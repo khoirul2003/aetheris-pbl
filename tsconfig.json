@@ -18,6 +18,7 @@
         "name": "next"
       }
     ],
+    /* Gunakan titik (.) di dalam paths untuk menggantikan fungsi baseUrl */
     "paths": {
       "@/*": ["./*"]
     }
