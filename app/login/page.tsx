@@ -31,7 +31,7 @@ export default function LoginPage() {
       } else {
         setError("Akses ditolak. Role tidak terdaftar.");
       }
-    } catch (err: any) {
+    } catch {
       setError("Email atau password yang Anda masukkan salah.");
     } finally {
       setLoading(false);
