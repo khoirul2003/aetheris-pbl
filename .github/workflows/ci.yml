@@ -1,0 +1,52 @@
+name: Next.js CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Lint
+        run: npm run lint
+
+      - name: Build Project
+        run: npm run build
+        env:
+          # Tambahkan environment variables jika diperlukan saat build
+          NEXT_TELEMETRY_DISABLED: 1
+
+  # Opsional: Job untuk Build Docker Image
+  docker:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and analyze
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false # Set true jika ingin push ke Docker Hub
+          tags: aetheris-pbl:latest
