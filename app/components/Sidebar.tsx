@@ -1,13 +1,13 @@
 "use client";
 
 import { 
-  LayoutDashboard, 
-  Users, 
-  Database, 
-  LogOut, 
-  ShieldCheck, 
-  Bell,
-  Settings
+  Home, 
+  MapPin, 
+  Bell, 
+  BarChart2, 
+  Settings,
+  Flame,
+  LogOut
 } from "lucide-react";
 import { auth } from "@/lib/firebase";
 import { useRouter, usePathname } from "next/navigation";
@@ -15,7 +15,7 @@ import { signOut } from "firebase/auth";
 
 interface SidebarProps {
   role: "admin" | "user";
-  userEmail?: string | null; // Tambahan prop untuk menerima email dari luar
+  userEmail?: string | null;
 }
 
 export default function Sidebar({ role, userEmail }: SidebarProps) {
@@ -35,86 +35,81 @@ export default function Sidebar({ role, userEmail }: SidebarProps) {
   const isActive = (path: string) => pathname === path;
 
   return (
-    <div className="w-64 bg-slate-900 h-screen fixed left-0 top-0 text-slate-300 flex flex-col border-r border-white/5 z-50">
-      {/* Logo Section */}
-      <div className="flex items-center gap-3 px-6 mb-8 mt-8">
-        <div className="bg-blue-600 p-2.5 rounded-xl shadow-lg shadow-blue-900/20">
-          <ShieldCheck className="text-white" size={24} />
+    <div className="w-64 bg-white h-screen fixed left-0 top-0 text-slate-800 flex flex-col border-r border-slate-200 z-50">
+      
+      {/* Header / Logo Section */}
+      <div className="flex items-center gap-2.5 px-6 py-5 border-b border-slate-200">
+        <div className="relative">
+          <Flame className="text-orange-500" size={24} strokeWidth={2.5} />
+          {/* Efek aksen warna di dalam api (opsional untuk mempercantik) */}
+          <div className="absolute inset-2 bg-yellow-400 blur-sm -z-10 rounded-full"></div>
         </div>
-        <div>
-          <h1 className="text-xl font-black text-white tracking-tight">AETHERIS</h1>
-          <p className="text-[10px] text-blue-400 font-bold uppercase tracking-widest">PBL Project</p>
-        </div>
+        <h1 className="text-lg font-bold text-slate-900 tracking-tight">
+          <span className="text-blue-900">AETHERIS.</span>
+        </h1>
       </div>
 
       {/* Navigation Section */}
-      <nav className="flex-1 space-y-2 px-4 overflow-y-auto custom-scrollbar">
-        <p className="px-2 text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-4">Main Menu</p>
+      <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto custom-scrollbar">
         
         <button 
           onClick={() => router.push(role === "admin" ? "/dashboard/admin" : "/dashboard/user")}
-          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-            isActive("/dashboard/admin") || isActive("/dashboard/user")
-              ? "bg-blue-600 text-white shadow-lg shadow-blue-900/40" 
-              : "hover:bg-white/5 hover:text-white"
-          }`}
+          className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors text-sm
+            ${isActive("/dashboard/admin") || isActive("/dashboard/user")
+              ? "bg-[#F6F5F2] text-slate-900 font-bold" 
+              : "text-slate-600 hover:bg-slate-50 font-medium"
+            }`}
         >
-          <LayoutDashboard size={20} /> 
-          <span className="font-medium">Dashboard</span>
+          <Home size={18} strokeWidth={isActive("/dashboard/user") ? 2.5 : 2} /> 
+          <span>Beranda</span>
         </button>
 
-        {role === "admin" && (
-          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all text-slate-400">
-            <Users size={20} /> 
-            <span className="font-medium">Kelola Restoran</span>
-          </button>
-        )}
-
-        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all text-slate-400">
-          <Database size={20} /> 
-          <span className="font-medium">Riwayat Data</span>
+        <button className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors text-sm font-medium">
+          <MapPin size={18} /> 
+          <span>Area & sensor</span>
         </button>
 
-        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all text-slate-400 relative">
-          <Bell size={20} /> 
-          <span className="font-medium">Notifikasi</span>
-          <span className="absolute right-4 w-2 h-2 bg-blue-500 rounded-full"></span>
+        <button className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors text-sm font-medium">
+          <Bell size={18} /> 
+          <span>Alert</span>
         </button>
 
-        <div className="pt-4 mt-4 border-t border-white/5">
-          <p className="px-2 text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mb-4">System</p>
-          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/5 hover:text-white transition-all text-slate-400">
-            <Settings size={20} /> 
-            <span className="font-medium">Pengaturan</span>
-          </button>
-        </div>
+        <button className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors text-sm font-medium">
+          <BarChart2 size={18} /> 
+          <span>Laporan</span>
+        </button>
+
+        <button className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors text-sm font-medium">
+          <Settings size={18} /> 
+          <span>Pengaturan</span>
+        </button>
+
       </nav>
 
-      {/* User Section & Logout */}
-      <div className="p-4 border-t border-white/5 bg-slate-900/50 backdrop-blur-md">
-        <div className="flex items-center gap-3 px-2 mb-4">
-          <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-sm font-bold text-white border border-white/10 shadow-inner">
-            {role === "admin" ? "AD" : "RS"}
+      {/* Footer / User Profile Section */}
+      <div 
+        onClick={handleLogout}
+        className="p-5 border-t border-slate-200 mt-auto hover:bg-slate-50 cursor-pointer transition-colors group flex items-center justify-between"
+        title="Klik untuk Keluar"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold shrink-0">
+            {role === "admin" ? "AD" : "RW"}
           </div>
           <div className="overflow-hidden">
-            <p className="text-sm font-bold text-white truncate">
-              {role === "admin" ? "Administrator" : "Pemilik Restoran"}
+            <p className="text-sm font-bold text-slate-900 leading-tight truncate">
+              {role === "admin" ? "Administrator" : "Restoran Warung"}
             </p>
-            {/* Menggunakan prop userEmail yang dikirim dari page.tsx */}
-            <p className="text-[11px] text-slate-400 truncate">
-              {userEmail || "Memuat..."}
+            <p className="text-[11px] text-slate-500 truncate mt-0.5">
+              {userEmail || "Paket Pro"}
             </p>
           </div>
         </div>
         
-        <button 
-          onClick={handleLogout}
-          className="group w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all font-semibold text-sm border border-transparent hover:border-red-500/20"
-        >
-          <LogOut size={18} className="transition-transform group-hover:-translate-x-1" /> 
-          Keluar Aplikasi
-        </button>
+        {/* Ikon Logout yang muncul saat di-hover */}
+        <LogOut size={16} className="text-slate-400 group-hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all shrink-0" />
       </div>
+
     </div>
   );
 }
