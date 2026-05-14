@@ -1,147 +1,314 @@
 "use client";
 
+import Sidebar from "@/app/components/Sidebar";
+import Navbar from "@/app/components/Navbar";
 import { useEffect, useState } from "react";
-import Sidebar from "../../components/ Sidebar";
 import { 
-  Flame, 
-  Wind, 
-  BellRing, 
-  History, 
-  ShieldAlert, 
+  AlertTriangle,
+  Loader2,
+  Check,
+  BellRing,
   CheckCircle2,
-  AlertTriangle
+  AlertCircle
 } from "lucide-react";
 import { auth, db } from "@/lib/firebase";
 import { collection, query, where, orderBy, limit, onSnapshot } from "firebase/firestore";
+import { onAuthStateChanged, User } from "firebase/auth";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
+
+const ZONES = [
+  { id: "Kompor utama", desc: "Area memasak kiri" },
+  { id: "Kompor kanan", desc: "Area memasak kanan" },
+  { id: "Gudang tabung gas", desc: "Ruang penyimpanan" },
+  { id: "Area exhaust", desc: "Plafon dekat kipas" }
+];
+
+const chartData = [
+  { time: '08:00', utama: 80, kanan: 60 },
+  { time: '09:00', utama: 90, kanan: 70 },
+  { time: '10:00', utama: 100, kanan: 80 },
+  { time: '11:00', utama: 280, kanan: 120 },
+  { time: '12:00', utama: 160, kanan: 200 },
+  { time: '13:00', utama: 140, kanan: 250 },
+  { time: '14:00', utama: 145, kanan: 280 },
+];
 
 export default function UserDashboard() {
-  const [gasLevel, setGasLevel] = useState(0);
-  const [status, setStatus] = useState("Memuat...");
-  const [lastUpdate, setLastUpdate] = useState("-");
-
-  useEffect(() => {
-    if (!auth.currentUser) return;
-
-    // Query untuk mengambil 1 data terbaru berdasarkan restaurantId (UID User)
-    const q = query(
-      collection(db, "gas_readings"),
-      where("restaurantId", "==", auth.currentUser.uid),
-      orderBy("timestamp", "desc"),
-      limit(1)
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      if (!snapshot.empty) {
-        const data = snapshot.docs[0].data();
-        setGasLevel(data.value);
-        setStatus(data.status);
-        
-        // Format waktu update terakhir
-        const time = data.timestamp?.toDate();
-        if (time) {
-          setLastUpdate(time.toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit' }));
-        }
-      } else {
-        setStatus("TIDAK ADA DATA");
-      }
+  const [user, setUser] = useState<User | null>(null);
+  const [loadingAuth, setLoadingAuth] = useState(true);
+  
+  const [zonesData, setZonesData] = useState(() => {
+    const initialState: any = {};
+    ZONES.forEach(zone => {
+      initialState[zone.id] = { value: 0, status: "Memuat...", lastUpdate: "-" };
     });
+    return initialState;
+  });
 
-    return () => unsubscribe();
+  // 1. Auth Checker
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoadingAuth(false);
+    });
+    return () => unsubscribeAuth();
   }, []);
 
-  // Konfigurasi warna berdasarkan status
-  const getStatusColor = () => {
-    if (status === "BAHAYA") return "text-rose-500 bg-rose-500";
-    if (status === "WASPADA") return "text-amber-500 bg-amber-500";
-    return "text-emerald-500 bg-emerald-500";
+  // 2. Data Fetcher dari Firebase
+  useEffect(() => {
+    if (loadingAuth || !user) return;
+
+    const unsubscribes = ZONES.map((zone) => {
+      const q = query(
+        collection(db, "gas_readings"),
+        where("restaurantId", "==", user.uid),
+        where("zoneName", "==", zone.id),
+        orderBy("timestamp", "desc"),
+        limit(1)
+      );
+
+      return onSnapshot(q, (snapshot) => {
+        if (!snapshot.empty) {
+          const data = snapshot.docs[0].data();
+          const time = data.timestamp?.toDate();
+          
+          setZonesData((prev: any) => ({
+            ...prev,
+            [zone.id]: {
+              value: data.value,
+              status: data.status,
+              lastUpdate: time ? time.toLocaleTimeString("id-ID", { hour: '2-digit', minute: '2-digit' }) : "-"
+            }
+          }));
+        } else {
+          // Dummy data untuk kebutuhan UI sementara jika database kosong
+          const dummyStatus = zone.id === "Kompor kanan" ? "WASPADA" : "AMAN";
+          setZonesData((prev: any) => ({
+            ...prev,
+            [zone.id]: { value: dummyStatus === "WASPADA" ? 280 : 140, status: dummyStatus, lastUpdate: "14:32" }
+          }));
+        }
+      });
+    });
+
+    return () => unsubscribes.forEach(unsub => unsub());
+  }, [user, loadingAuth]);
+
+  // Fungsi utilitas untuk meringkas status
+  const getOverallStatus = () => {
+    const statuses = Object.values(zonesData).map((d: any) => d.status);
+    if (statuses.includes("BAHAYA")) return "Bahaya";
+    if (statuses.includes("WASPADA")) return "Waspada";
+    return "Aman";
   };
 
+  const overallStatus = getOverallStatus();
+  const warningCount = Object.values(zonesData).filter((d: any) => d.status === "WASPADA" || d.status === "BAHAYA").length;
+  const connectedCount = Object.values(zonesData).filter((d: any) => d.status !== "Memuat..." && d.status !== "BELUM ADA DATA").length;
+
+  if (loadingAuth) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-50">
+        <Loader2 className="animate-spin text-blue-600 mr-3" size={32} />
+        <span className="font-bold text-slate-600">Memuat Sistem Keamanan...</span>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <AlertTriangle className="mx-auto text-amber-500 mb-4" size={48} />
+          <h2 className="text-2xl font-bold text-slate-800">Akses Ditolak</h2>
+          <p className="text-slate-500">Silakan login terlebih dahulu untuk memantau dapur.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex bg-slate-50 min-h-screen">
-      {/* Sidebar khusus User */}
-      <Sidebar role="user" />
+    <div className="flex bg-[#FDFBF7] min-h-screen font-sans text-slate-800">
+      
+      {/* SIDEBAR */}
+      <Sidebar role="user" userEmail={user?.email} />
 
-      {/* Main Content */}
-      <main className="ml-64 p-8 w-full">
-        {/* Header Dashboard */}
-        <header className="mb-10 flex justify-between items-end">
-          <div>
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight">Status Keamanan Dapur</h1>
-            <p className="text-slate-500 text-sm italic">Monitoring real-time sensor gas MQ-2</p>
-          </div>
-          <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-200 flex items-center gap-2 text-xs font-bold text-slate-600">
-            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> 
-            TERKONEKSI • Update Terakhir: {lastUpdate}
-          </div>
-        </header>
+      {/* NAVBAR */}
+      <Navbar title="Beranda" />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Card Utama Visualisasi Gas */}
-          <div className="lg:col-span-2 bg-white p-12 rounded-[2rem] shadow-sm border border-slate-200 flex flex-col items-center justify-center relative overflow-hidden">
-            {/* Dekorasi Background */}
-            <div className="absolute -top-10 -right-10 opacity-[0.03] rotate-12">
-              <Flame size={300} />
-            </div>
-
-            <h3 className="text-slate-400 font-bold uppercase tracking-[0.2em] text-xs mb-6">Konsentrasi Gas Saat Ini</h3>
-            
-            <div className="relative flex items-center justify-center">
-              <div className="text-[10rem] font-black text-slate-800 leading-none tracking-tighter">
-                {gasLevel}
-              </div>
-              <span className="absolute -right-16 bottom-6 text-2xl font-bold text-slate-400">PPM</span>
-            </div>
-
-            <div className={`mt-8 px-10 py-3 rounded-2xl font-black text-xl tracking-widest text-white shadow-lg flex items-center gap-3 ${getStatusColor().split(' ')[1]}`}>
-              {status === "AMAN" && <CheckCircle2 size={24} />}
-              {status === "WASPADA" && <AlertTriangle size={24} />}
-              {status === "BAHAYA" && <ShieldAlert size={24} className="animate-bounce" />}
-              {status}
-            </div>
-          </div>
-
-          {/* Kolom Informasi & Aksi Cepat */}
-          <div className="space-y-6">
-            {/* Widget Notifikasi WhatsApp */}
-            <div className="bg-slate-900 p-8 rounded-[2rem] text-white shadow-xl shadow-slate-200 relative overflow-hidden group">
-              <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:scale-110 transition-transform">
-                <BellRing size={40} />
-              </div>
-              <h4 className="font-bold text-lg mb-3">Sistem Alert Aktif</h4>
-              <p className="text-slate-400 text-sm leading-relaxed">
-                Pesan WhatsApp otomatis akan dikirim ke nomor Anda jika terdeteksi kebocoran di atas <span className="text-amber-400 font-bold">400 PPM</span>.
+      {/* KONTEN UTAMA */}
+      <main className="md:ml-64 pt-24 px-6 md:px-8 pb-8 w-full max-w-6xl mx-auto">
+        
+        {/* WARNING BANNER */}
+        {(overallStatus === "Waspada" || overallStatus === "Bahaya") && (
+          <div className="bg-orange-50 border border-orange-200 p-4 rounded-xl flex items-start gap-3 mb-6 shadow-sm">
+            <AlertCircle className="text-orange-500 mt-0.5 shrink-0" size={20} />
+            <div>
+              <p className="text-orange-800 font-medium text-sm leading-relaxed">
+                <span className="font-bold">Perhatian!</span> Kompor kanan mendekati batas aman. Pastikan ventilasi dapur terbuka dan periksa selang gas.
               </p>
-              <button className="mt-6 w-full py-3 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl text-xs font-bold transition-all uppercase tracking-wider">
-                Pengaturan Kontak
-              </button>
             </div>
+          </div>
+        )}
+
+        {/* TOP STATS ROW */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="bg-[#F6F5F2] border border-transparent p-5 rounded-xl">
+            <p className="text-slate-500 text-xs font-semibold mb-1 uppercase tracking-wider">Kondisi Dapur</p>
+            <h2 className={`text-2xl font-black mb-1 ${overallStatus === 'Waspada' ? 'text-[#C67023]' : overallStatus === 'Bahaya' ? 'text-red-600' : 'text-[#4A6741]'}`}>
+              {overallStatus}
+            </h2>
+            <p className="text-slate-500 text-xs font-medium">{warningCount > 0 ? `${warningCount} area perlu cek` : 'Semua area aman'}</p>
+          </div>
+          <div className="bg-[#F6F5F2] border border-transparent p-5 rounded-xl">
+            <p className="text-slate-500 text-xs font-semibold mb-1 uppercase tracking-wider">Sensor Aktif</p>
+            <h2 className="text-2xl font-black text-slate-800 mb-1">{connectedCount} <span className="text-lg text-slate-500">/ {ZONES.length}</span></h2>
+            <p className="text-slate-500 text-xs font-medium">Semua terhubung</p>
+          </div>
+          <div className="bg-[#F6F5F2] border border-transparent p-5 rounded-xl">
+            <p className="text-slate-500 text-xs font-semibold mb-1 uppercase tracking-wider">Alert Hari Ini</p>
+            <h2 className="text-2xl font-black text-slate-800 mb-1">3 <span className="text-lg text-slate-500">kali</span></h2>
+            <p className="text-slate-500 text-xs font-medium">1 belum ditangani</p>
+          </div>
+          <div className="bg-[#F6F5F2] border border-transparent p-5 rounded-xl">
+            <p className="text-slate-500 text-xs font-semibold mb-1 uppercase tracking-wider">Terakhir Dicek</p>
+            <h2 className="text-2xl font-black text-slate-800 mb-1">14:32</h2>
+            <p className="text-slate-500 text-xs font-medium">Hari ini</p>
+          </div>
+        </div>
+
+        {/* MIDDLE ROW: STATUS & MAP */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          
+          {/* STATUS SEMUA AREA */}
+          <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm flex flex-col h-full">
+            <h3 className="text-xs font-bold text-slate-500 tracking-widest uppercase mb-6 flex items-center gap-2">
+              Status Semua Area
+            </h3>
+            <div className="space-y-0 flex-grow">
+              {ZONES.map((zone, index) => {
+                const status = zonesData[zone.id].status;
+                const isWarning = status === "WASPADA" || status === "BAHAYA";
+                
+                return (
+                  <div key={zone.id} className={`flex items-center justify-between py-4 ${index !== ZONES.length - 1 ? 'border-b border-slate-100' : ''}`}>
+                    <div className="flex items-center gap-4">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isWarning ? 'bg-[#FDF0E1] text-[#C67023]' : 'bg-[#E9F2E4] text-[#4A6741]'}`}>
+                        {isWarning ? <AlertTriangle size={18} /> : <Check size={18} strokeWidth={3} />}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-slate-800 text-sm truncate">{zone.id}</p>
+                        <p className="text-xs text-slate-500 truncate">{zone.desc}</p>
+                      </div>
+                    </div>
+                    <span className={`px-4 py-1.5 rounded-full text-xs font-bold shrink-0 ${isWarning ? 'bg-[#FDF0E1] text-[#A05E1A]' : 'bg-[#E9F2E4] text-[#4A6741]'}`}>
+                      {status === "Memuat..." ? "Aman" : status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* PETA ZONA DAPUR */}
+          <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm flex flex-col h-full">
+            <h3 className="text-xs font-bold text-slate-500 tracking-widest uppercase mb-6">Peta Zona Dapur</h3>
+            <div className="bg-[#F6F5F2] p-5 rounded-2xl border border-slate-100 grid grid-cols-2 gap-4 flex-grow items-center">
+              {ZONES.map((zone) => {
+                const status = zonesData[zone.id].status;
+                const isWarning = status === "WASPADA" || status === "BAHAYA";
+
+                return (
+                  <div key={zone.id} className={`p-4 rounded-xl border flex flex-col justify-center items-center text-center h-28 transition-all ${isWarning ? 'bg-[#FDF0E1] border-[#F3D5B5]' : 'bg-[#E9F2E4] border-[#D1E2C7]'}`}>
+                    <p className={`font-bold text-xs mb-3 line-clamp-2 ${isWarning ? 'text-[#99551A]' : 'text-[#4A6741]'}`}>
+                      {zone.id}
+                      {isWarning && <span className="block text-[10px] opacity-80 font-normal mt-0.5">! Waspada</span>}
+                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <div className={`w-2 h-2 rounded-full ${isWarning ? 'bg-[#F59E0B]' : 'bg-[#558B2F]'}`}></div>
+                      {!isWarning && <span className="text-[10px] font-bold text-[#4A6741]">Aman</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+        </div>
+
+        {/* BOTTOM ROW: CHART & ALERTS */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+          {/* GRAFIK TREN GAS */}
+          <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm flex flex-col">
+            <h3 className="text-xs font-bold text-slate-500 tracking-widest uppercase mb-4">Grafik Tren Gas Hari Ini</h3>
             
-            {/* Widget Tips Keamanan */}
-            <div className="bg-white p-8 rounded-[2rem] border border-slate-200">
-              <h4 className="font-bold text-slate-800 mb-5 flex items-center gap-2">
-                <Wind className="text-blue-500" size={20} /> Protokol Keamanan
-              </h4>
-              <ul className="text-sm text-slate-500 space-y-4">
-                <li className="flex gap-3">
-                  <span className="font-bold text-blue-500">01.</span>
-                  <span>Pastikan ventilasi mekanis (exhaust) menyala saat jam operasional.</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="font-bold text-blue-500">02.</span>
-                  <span>Lakukan pengecekan visual pada selang regulator setiap pagi.</span>
-                </li>
-                <li className="flex gap-3">
-                  <span className="font-bold text-blue-500">03.</span>
-                  <span>Hubungi teknisi jika status WASPADA muncul lebih dari 10 menit.</span>
-                </li>
-              </ul>
+            <div className="flex items-center justify-center gap-6 mb-6">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 border-2 border-[#558B2F] bg-white"></div>
+                <span className="text-xs text-slate-500 font-medium">Kompor utama</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 border-2 border-[#F59E0B] bg-white"></div>
+                <span className="text-xs text-slate-500 font-medium">Kompor kanan</span>
+              </div>
             </div>
 
-            {/* Tombol Lihat Riwayat */}
-            <button className="w-full flex items-center justify-center gap-3 py-4 bg-white border border-slate-200 rounded-2xl text-slate-600 font-bold hover:bg-slate-50 transition-all shadow-sm">
-              <History size={20} /> Lihat Riwayat Laporan
-            </button>
+            <div className="h-[250px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="time" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} ticks={[0, 200, 400]} tickFormatter={(val) => `${val}p`} />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  />
+                  <Line type="linear" dataKey="kanan" stroke="#F59E0B" strokeWidth={2} dot={{ r: 3, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 5 }} />
+                  <Line type="linear" dataKey="utama" stroke="#558B2F" strokeWidth={2} dot={{ r: 3, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 5 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </div>
+
+          {/* ALERT TERBARU */}
+          <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm flex flex-col h-[350px]">
+            <h3 className="text-xs font-bold text-slate-500 tracking-widest uppercase mb-4">Alert Terbaru</h3>
+            
+            <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar flex-grow">
+              
+              <div className="flex gap-4 relative py-2 border-b border-slate-100">
+                <div className="w-10 h-10 rounded-xl bg-[#FDF0E1] text-[#C67023] flex items-center justify-center shrink-0">
+                  <AlertTriangle size={18} />
+                </div>
+                <div className="w-full pb-2">
+                  <p className="text-sm font-bold text-slate-800 leading-snug mb-1">Kompor kanan mendekati batas aman</p>
+                  <p className="text-xs text-slate-500">14:32 — <span className="text-[#A05E1A] font-semibold">Belum ditangani</span></p>
+                </div>
+              </div>
+
+              <div className="flex gap-4 relative py-2 border-b border-slate-100">
+                <div className="w-10 h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center shrink-0">
+                  <BellRing size={18} />
+                </div>
+                <div className="w-full pb-2">
+                  <p className="text-sm font-bold text-slate-800 leading-snug mb-1">Gas terdeteksi tinggi di kompor utama. Kipas otomatis menyala.</p>
+                  <p className="text-xs text-slate-500">11:07 — <span className="text-[#4A6741] font-semibold">Selesai</span></p>
+                </div>
+              </div>
+
+              <div className="flex gap-4 relative py-2">
+                <div className="w-10 h-10 rounded-xl bg-[#E9F2E4] text-[#4A6741] flex items-center justify-center shrink-0">
+                  <CheckCircle2 size={18} />
+                </div>
+                <div className="w-full">
+                  <p className="text-sm font-bold text-slate-800 leading-snug mb-1">Semua sensor kembali normal</p>
+                  <p className="text-xs text-slate-500">11:19 — <span className="text-[#4A6741] font-semibold">Otomatis</span></p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
         </div>
       </main>
     </div>
