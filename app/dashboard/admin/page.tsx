@@ -5,7 +5,6 @@ import {
   Activity, 
   Users, 
   AlertTriangle, 
-  CheckCircle, 
   ArrowUpRight, 
   MoreVertical,
   Search

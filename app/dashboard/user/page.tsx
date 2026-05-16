@@ -16,6 +16,17 @@ import { collection, query, where, orderBy, limit, onSnapshot } from "firebase/f
 import { onAuthStateChanged, User } from "firebase/auth";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
 
+// Interface untuk Type Safety (Menghilangkan error @typescript-eslint/no-explicit-any)
+interface ZoneStatus {
+  value: number;
+  status: string;
+  lastUpdate: string;
+}
+
+interface ZonesDataMap {
+  [key: string]: ZoneStatus;
+}
+
 const ZONES = [
   { id: "Kompor utama", desc: "Area memasak kiri" },
   { id: "Kompor kanan", desc: "Area memasak kanan" },
@@ -37,8 +48,8 @@ export default function UserDashboard() {
   const [user, setUser] = useState<User | null>(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
   
-  const [zonesData, setZonesData] = useState(() => {
-    const initialState: any = {};
+  const [zonesData, setZonesData] = useState<ZonesDataMap>(() => {
+    const initialState: ZonesDataMap = {};
     ZONES.forEach(zone => {
       initialState[zone.id] = { value: 0, status: "Memuat...", lastUpdate: "-" };
     });
@@ -72,7 +83,7 @@ export default function UserDashboard() {
           const data = snapshot.docs[0].data();
           const time = data.timestamp?.toDate();
           
-          setZonesData((prev: any) => ({
+          setZonesData((prev: ZonesDataMap) => ({
             ...prev,
             [zone.id]: {
               value: data.value,
@@ -81,9 +92,9 @@ export default function UserDashboard() {
             }
           }));
         } else {
-          // Dummy data untuk kebutuhan UI sementara jika database kosong
+          // Fallback data jika belum ada di database
           const dummyStatus = zone.id === "Kompor kanan" ? "WASPADA" : "AMAN";
-          setZonesData((prev: any) => ({
+          setZonesData((prev: ZonesDataMap) => ({
             ...prev,
             [zone.id]: { value: dummyStatus === "WASPADA" ? 280 : 140, status: dummyStatus, lastUpdate: "14:32" }
           }));
@@ -94,17 +105,16 @@ export default function UserDashboard() {
     return () => unsubscribes.forEach(unsub => unsub());
   }, [user, loadingAuth]);
 
-  // Fungsi utilitas untuk meringkas status
   const getOverallStatus = () => {
-    const statuses = Object.values(zonesData).map((d: any) => d.status);
+    const statuses = Object.values(zonesData).map((d: ZoneStatus) => d.status);
     if (statuses.includes("BAHAYA")) return "Bahaya";
     if (statuses.includes("WASPADA")) return "Waspada";
     return "Aman";
   };
 
   const overallStatus = getOverallStatus();
-  const warningCount = Object.values(zonesData).filter((d: any) => d.status === "WASPADA" || d.status === "BAHAYA").length;
-  const connectedCount = Object.values(zonesData).filter((d: any) => d.status !== "Memuat..." && d.status !== "BELUM ADA DATA").length;
+  const warningCount = Object.values(zonesData).filter((d: ZoneStatus) => d.status === "WASPADA" || d.status === "BAHAYA").length;
+  const connectedCount = Object.values(zonesData).filter((d: ZoneStatus) => d.status !== "Memuat..." && d.status !== "BELUM ADA DATA").length;
 
   if (loadingAuth) {
     return (
@@ -130,13 +140,12 @@ export default function UserDashboard() {
   return (
     <div className="flex bg-[#FDFBF7] min-h-screen font-sans text-slate-800">
       
-      {/* SIDEBAR */}
-      <Sidebar role="user" userEmail={user?.email} />
+      {/* Perbaikan Props Sidebar */}
+      <Sidebar role="user" userEmail={user.email ?? ""} />
 
-      {/* NAVBAR */}
+      {/* Perbaikan Props Navbar */}
       <Navbar title="Beranda" />
 
-      {/* KONTEN UTAMA */}
       <main className="md:ml-64 pt-24 px-6 md:px-8 pb-8 w-full max-w-6xl mx-auto">
         
         {/* WARNING BANNER */}
@@ -179,8 +188,6 @@ export default function UserDashboard() {
 
         {/* MIDDLE ROW: STATUS & MAP */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          
-          {/* STATUS SEMUA AREA */}
           <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm flex flex-col h-full">
             <h3 className="text-xs font-bold text-slate-500 tracking-widest uppercase mb-6 flex items-center gap-2">
               Status Semua Area
@@ -189,7 +196,6 @@ export default function UserDashboard() {
               {ZONES.map((zone, index) => {
                 const status = zonesData[zone.id].status;
                 const isWarning = status === "WASPADA" || status === "BAHAYA";
-                
                 return (
                   <div key={zone.id} className={`flex items-center justify-between py-4 ${index !== ZONES.length - 1 ? 'border-b border-slate-100' : ''}`}>
                     <div className="flex items-center gap-4">
@@ -202,7 +208,7 @@ export default function UserDashboard() {
                       </div>
                     </div>
                     <span className={`px-4 py-1.5 rounded-full text-xs font-bold shrink-0 ${isWarning ? 'bg-[#FDF0E1] text-[#A05E1A]' : 'bg-[#E9F2E4] text-[#4A6741]'}`}>
-                      {status === "Memuat..." ? "Aman" : status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()}
+                      {status === "Memuat..." ? "Aman" : status}
                     </span>
                   </div>
                 );
@@ -210,14 +216,13 @@ export default function UserDashboard() {
             </div>
           </div>
 
-          {/* PETA ZONA DAPUR */}
+          {/* PETA ZONA DAPUR (Dikembalikan) */}
           <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm flex flex-col h-full">
             <h3 className="text-xs font-bold text-slate-500 tracking-widest uppercase mb-6">Peta Zona Dapur</h3>
             <div className="bg-[#F6F5F2] p-5 rounded-2xl border border-slate-100 grid grid-cols-2 gap-4 flex-grow items-center">
               {ZONES.map((zone) => {
                 const status = zonesData[zone.id].status;
                 const isWarning = status === "WASPADA" || status === "BAHAYA";
-
                 return (
                   <div key={zone.id} className={`p-4 rounded-xl border flex flex-col justify-center items-center text-center h-28 transition-all ${isWarning ? 'bg-[#FDF0E1] border-[#F3D5B5]' : 'bg-[#E9F2E4] border-[#D1E2C7]'}`}>
                     <p className={`font-bold text-xs mb-3 line-clamp-2 ${isWarning ? 'text-[#99551A]' : 'text-[#4A6741]'}`}>
@@ -233,49 +238,30 @@ export default function UserDashboard() {
               })}
             </div>
           </div>
-
         </div>
 
         {/* BOTTOM ROW: CHART & ALERTS */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          
-          {/* GRAFIK TREN GAS */}
           <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm flex flex-col">
             <h3 className="text-xs font-bold text-slate-500 tracking-widest uppercase mb-4">Grafik Tren Gas Hari Ini</h3>
-            
-            <div className="flex items-center justify-center gap-6 mb-6">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 border-2 border-[#558B2F] bg-white"></div>
-                <span className="text-xs text-slate-500 font-medium">Kompor utama</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 border-2 border-[#F59E0B] bg-white"></div>
-                <span className="text-xs text-slate-500 font-medium">Kompor kanan</span>
-              </div>
-            </div>
-
             <div className="h-[250px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="time" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} ticks={[0, 200, 400]} tickFormatter={(val) => `${val}p`} />
-                  <Tooltip 
-                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  />
-                  <Line type="linear" dataKey="kanan" stroke="#F59E0B" strokeWidth={2} dot={{ r: 3, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 5 }} />
-                  <Line type="linear" dataKey="utama" stroke="#558B2F" strokeWidth={2} dot={{ r: 3, strokeWidth: 2, fill: '#fff' }} activeDot={{ r: 5 }} />
+                  <XAxis dataKey="time" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
+                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} ticks={[0, 200, 400]} />
+                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Line type="linear" dataKey="kanan" stroke="#F59E0B" strokeWidth={2} dot={{ r: 3 }} />
+                  <Line type="linear" dataKey="utama" stroke="#558B2F" strokeWidth={2} dot={{ r: 3 }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          {/* ALERT TERBARU */}
+          {/* ALERT TERBARU (Dikembalikan) */}
           <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm flex flex-col h-[350px]">
             <h3 className="text-xs font-bold text-slate-500 tracking-widest uppercase mb-4">Alert Terbaru</h3>
-            
-            <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar flex-grow">
-              
+            <div className="space-y-4 overflow-y-auto pr-2 flex-grow">
               <div className="flex gap-4 relative py-2 border-b border-slate-100">
                 <div className="w-10 h-10 rounded-xl bg-[#FDF0E1] text-[#C67023] flex items-center justify-center shrink-0">
                   <AlertTriangle size={18} />
@@ -285,7 +271,6 @@ export default function UserDashboard() {
                   <p className="text-xs text-slate-500">14:32 — <span className="text-[#A05E1A] font-semibold">Belum ditangani</span></p>
                 </div>
               </div>
-
               <div className="flex gap-4 relative py-2 border-b border-slate-100">
                 <div className="w-10 h-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center shrink-0">
                   <BellRing size={18} />
@@ -295,20 +280,8 @@ export default function UserDashboard() {
                   <p className="text-xs text-slate-500">11:07 — <span className="text-[#4A6741] font-semibold">Selesai</span></p>
                 </div>
               </div>
-
-              <div className="flex gap-4 relative py-2">
-                <div className="w-10 h-10 rounded-xl bg-[#E9F2E4] text-[#4A6741] flex items-center justify-center shrink-0">
-                  <CheckCircle2 size={18} />
-                </div>
-                <div className="w-full">
-                  <p className="text-sm font-bold text-slate-800 leading-snug mb-1">Semua sensor kembali normal</p>
-                  <p className="text-xs text-slate-500">11:19 — <span className="text-[#4A6741] font-semibold">Otomatis</span></p>
-                </div>
-              </div>
-
             </div>
           </div>
-
         </div>
       </main>
     </div>
