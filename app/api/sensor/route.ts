@@ -1,32 +1,19 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { SensorController } from '@/controllers/sensorController';
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { restaurantId, sensorValue } = body;
+    const { sensorId, ...payload } = body;
 
-    // Logika Indikator 3 Level
-    let status = "AMAN";
-    if (sensorValue > 400 && sensorValue <= 700) status = "WASPADA";
-    else if (sensorValue > 700) status = "BAHAYA";
+    if (!sensorId) {
+      return NextResponse.json({ error: "sensorId wajib diisi" }, { status: 400 });
+    }
 
-    // Simpan ke Firestore
-    const docRef = await addDoc(collection(db, "gas_readings"), {
-      restaurantId,
-      value: sensorValue,
-      status: status,
-      timestamp: serverTimestamp(),
-    });
+    const result = await SensorController.processIncomingData(sensorId, payload);
 
-    return NextResponse.json({ 
-      success: true, 
-      id: docRef.id,
-      status: status 
-    }, { status: 201 });
-    
-  } catch (error) {
+    return NextResponse.json(result, { status: 201 });
+  } catch (_error) {
     return NextResponse.json({ error: "Gagal memproses data" }, { status: 500 });
   }
 }

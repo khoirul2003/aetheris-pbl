@@ -64,8 +64,15 @@ export default function Sidebar({ role, userEmail }: SidebarProps) {
           <span>Beranda</span>
         </button>
 
-        <button className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors text-sm font-medium">
-          <MapPin size={18} /> 
+        <button 
+          onClick={() => router.push("/dashboard/sensors")}
+          className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors text-sm
+            ${isActive("/dashboard/sensors")
+              ? "bg-[#F6F5F2] text-slate-900 font-bold" 
+              : "text-slate-600 hover:bg-slate-50 font-medium"
+            }`}
+        >
+          <MapPin size={18} strokeWidth={isActive("/dashboard/sensors") ? 2.5 : 2} /> 
           <span>Area & sensor</span>
         </button>
 
