@@ -76,11 +76,18 @@ export default function Sidebar({ role, userEmail }: SidebarProps) {
           <span>Area & sensor</span>
         </button>
 
-        <button className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors text-sm font-medium">
-          <Bell size={18} /> 
+        {/* Menu Alert */}
+        <button 
+          onClick={() => router.push("/dashboard/alerts")}
+          className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors text-sm
+            ${isActive("/dashboard/alerts")
+              ? "bg-[#F6F5F2] text-slate-900 font-bold" 
+              : "text-slate-600 hover:bg-slate-50 font-medium"
+            }`}
+        >
+          <Bell size={18} strokeWidth={isActive("/dashboard/alerts") ? 2.5 : 2} /> 
           <span>Alert</span>
         </button>
-
         <button className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-50 transition-colors text-sm font-medium">
           <BarChart2 size={18} /> 
           <span>Laporan</span>
