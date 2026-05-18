@@ -7,7 +7,6 @@ import {
   Loader2,
   Check,
   BellRing,
-  CheckCircle2,
   AlertCircle
 } from "lucide-react";
 import { auth, db } from "@/lib/firebase";
