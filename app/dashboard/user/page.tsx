@@ -244,8 +244,8 @@ export default function UserDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm flex flex-col">
             <h3 className="text-xs font-bold text-slate-500 tracking-widest uppercase mb-4">Grafik Tren Gas Hari Ini</h3>
-            <div className="h-[250px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="h-[350px] w-full w-min-0">
+              <ResponsiveContainer width="100%" height="100%" aspect={2}>
                 <LineChart data={chartData} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                   <XAxis dataKey="time" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
