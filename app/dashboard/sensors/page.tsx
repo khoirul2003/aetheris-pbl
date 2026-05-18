@@ -1,13 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Sidebar from "@/app/components/Sidebar";
-import Navbar from "@/app/components/Navbar";
+import Topbar from "@/app/components/topbar";
 import { ClientSensorModel, FirestoreSensor, LiveSensorData } from "@/models/clientSensorModel";
 import { AlertTriangle, Check, RefreshCw, Radio } from "lucide-react";
 
 export default function SensorsPage() {
-  // Gunakan User ID sesuai data database Anda
   const userId = "O4O7ZiAKmCUoNtqBoJhTsk3prHW2";
 
   const [sensors, setSensors] = useState<FirestoreSensor[]>([]);
@@ -15,7 +13,6 @@ export default function SensorsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 1. Ambil data statis sensor dari Firestore
   useEffect(() => {
     async function fetchSensors() {
       try {
@@ -31,7 +28,6 @@ export default function SensorsPage() {
     fetchSensors();
   }, [userId]);
 
-  // 2. Dengarkan data live secara realtime dari Realtime Database
   useEffect(() => {
     if (sensors.length === 0) return;
 
@@ -63,17 +59,14 @@ export default function SensorsPage() {
   if (error) return <div className="p-8 text-red-500 font-bold">{error}</div>;
 
   return (
-    <div className="flex bg-[#FDFBF7] min-h-screen font-sans text-slate-800">
-      {/* SIDEBAR NAVIGATION */}
-      <Sidebar role="user" userEmail="khoirul@email.com" />
+    <div className="bg-[#FDFBF7] min-h-screen font-sans text-slate-800">
+      
+      {/* UBAH ROLE JADI ADMIN & Hapus Navbar lama */}
+      <Topbar role="admin" />
 
-      {/* NAVBAR */}
-      <Navbar title="Area & Sensor" />
-
-      {/* KONTEN UTAMA */}
-      <main className="md:ml-64 pt-24 px-6 md:px-8 pb-8 w-full max-w-6xl mx-auto">
+      {/* KONTEN UTAMA: Hapus md:ml-64, pastikan ada pt-24 */}
+      <main className="pt-24 px-6 md:px-8 pb-8 w-full max-w-6xl mx-auto">
         
-        {/* HEADER JUDUL HALAMAN */}
         <div className="mb-6 flex justify-between items-center">
           <div>
             <h1 className="text-xl font-black text-slate-800 tracking-tight">Status Semua Area</h1>
@@ -90,12 +83,9 @@ export default function SensorsPage() {
             Belum ada area atau sensor yang terdaftar.
           </div>
         ) : (
-          /* GRID RESPONSIVE - MENYESUAIKAN GAMBAR MOCKUP */
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {sensors.map((sensor) => {
               const currentLive = liveData[sensor.id];
-              
-              // Mengambil status dari RTDB, jika belum ada gunakan default 'safe'
               const status = currentLive?.status || "safe";
               const isWarningOrDanger = status === "warning" || status === "danger";
 
@@ -108,7 +98,6 @@ export default function SensorsPage() {
                     "bg-[#E9F2E4] border-[#D1E2C7]"
                   }`}
                 >
-                  {/* BARIS ATAS: IKON STATUS DAN LABEL BADGE */}
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-4">
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
@@ -121,8 +110,6 @@ export default function SensorsPage() {
                         <p className="text-xs text-slate-500 truncate">{sensor.name} — {sensor.location}</p>
                       </div>
                     </div>
-
-                    {/* BADGE STATUS */}
                     <span className={`px-4 py-1.5 rounded-full text-xs font-black shrink-0 uppercase tracking-wider ${
                       status === "danger" ? "bg-red-100 text-red-700" :
                       status === "warning" ? "bg-[#FDF0E1] text-[#A05E1A]" : 
@@ -132,7 +119,6 @@ export default function SensorsPage() {
                     </span>
                   </div>
 
-                  {/* BARIS TENGAH: DETAIL INDIKATOR LIVE */}
                   <div className="space-y-3 bg-white/70 backdrop-blur-sm p-4 rounded-xl border border-slate-100/50 mb-4 flex-grow flex flex-col justify-center">
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-slate-500 font-medium">Kadar Gas:</span>
@@ -140,14 +126,12 @@ export default function SensorsPage() {
                         {currentLive ? `${currentLive.gas} PPM` : "-"}
                       </span>
                     </div>
-                    
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-slate-500 font-medium">Suhu Ruangan:</span>
                       <span className="font-mono font-bold text-slate-800">
                         {currentLive ? `${currentLive.temperature} °C` : "-"}
                       </span>
                     </div>
-
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-slate-500 font-medium">Kelembapan:</span>
                       <span className="font-mono font-bold text-slate-800">
@@ -156,7 +140,6 @@ export default function SensorsPage() {
                     </div>
                   </div>
 
-                  {/* BARIS BAWAH: STATUS PARAMETER AMBANG BATAS & KONEKSI */}
                   <div className="pt-3 border-t border-slate-200/60 flex items-center justify-between text-[10px] text-slate-400 font-semibold tracking-wide">
                     <div>
                       <span>BATAS AMAN: &lt;{sensor.thresholds.warning} PPM</span>
@@ -166,7 +149,6 @@ export default function SensorsPage() {
                       <span className="uppercase">{currentLive?.isOnline ? "Connected" : "Offline"}</span>
                     </div>
                   </div>
-
                 </div>
               );
             })}

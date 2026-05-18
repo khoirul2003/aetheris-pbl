@@ -1,6 +1,6 @@
 "use client";
 
-import Sidebar from "@/app/components/Sidebar";
+import Topbar from "@/app/components/topbar";
 import { 
   Activity, 
   Users, 
@@ -27,12 +27,12 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="flex bg-slate-50 min-h-screen">
-      {/* Sidebar Navigation */}
-      <Sidebar role="admin" />
+    <div className="bg-slate-50 min-h-screen">
+      {/* Topbar Navigation */}
+      <Topbar role="admin" />
 
-      {/* Main Content */}
-      <main className="ml-64 p-8 w-full">
+      {/* Main Content - Hapus ml-64, ganti dengan pt-24 agar tidak numpuk */}
+      <main className="pt-24 px-8 pb-8 w-full max-w-7xl mx-auto">
         {/* Header Section */}
         <header className="flex justify-between items-center mb-10">
           <div>
@@ -132,7 +132,6 @@ export default function AdminDashboard() {
   );
 }
 
-// Komponen ikon tambahan yang dibutuhkan
 function BellRing({ size }: { size: number }) {
   return (
     <div className="relative">

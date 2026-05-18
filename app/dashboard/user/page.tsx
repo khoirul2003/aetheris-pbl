@@ -1,7 +1,6 @@
 "use client";
 
-import Sidebar from "@/app/components/Sidebar";
-import Navbar from "@/app/components/Navbar";
+import Topbar from "@/app/components/topbar";
 import { useEffect, useState } from "react";
 import { 
   AlertTriangle,
@@ -16,7 +15,6 @@ import { collection, query, where, orderBy, limit, onSnapshot } from "firebase/f
 import { onAuthStateChanged, User } from "firebase/auth";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
 
-// Interface untuk Type Safety (Menghilangkan error @typescript-eslint/no-explicit-any)
 interface ZoneStatus {
   value: number;
   status: string;
@@ -56,7 +54,6 @@ export default function UserDashboard() {
     return initialState;
   });
 
-  // 1. Auth Checker
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -65,7 +62,6 @@ export default function UserDashboard() {
     return () => unsubscribeAuth();
   }, []);
 
-  // 2. Data Fetcher dari Firebase
   useEffect(() => {
     if (loadingAuth || !user) return;
 
@@ -92,7 +88,6 @@ export default function UserDashboard() {
             }
           }));
         } else {
-          // Fallback data jika belum ada di database
           const dummyStatus = zone.id === "Kompor kanan" ? "WASPADA" : "AMAN";
           setZonesData((prev: ZonesDataMap) => ({
             ...prev,
@@ -138,15 +133,13 @@ export default function UserDashboard() {
   }
 
   return (
-    <div className="flex bg-[#FDFBF7] min-h-screen font-sans text-slate-800">
+    <div className="bg-[#FDFBF7] min-h-screen font-sans text-slate-800">
       
-      {/* Perbaikan Props Sidebar */}
-      <Sidebar role="user" userEmail={user.email ?? ""} />
+      {/* Topbar User */}
+      <Topbar role="user" userEmail={user.email ?? ""} />
 
-      {/* Perbaikan Props Navbar */}
-      <Navbar title="Beranda" />
-
-      <main className="md:ml-64 pt-24 px-6 md:px-8 pb-8 w-full max-w-6xl mx-auto">
+      {/* Main Container - Hapus md:ml-64 */}
+      <main className="pt-24 px-6 md:px-8 pb-8 w-full max-w-6xl mx-auto">
         
         {/* WARNING BANNER */}
         {(overallStatus === "Waspada" || overallStatus === "Bahaya") && (
@@ -216,7 +209,6 @@ export default function UserDashboard() {
             </div>
           </div>
 
-          {/* PETA ZONA DAPUR (Dikembalikan) */}
           <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm flex flex-col h-full">
             <h3 className="text-xs font-bold text-slate-500 tracking-widest uppercase mb-6">Peta Zona Dapur</h3>
             <div className="bg-[#F6F5F2] p-5 rounded-2xl border border-slate-100 grid grid-cols-2 gap-4 flex-grow items-center">
@@ -258,7 +250,6 @@ export default function UserDashboard() {
             </div>
           </div>
 
-          {/* ALERT TERBARU (Dikembalikan) */}
           <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm flex flex-col h-[350px]">
             <h3 className="text-xs font-bold text-slate-500 tracking-widest uppercase mb-4">Alert Terbaru</h3>
             <div className="space-y-4 overflow-y-auto pr-2 flex-grow">
