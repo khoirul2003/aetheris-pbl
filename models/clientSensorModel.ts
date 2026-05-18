@@ -7,7 +7,6 @@ export interface FirestoreSensor {
   userId: string;
   name: string;
   location: string;
-  isOnline: boolean;
   thresholds: {
     safe: number;
     warning: number;
@@ -24,7 +23,7 @@ export interface LiveSensorData {
 }
 
 export const ClientSensorModel = {
-  // Ambil daftar area/sensor berdasarkan userId dari Firestore
+  // Mengambil daftar konfigurasi sensor secara dinamis dari Firestore berdasarkan UID pengguna
   async getSensorsByUserId(userId: string): Promise<FirestoreSensor[]> {
     const sensorsRef = collection(db, 'sensors');
     const q = query(sensorsRef, where('userId', '==', userId));
@@ -37,15 +36,18 @@ export const ClientSensorModel = {
     return sensors;
   },
 
-  // Berlangganan data live dari Realtime Database berdasarkan sensorId
-  subscribeToLiveStatus(sensorId: string, callback: (data: LiveSensorData) => void) {
-    const liveRef = ref(rtdb, `sensorLive/${sensorId}`);
+  // Berlangganan data live dari Realtime Database
+  subscribeToLiveStatus(callback: (data: any) => void) {
+    const liveRef = ref(rtdb, 'sensorLive');
+    
     onValue(liveRef, (snapshot) => {
-      if (snapshot.exists()) {
-        callback(snapshot.val() as LiveSensorData);
+      // Validasi ketat: Pastikan snapshot ada DAN parameter callback benar-benar sebuah fungsi
+      if (snapshot.exists() && typeof callback === 'function') {
+        callback(snapshot.val());
       }
     });
-    // Mengembalikan fungsi untuk unsubscribe agar tidak bocor memorinya
+
+    // Mengembalikan fungsi untuk memutus pemantauan data (cleanup listener)
     return () => off(liveRef);
   }
 };

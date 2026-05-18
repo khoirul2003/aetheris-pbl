@@ -65,54 +65,54 @@ export default function Sidebar({ role, userEmail }: SidebarProps) {
         </button>
 
         <button 
-          onClick={() => router.push("/dashboard/sensors")}
+          onClick={() => router.push("/dashboard/user/sensors")}
           className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors text-sm
             ${isActive("/dashboard/sensors")
               ? "bg-[#F6F5F2] text-slate-900 font-bold" 
               : "text-slate-600 hover:bg-slate-50 font-medium"
             }`}
         >
-          <MapPin size={18} strokeWidth={isActive("/dashboard/sensors") ? 2.5 : 2} /> 
+          <MapPin size={18} strokeWidth={isActive("/dashboard/user/sensors") ? 2.5 : 2} /> 
           <span>Area & sensor</span>
         </button>
 
         {/* Menu Alert */}
         <button 
-          onClick={() => router.push("/dashboard/alerts")}
+          onClick={() => router.push("/dashboard/user/alerts")}
           className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors text-sm
             ${isActive("/dashboard/alerts")
               ? "bg-[#F6F5F2] text-slate-900 font-bold" 
               : "text-slate-600 hover:bg-slate-50 font-medium"
             }`}
         >
-          <Bell size={18} strokeWidth={isActive("/dashboard/alerts") ? 2.5 : 2} /> 
+          <Bell size={18} strokeWidth={isActive("/dashboard/user/alerts") ? 2.5 : 2} /> 
           <span>Alert</span>
         </button>
 
         {/* Menu Report */}
         <button 
-          onClick={() => router.push("/dashboard/reports")}
+          onClick={() => router.push("/dashboard/user/reports")}
           className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors text-sm
             ${isActive("/dashboard/reports")
               ? "bg-[#F6F5F2] text-slate-900 font-bold" 
               : "text-slate-600 hover:bg-slate-50 font-medium"
             }`}
         >
-          <Bell size={18} strokeWidth={isActive("/dashboard/reports") ? 2.5 : 2} /> 
+          <Bell size={18} strokeWidth={isActive("/dashboard/user/reports") ? 2.5 : 2} /> 
           <span>laporan</span>
         </button>
         
 
         {/* setting */}
         <button 
-          onClick={() => router.push("/dashboard/settings")}
+          onClick={() => router.push("/dashboard/user/settings")}
           className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors text-sm
             ${isActive("/dashboard/settings")
               ? "bg-[#F6F5F2] text-slate-900 font-bold" 
               : "text-slate-600 hover:bg-slate-50 font-medium"
             }`}
         >
-          <Settings size={18} strokeWidth={isActive("/dashboard/settings") ? 2.5 : 2} /> 
+          <Settings size={18} strokeWidth={isActive("/dashboard/user/settings") ? 2.5 : 2} /> 
           <span>Pengaturan</span>
         </button>
 
