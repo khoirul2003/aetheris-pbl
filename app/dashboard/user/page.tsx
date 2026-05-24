@@ -3,11 +3,9 @@
 import { useEffect, useState } from "react";
 import Sidebar from "@/app/components/Sidebar";
 import Navbar from "@/app/components/Navbar";
-import { auth, db, rtdb } from "@/lib/firebase";
-import { onAuthStateChanged, User } from "firebase/auth";
-import { collection, query, where, orderBy, limit, onSnapshot } from "firebase/firestore";
-import { ref, onValue } from "firebase/database";
-import { ClientSensorModel, FirestoreSensor, LiveSensorData } from "@/models/clientSensorModel";
+import { db, rtdb } from "@/lib/firebase";
+import { collection, query, where, orderBy, limit, onSnapshot, Timestamp } from "firebase/firestore";
+import { ref, onValue, off } from "firebase/database";
 import { 
   AlertTriangle, 
   Loader2, 
@@ -20,6 +18,23 @@ import {
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 
+interface FirestoreSensor {
+  id: string;
+  userId: string;
+  name: string;
+  location: string;
+}
+
+interface LiveSensorData {
+  gas: number;
+  temperature: number;
+  humidity: number;
+  status: string;
+  lpgLevel?: string;
+  smokeLevel?: string;
+  isOnline: boolean;
+}
+
 interface AlertLog {
   id: string;
   message: string;
@@ -28,42 +43,27 @@ interface AlertLog {
   timeStr: string;
 }
 
-// Warna estetik bumi/natural untuk grafik garis secara dinamis (mendukung hingga 6 sensor sekaligus)
+interface ChartRow {
+  time: string;
+  [sensorName: string]: number | string;
+}
+
 const LINE_COLORS = ["#4A6741", "#C67023", "#2E5A88", "#A04040", "#6D4C41", "#7B1FA2"];
 
 export default function UserDashboard() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loadingAuth, setLoadingAuth] = useState(true);
-  const [loadingData, setLoadingData] = useState(true);
+  const currentUserId = "O4O7ZiAKmCUoNtqBoJhTsk3prHW2";
 
-  // Semua data di bawah ini murni dikendalikan secara dinamis dari database
+  const [loadingData, setLoadingData] = useState(true);
   const [dynamicSensors, setDynamicSensors] = useState<FirestoreSensor[]>([]);
   const [liveSensors, setLiveSensors] = useState<{ [key: string]: LiveSensorData }>({});
   const [latestAlerts, setLatestAlerts] = useState<AlertLog[]>([]);
-  const [chartHistory, setChartHistory] = useState<any[]>([]);
+  const [chartHistory, setChartHistory] = useState<ChartRow[]>([]);
   const [stats, setStats] = useState({ totalToday: 0, unresolved: 0, lastCheck: "-" });
 
-  // 1. Auth Checker
-  
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setLoadingAuth(false);
-    });
-    return () => unsubscribeAuth();
-  }, []);
-
-  // 2. Hubungkan Semua Komponen ke Database secara 100% Dinamis
-  useEffect(() => {
-    if (loadingAuth || !user) return;
-    
-    // Gunakan User ID dari akun hasil seed Anda
-    const currentUserId = user.uid;
-
     let unsubscribeSummary: (() => void) | undefined;
 
-    // LANGKAH UTAMA: Ambil konfigurasi sensor aktif dari Firestore secara REAL-TIME (`onSnapshot`)
-    // Jadi jika Anda mengubah NAMA atau jumlah SENSOR di Firebase, UI langsung berubah otomatis tanpa refresh!
+    // Ambil Konfigurasi Sensor secara Dinamis dari Firestore
     const sensorsQ = query(collection(db, "sensors"), where("userId", "==", currentUserId));
     const unsubscribeSensors = onSnapshot(sensorsQ, (snapshot) => {
       const sensorList: FirestoreSensor[] = [];
@@ -74,9 +74,14 @@ export default function UserDashboard() {
       setDynamicSensors(sensorList);
       setLoadingData(false);
 
-      // Setelah daftar sensor berhasil diambil secara dinamis, jalankan kueri Grafik Laporan
+      if (sensorList.length === 0) {
+        setChartHistory([]);
+        return;
+      }
+
       if (unsubscribeSummary) unsubscribeSummary();
       
+      // Ambil Data Tren Grafik Mingguan
       const summaryQ = query(
         collection(db, "dailySummaries"),
         where("userId", "==", currentUserId),
@@ -85,19 +90,18 @@ export default function UserDashboard() {
       );
 
       unsubscribeSummary = onSnapshot(summaryQ, (summarySnapshot) => {
-        const history: any[] = [];
+        const history: ChartRow[] = [];
         
         summarySnapshot.forEach((doc) => {
           const data = doc.data();
-          const rawDate = data.date ? data.date.split("-") : [];
-          const formattedDate = rawDate.length === 3 ? `${rawDate[2]}/${rawDate[1]}` : data.date;
+          const rawDate = (data.date as string || "").split("-");
+          const formattedDate = rawDate.length === 3 ? `${rawDate[2]}/${rawDate[1]}` : (data.date as string || "");
           
-          // Kerangka dasar data chart per baris tanggal
-          const chartRow: any = { time: formattedDate };
+          const chartRow: ChartRow = { time: formattedDate };
           
-          // LOOPING DINAMIS: Isi grafik hanya menggunakan nama sensor yang terdaftar di Firestore saat ini
           sensorList.forEach((sensor) => {
-            chartRow[sensor.name] = data.avgGasPerSensor?.[sensor.id] || 0;
+            const avgGasData = data.avgGasPerSensor as Record<string, number> | undefined;
+            chartRow[sensor.name] = avgGasData?.[sensor.id] || 0;
           });
 
           history.push(chartRow);
@@ -108,21 +112,24 @@ export default function UserDashboard() {
         }
       });
     }, (error) => {
-      console.error("Gagal memuat sensor secara real-time:", error);
+      console.error(error);
       setLoadingData(false);
     });
 
-    // A. Berlangganan data live detik-per-detik dari Realtime Database
-    const unsubscribeLive = ClientSensorModel.subscribeToLiveStatus((data) => {
-      setLiveSensors(data);
-      const now = new Date();
-      setStats(prev => ({
-        ...prev,
-        lastCheck: now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) + " WIB"
-      }));
+    // Ambil Status Detik-per-Detik dari Realtime Database
+    const liveRef = ref(rtdb, "sensorLive");
+    onValue(liveRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setLiveSensors(snapshot.val() as Record<string, LiveSensorData>);
+        const now = new Date();
+        setStats(prev => ({
+          ...prev,
+          lastCheck: now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) + " WIB"
+        }));
+      }
     });
 
-    // B. Ambil Riwayat Log Aktivitas Alert Terbaru dari Firestore
+    // Ambil Riwayat Alert Terbaru
     const alertsQ = query(
       collection(db, "alerts"),
       where("userId", "==", currentUserId),
@@ -137,15 +144,13 @@ export default function UserDashboard() {
         const data = doc.data();
         if (!data.isResolved) unresolvedCount++;
         
-        const timestamp = data.createdAt?.toDate();
-        const timeStr = timestamp 
-          ? timestamp.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) 
-          : "-";
+        const timestamp = data.createdAt as Timestamp | null;
+        const timeStr = timestamp ? timestamp.toDate().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) : "-";
 
         logs.push({
           id: doc.id,
-          message: data.message || "Anomali terdeteksi",
-          level: data.level || "warning",
+          message: data.message as string || "Anomali terdeteksi",
+          level: data.level as string || "warning",
           isResolved: !!data.isResolved,
           timeStr
         });
@@ -157,13 +162,12 @@ export default function UserDashboard() {
 
     return () => {
       unsubscribeSensors();
-      unsubscribeLive();
+      off(liveRef);
       unsubscribeAlerts();
       if (unsubscribeSummary) unsubscribeSummary();
     };
-  }, [user, loadingAuth]);
+  }, [currentUserId]);
 
-  // Evaluasi Kondisi Global Dapur Restoran
   const getOverallStatus = () => {
     if (dynamicSensors.length === 0) return "Aman";
     const statuses = dynamicSensors.map(sensor => liveSensors[sensor.id]?.status || "safe");
@@ -175,7 +179,7 @@ export default function UserDashboard() {
   const overallStatus = getOverallStatus();
   const connectedCount = dynamicSensors.filter(sensor => liveSensors[sensor.id]?.isOnline).length;
 
-  if (loadingAuth || loadingData) {
+  if (loadingData) {
     return (
       <div className="flex h-screen items-center justify-center bg-[#FDFBF7]">
         <div className="text-center space-y-2">
@@ -186,11 +190,9 @@ export default function UserDashboard() {
     );
   }
 
-  if (!user) return <div className="p-8">Akses Ditolak. Silakan Login.</div>;
-
   return (
     <div className="flex bg-[#FDFBF7] min-h-screen font-sans text-slate-800 antialiased">
-      <Sidebar role="user" userEmail={user.email} />
+      <Sidebar role="user" userEmail="khoirul@email.com" />
       <Navbar title="Beranda" />
 
       <main className="md:ml-64 pt-24 px-6 md:px-8 pb-8 w-full max-w-6xl mx-auto">
@@ -203,41 +205,39 @@ export default function UserDashboard() {
             <AlertCircle className={overallStatus === "Bahaya" ? "text-red-500" : "text-[#C67023]"} size={20} />
             <div>
               <p className={`text-xs font-semibold leading-relaxed ${overallStatus === "Bahaya" ? "text-red-800" : "text-amber-900"}`}>
-                <span className="font-black uppercase tracking-wider">Peringatan Keamanan!</span> Terdeteksi kenaikan volume gas. Segera periksa area dapur Anda.
+                <span className="font-black uppercase tracking-wider">Peringatan Keamanan!</span> Kebocoran gas terdeteksi. Mohon matikan katup kompor utama restoran Anda secepatnya.
               </p>
             </div>
           </div>
         )}
 
-        {/* KARTU RINGKASAN ATAS */}
+        {/* STATS ROW */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div className="bg-white border border-slate-200 p-5 rounded-xl shadow-sm">
             <p className="text-slate-400 text-[10px] font-black mb-1 uppercase tracking-widest">Kondisi Dapur</p>
             <h2 className={`text-xl font-black mb-0.5 ${overallStatus === 'Waspada' ? 'text-[#C67023]' : overallStatus === 'Bahaya' ? 'text-red-600' : 'text-[#4A6741]'}`}>
               {overallStatus}
             </h2>
-            <p className="text-slate-500 text-[10px] font-semibold">
-              {stats.unresolved > 0 ? `${stats.unresolved} sektor butuh tindakan` : 'Zona memasak aman'}
-            </p>
+            <p className="text-slate-500 text-[10px] font-semibold">{stats.unresolved > 0 ? `${stats.unresolved} area butuh atensi` : 'Dapur steril'}</p>
           </div>
           <div className="bg-white border border-slate-200 p-5 rounded-xl shadow-sm">
             <p className="text-slate-400 text-[10px] font-black mb-1 uppercase tracking-widest">Sensor Aktif</p>
             <h2 className="text-xl font-black text-slate-800 mb-0.5">{connectedCount} <span className="text-xs text-slate-400 font-bold">/ {dynamicSensors.length} Node</span></h2>
-            <p className="text-slate-500 text-[10px] font-semibold">Otomatis Terdeteksi</p>
+            <p className="text-slate-500 text-[10px] font-semibold">Real-time Aktif</p>
           </div>
           <div className="bg-white border border-slate-200 p-5 rounded-xl shadow-sm">
             <p className="text-slate-400 text-[10px] font-black mb-1 uppercase tracking-widest">Alert Hari Ini</p>
-            <h2 className="text-xl font-black text-slate-800 mb-0.5">{stats.totalToday} <span className="text-xs text-slate-400 font-bold">Kali</span></h2>
-            <p className="text-slate-500 text-[10px] font-semibold">{stats.unresolved} Perlu perhatian</p>
+            <h2 className="text-xl font-black text-slate-800 mb-0.5">{stats.totalToday} <span className="text-xs text-slate-400 font-bold">Insiden</span></h2>
+            <p className="text-slate-500 text-[10px] font-semibold">{stats.unresolved} Belum ditangani</p>
           </div>
           <div className="bg-white border border-slate-200 p-5 rounded-xl shadow-sm">
             <p className="text-slate-400 text-[10px] font-black mb-1 uppercase tracking-widest">Terakhir Dicek</p>
             <h2 className="text-xl font-black text-slate-800 mb-0.5">{stats.lastCheck.split(" ")[0]}</h2>
-            <p className="text-slate-500 text-[10px] font-semibold">Real-time Sinkron</p>
+            <p className="text-slate-500 text-[10px] font-semibold">Sinkronisasi Sukses</p>
           </div>
         </div>
 
-        {/* GRIDS TENGAH */}
+        {/* MIDDLE GRID */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           
           {/* TABEL STATUS SEMUA AREA */}
@@ -246,44 +246,39 @@ export default function UserDashboard() {
               <LayoutDashboard size={14} className="text-slate-400" /> Status Semua Area
             </h3>
             <div className="space-y-0 flex-grow divide-y divide-slate-100">
-              {dynamicSensors.length === 0 ? (
-                <p className="text-xs text-slate-400 py-6 text-center font-medium">Tidak ada sensor yang ditemukan.</p>
-              ) : (
-                dynamicSensors.map((sensor) => {
-                  const live = liveSensors[sensor.id];
-                  const isWarning = live?.status === "warning" || live?.status === "danger";
+              {dynamicSensors.map((sensor) => {
+                const live = liveSensors[sensor.id];
+                const isWarning = live?.status === "warning" || live?.status === "danger";
 
-                  return (
-                    <div key={sensor.id} className="flex items-center justify-between py-3.5 first:pt-0 last:pb-0">
-                      <div className="flex items-center gap-4">
-                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                          isWarning ? 'bg-red-50 text-red-500' : 'bg-[#E9F2E4] text-[#4A6741]'
-                        }`}>
-                          {isWarning ? <AlertTriangle size={16} /> : <Check size={16} strokeWidth={3} />}
-                        </div>
-                        <div className="min-w-0">
-                          {/* Nama ter-update otomatis dari database */}
-                          <p className="font-bold text-slate-900 text-xs truncate">{sensor.name}</p>
-                          <p className="text-[10px] text-slate-400 font-medium truncate">{sensor.location}</p>
-                        </div>
+                return (
+                  <div key={sensor.id} className="flex items-center justify-between py-3.5 first:pt-0 last:pb-0">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                        isWarning ? 'bg-red-50 text-red-500' : 'bg-[#E9F2E4] text-[#4A6741]'
+                      }`}>
+                        {isWarning ? <AlertTriangle size={16} /> : <Check size={16} strokeWidth={3} />}
                       </div>
-                      <div className="text-right">
-                        <span className={`inline-block px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wide ${
-                          live?.status === "danger" ? 'bg-red-100 text-red-700' : 
-                          live?.status === "warning" ? 'bg-[#FDF0E1] text-[#A05E1A]' : 'bg-[#E9F2E4] text-[#4A6741]'
-                        }`}>
-                          {live ? (live.status === "safe" ? "Aman" : live.status === "warning" ? "Waspada" : "Bahaya") : "Offline"}
-                        </span>
-                        <p className="font-mono text-[10px] text-slate-400 font-bold mt-1">{live ? `${live.gas} PPM` : "-"}</p>
+                      <div className="min-w-0">
+                        <p className="font-bold text-slate-900 text-xs truncate">{sensor.name}</p>
+                        <p className="text-[10px] text-slate-400 font-medium truncate">{sensor.location}</p>
                       </div>
                     </div>
-                  );
-                })
-              )}
+                    <div className="text-right">
+                      <span className={`inline-block px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wide ${
+                        live?.status === "danger" ? 'bg-red-100 text-red-700' : 
+                        live?.status === "warning" ? 'bg-[#FDF0E1] text-[#A05E1A]' : 'bg-[#E9F2E4] text-[#4A6741]'
+                      }`}>
+                        {live ? (live.status === "safe" ? "Aman" : live.status === "warning" ? "Waspada" : "Bahaya") : "Offline"}
+                      </span>
+                      <p className="font-mono text-[10px] text-slate-400 font-bold mt-1">{live ? `${live.gas} PPM` : "-"}</p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          {/* DENAH MATRIKS ZONA DAPUR */}
+          {/* DENAH MATRIKS ZONA DAPUR (DENGAN LPG & SMOKE LEVEL DARI ARDUINO) */}
           <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm flex flex-col h-full">
             <h3 className="text-xs font-black text-slate-400 tracking-widest uppercase mb-4 flex items-center gap-2">
               <Cpu size={14} className="text-slate-400" /> Peta Denah Zona Dapur
@@ -294,23 +289,25 @@ export default function UserDashboard() {
                 const isWarning = live?.status === "warning" || live?.status === "danger";
 
                 return (
-                  <div key={sensor.id} className={`p-4 rounded-xl border flex flex-col justify-between h-24 transition-all bg-white shadow-sm ${
+                  <div key={sensor.id} className={`p-4 rounded-xl border flex flex-col justify-between h-28 transition-all bg-white shadow-sm ${
                     isWarning ? 'border-red-200 bg-red-50/30' : 'border-slate-100'
                   }`}>
-                    <p className="font-bold text-[11px] text-slate-800 line-clamp-2 leading-tight">
-                      {sensor.name}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[9px] text-slate-400 font-bold font-mono">{live ? `${live.temperature}°C` : "-"}</span>
-                      <div className="flex items-center gap-1.5">
-                        <div className={`w-1.5 h-1.5 rounded-full ${
-                          live?.status === "danger" ? 'bg-red-500 animate-ping' : 
-                          live?.status === "warning" ? 'bg-amber-500' : 'bg-emerald-500'
-                        }`} />
-                        <span className="text-[9px] font-black uppercase text-slate-500 tracking-wide">
-                          {live ? (live.status === "safe" ? "Aman" : live.status === "warning" ? "Waspada" : "Bahaya") : "Offline"}
-                        </span>
+                    <div>
+                      <div className="flex justify-between items-start">
+                        <p className="font-bold text-[11px] text-slate-800 line-clamp-1 leading-tight">{sensor.name}</p>
+                        <div className={`w-1.5 h-1.5 rounded-full ${isWarning ? 'bg-red-500 animate-ping' : 'bg-emerald-500'}`} />
                       </div>
+                      {/* Tampilan LPG dan Smoke Level Baru dari Hardware */}
+                      <div className="mt-1.5 space-y-0.5 text-[9px] font-semibold text-slate-400">
+                        <p>LPG: <span className="text-slate-700 font-bold">{live?.lpgLevel || "LOW"}</span></p>
+                        <p>Smoke: <span className="text-slate-700 font-bold">{live?.smokeLevel || "CLEAR"}</span></p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between border-t border-slate-50 pt-1 mt-1">
+                      <span className="text-[9px] text-slate-400 font-bold font-mono">{live ? `${live.temperature}°C / ${live.humidity}%` : "-"}</span>
+                      <span className="text-[8px] font-black uppercase text-slate-400 tracking-wider">
+                        {live ? (live.status === "safe" ? "Aman" : live.status === "warning" ? "Waspada" : "Bahaya") : "Offline"}
+                      </span>
                     </div>
                   </div>
                 );
@@ -319,9 +316,8 @@ export default function UserDashboard() {
           </div>
         </div>
 
-        {/* BARIS GRAFIK & ALERTS LOG */}
+        {/* BOTTOM ROW: CHART & LOGS */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* GRAFIK TREN HARIAN - GENERATE LINE SECARA DINAMIS */}
           <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm flex flex-col">
             <h3 className="text-xs font-black text-slate-400 tracking-widest uppercase mb-4 flex items-center gap-2">
               <TrendingUp size={14} className="text-slate-400" /> Tren Rata-rata Gas Mingguan
@@ -334,8 +330,6 @@ export default function UserDashboard() {
                   <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontWeight: 'bold'}} />
                   <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }} />
                   <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px' }} />
-                  
-                  {/* GENERATOR GARIS GRAFIK OTOMATIS BERDASARKAN HASIL QUERY FIRESTORE */}
                   {dynamicSensors.map((sensor, index) => (
                     <Line 
                       key={sensor.id}
@@ -358,9 +352,7 @@ export default function UserDashboard() {
             </h3>
             <div className="space-y-3 overflow-y-auto pr-1 flex-grow custom-scrollbar">
               {latestAlerts.length === 0 ? (
-                <div className="text-center py-20 text-xs text-slate-400 font-medium">
-                  Kondisi dapur steril. Tidak ada riwayat bahaya.
-                </div>
+                <div className="text-center py-20 text-xs text-slate-400 font-medium">Kondisi dapur steril. Tidak ada riwayat bahaya.</div>
               ) : (
                 latestAlerts.map((alert) => (
                   <div key={alert.id} className="flex gap-3 py-2.5 border-b border-slate-50 last:border-0 items-start">

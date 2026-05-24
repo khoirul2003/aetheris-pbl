@@ -15,22 +15,34 @@ if (!admin.apps.length) {
 const db = admin.firestore();
 const rtdb = admin.database();
 
-// Fungsi helper untuk mengurangi hari dari tanggal sekarang (untuk data mundur di Laporan)
-const getPastDateString = (daysAgo: number) => {
+const getPastDateString = (daysAgo: number): string => {
   const date = new Date();
   date.setDate(date.getDate() - daysAgo);
   return date.toISOString().split('T')[0];
 };
 
-async function seedDatabase() {
+// Interface terstruktur untuk menghindari error 'any' pada ESLint Linting CI
+interface AlertSeedData {
+  sensorId: string;
+  sensorName: string;
+  location: string;
+  level: string;
+  message: string;
+  gasValue: number;
+  temperature: number;
+  isResolved: boolean;
+  daysAgo: number;
+}
+
+async function seedDatabase(): Promise<void> {
   try {
-    console.log("🚀 Memulai pengisian data berskala besar...");
+    console.log("🚀 Memulai pengisian data berskala besar (Versi Integrasi IoT)...");
 
     const userId = "O4O7ZiAKmCUoNtqBoJhTsk3prHW2";
     
-    // List 4 ID Sensor baru sesuai mockup Anda
+    // List 4 ID Sensor dinamis
     const s1 = "sensor_001"; // Kompor utama
-    const s2 = "sensor_002"; // Kompor kanan
+    const s2 = "sensor_002"; // Kompor kanan (Terhubung ke Hardware ESP32)
     const s3 = "sensor_003"; // Gudang tabung gas
     const s4 = "sensor_004"; // Area exhaust / ventilasi
 
@@ -49,37 +61,33 @@ async function seedDatabase() {
       phone: "+62 812-3456-7890",
       operationalHours: { open: "08:00", close: "22:00" },
       plan: "pro",
-      notifWhatsapp: true,
+      notifWorkspace: true,
       notifPush: true,
       notifOnlyOperational: false,
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
     // ==========================================
-    // 2. DATA 4 SENSORS (Firestore)
+    // 2. DATA 4 SENSORS CONFIG (Firestore)
     // ==========================================
-    // Sensor 1: Kompor Utama
     batch.set(db.collection('sensors').doc(s1), {
-      userId, name: "Kompor utama", location: "Area memasak kiri", isOnline: true,
+      userId, name: "Kompor utama", location: "Area memasak kaki", isOnline: true,
       thresholds: { safe: 300, warning: 450, danger: 600 },
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
-    // Sensor 2: Kompor Kanan
     batch.set(db.collection('sensors').doc(s2), {
       userId, name: "Kompor kanan", location: "Area memasak kanan", isOnline: true,
       thresholds: { safe: 300, warning: 450, danger: 600 },
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
-    // Sensor 3: Gudang Tabung Gas
     batch.set(db.collection('sensors').doc(s3), {
       userId, name: "Gudang tabung gas", location: "Ruang penyimpanan", isOnline: true,
       thresholds: { safe: 200, warning: 350, danger: 500 },
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
-    // Sensor 4: Area Exhaust / Ventilasi
     batch.set(db.collection('sensors').doc(s4), {
       userId, name: "Area exhaust / ventilasi", location: "Plafon dekat kipas", isOnline: true,
       thresholds: { safe: 250, warning: 400, danger: 550 },
@@ -90,19 +98,19 @@ async function seedDatabase() {
     console.log("✅ Firestore (Users & 4 Sensors) terisi.");
 
     // ==========================================
-    // 3. DATA ALERTS HISTORY (Firestore) - Total 9 Data sesuai Mockup
+    // 3. DATA ALERTS HISTORY (Firestore)
     // ==========================================
     console.log("⏳ Mengisi log riwayat alert...");
-    const alertsData = [
-      { sensorId: s2, sensorName: "Kompor kanan", location: "Area memasak kanan", level: "warning", message: "Kompor kanan mendekati batas aman", gasValue: 455, temperature: 38, isResolved: false, daysAgo: 0 },
-      { sensorId: s1, sensorName: "Kompor utama", location: "Area memasak kiri", level: "danger", message: "Kadar gas kritis di Kompor Utama!", gasValue: 620, temperature: 42, isResolved: true, daysAgo: 0 },
-      { sensorId: s4, sensorName: "Area exhaust", location: "Plafon dekat kipas", level: "warning", message: "Sirkulasi udara mendeteksi akumulasi gas tipis", gasValue: 310, temperature: 35, isResolved: true, daysAgo: 0 },
-      { sensorId: s2, sensorName: "Kompor kanan", location: "Area memasak kanan", level: "danger", message: "Kebocoran gas terdeteksi di Kompor Kanan!", gasValue: 680, temperature: 40, isResolved: true, daysAgo: 1 },
-      { sensorId: s1, sensorName: "Kompor utama", location: "Area memasak kiri", level: "danger", message: "Suhu kompor utama terlalu panas", gasValue: 250, temperature: 75, isResolved: true, daysAgo: 1 },
-      { sensorId: s4, sensorName: "Area exhaust", location: "Plafon dekat kipas", level: "warning", message: "Kadar gas meningkat di ventilasi", gasValue: 415, temperature: 32, isResolved: true, daysAgo: 2 },
-      { sensorId: s1, sensorName: "Kompor utama", location: "Area memasak kiri", level: "warning", message: "Asap tipis terdeteksi", gasValue: 380, temperature: 46, isResolved: true, daysAgo: 3 },
-      { sensorId: s3, sensorName: "Gudang gas", location: "Ruang penyimpanan", level: "warning", message: "Indikasi gas mikro di ruang penyimpanan", gasValue: 220, temperature: 29, isResolved: true, daysAgo: 4 },
-      { sensorId: s2, sensorName: "Kompor kanan", location: "Area memasak kanan", level: "warning", message: "Suhu sekitar kompor kanan naik mendadak", gasValue: 290, temperature: 52, isResolved: true, daysAgo: 5 }
+    const alertsData: AlertSeedData[] = [
+      { sensorId: s2, sensorName: "Kompor kanan", location: "Area memasak kanan", level: "warning", message: "Kompor kanan mendekati batas aman", gasValue: 655, temperature: 38, isResolved: false, daysAgo: 0 },
+      { sensorId: s1, sensorName: "Kompor utama", location: "Area memasak kaki", level: "danger", message: "Kadar gas kritis di Kompor Utama!", gasValue: 1620, temperature: 42, isResolved: true, daysAgo: 0 },
+      { sensorId: s4, sensorName: "Area exhaust / ventilasi", location: "Plafon dekat kipas", level: "warning", message: "Sirkulasi udara mendeteksi akumulasi gas tipis", gasValue: 710, temperature: 35, isResolved: true, daysAgo: 0 },
+      { sensorId: s2, sensorName: "Kompor kanan", location: "Area memasak kanan", level: "danger", message: "Kebocoran gas terdeteksi di Kompor Kanan!", gasValue: 2680, temperature: 40, isResolved: true, daysAgo: 1 },
+      { sensorId: s1, sensorName: "Kompor utama", location: "Area memasak kaki", level: "danger", message: "Suhu kompor utama terlalu panas", gasValue: 550, temperature: 75, isResolved: true, daysAgo: 1 },
+      { sensorId: s4, sensorName: "Area exhaust / ventilasi", location: "Plafon dekat kipas", level: "warning", message: "Kadar gas meningkat di ventilasi", gasValue: 815, temperature: 32, isResolved: true, daysAgo: 2 },
+      { sensorId: s1, sensorName: "Kompor utama", location: "Area memasak kaki", level: "warning", message: "Asap tipis terdeteksi", gasValue: 680, temperature: 46, isResolved: true, daysAgo: 3 },
+      { sensorId: s3, sensorName: "Gudang tabung gas", location: "Ruang penyimpanan", level: "warning", message: "Indikasi gas mikro di ruang penyimpanan", gasValue: 320, temperature: 29, isResolved: true, daysAgo: 4 },
+      { sensorId: s2, sensorName: "Kompor kanan", location: "Area memasak kanan", level: "warning", message: "Suhu sekitar kompor kanan naik mendadak", gasValue: 690, temperature: 52, isResolved: true, daysAgo: 5 }
     ];
 
     for (const alert of alertsData) {
@@ -125,10 +133,10 @@ async function seedDatabase() {
     console.log("✅ Firestore (9 Riwayat Alerts) berhasil ditambahkan.");
 
     // ==========================================
-    // 4. DATA DAILY SUMMARIES (Firestore) - Data Tren 7 Hari Terakhir
+    // 4. DATA DAILY SUMMARIES (Firestore) - Data Tren Laporan Grafik
     // ==========================================
     console.log("⏳ Mengisi data summary laporan 7 hari...");
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 8; i++) {
       const dateStr = getPastDateString(i);
       await db.collection('dailySummaries').doc(`${userId}_${dateStr}`).set({
         userId,
@@ -146,35 +154,31 @@ async function seedDatabase() {
         createdAt: admin.firestore.FieldValue.serverTimestamp()
       });
     }
-    console.log("✅ Firestore (7 Hari Rangkuman Laporan) terisi.");
+    console.log("✅ Firestore (8 Hari Rangkuman Laporan harian) terisi.");
 
-    // ==========================================
-    // 5. DATA LIVE DISPLAY (Realtime Database) - Kondisi Detik Ini
-    // ==========================================
-    console.log("⏳ Mengisi status live monitoring ke Realtime Database...");
+    console.log("⏳ Menyelaraskan matriks parameter LPG & Smoke Level ke Realtime Database...");
     
-    // Perangkat 1: Aman (Rendah)
     await rtdb.ref(`sensorLive/${s1}`).set({
-      gas: 145, temperature: 34, humidity: 55, status: "safe", isOnline: true, lastUpdate: Date.now()
+      gas: 145, temperature: 34, humidity: 55, status: "safe", lpgLevel: "LOW", smokeLevel: "CLEAR", isOnline: true, lastUpdate: Date.now()
     });
 
-    // Perangkat 2: Waspada (Sedang-Tinggi)
+    // Perangkat 2: Waspada (Sedang-Tinggi) -> Sesuai dengan pembacaan sensor awal ESP32 Anda
     await rtdb.ref(`sensorLive/${s2}`).set({
-      gas: 455, temperature: 38, humidity: 48, status: "warning", isOnline: true, lastUpdate: Date.now()
+      gas: 655, temperature: 30, humidity: 69, status: "warning", lpgLevel: "MEDIUM", smokeLevel: "LIGHT SMOKE", isOnline: true, lastUpdate: Date.now()
     });
 
-    // Perangkat 3: Aman Sangat Rendah
+    // Perangkat 3: Gudang Gas
     await rtdb.ref(`sensorLive/${s3}`).set({
-      gas: 42, temperature: 28, humidity: 62, status: "safe", isOnline: true, lastUpdate: Date.now()
+      gas: 42, temperature: 28, humidity: 62, status: "safe", lpgLevel: "LOW", smokeLevel: "CLEAR", isOnline: true, lastUpdate: Date.now()
     });
 
-    // Perangkat 4: Aman Normal
+    // Perangkat 4: Ventilasi
     await rtdb.ref(`sensorLive/${s4}`).set({
-      gas: 85, temperature: 30, humidity: 58, status: "safe", isOnline: true, lastUpdate: Date.now()
+      gas: 85, temperature: 30, humidity: 58, status: "safe", lpgLevel: "LOW", smokeLevel: "CLEAR", isOnline: true, lastUpdate: Date.now()
     });
 
-    console.log("✅ Realtime Database (4 Live Sensors Status) terisi.");
-    console.log("🎉 SEEDING SELESAI! Seluruh data simulasi Anda siap digunakan.");
+    console.log("✅ Realtime Database (4 Live Sensors Status dengan Skema IoT) terisi.");
+    console.log("🎉 SEEDING SELESAI! Seluruh pilar visualisasi Web Dashboard Anda siap digunakan.");
 
   } catch (error) {
     console.error("❌ Terjadi kesalahan saat seeding:", error);

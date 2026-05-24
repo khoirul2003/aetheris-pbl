@@ -5,40 +5,43 @@ import Sidebar from "@/app/components/Sidebar";
 import Navbar from "@/app/components/Navbar";
 import { ClientAlertModel, AlertData } from "@/models/clientAlertModel";
 import { RefreshCw } from "lucide-react";
+import { Timestamp } from "firebase/firestore";
 
 type FilterType = "semua" | "bahaya" | "waspada" | "belum_ditangani";
 
 export default function AlertsPage() {
-  const userId = "O4O7ZiAKmCUoNtqBoJhTsk3prHW2";
+  // ID Pengguna utama sesuai data database Anda
+  const currentUserId = "O4O7ZiAKmCUoNtqBoJhTsk3prHW2";
 
   const [alerts, setAlerts] = useState<AlertData[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<FilterType>("semua");
 
+  // 1. Mendengarkan data log insiden secara real-time dari Firestore
   useEffect(() => {
-    const unsubscribe = ClientAlertModel.subscribeToAlerts(userId, (data) => {
+    const unsubscribe = ClientAlertModel.subscribeToAlerts(currentUserId, (data) => {
       setAlerts(data);
       setLoading(false);
     });
     return () => unsubscribe();
-  }, [userId]);
+  }, [currentUserId]);
 
-  // Logika Menghitung Angka Statistik di Dalam Tab Tombol
+  // 2. Logika Menghitung Angka Statistik di Atas Tab Tombol Kategori
   const countAll = alerts.length;
   const countBahaya = alerts.filter((a) => a.level === "danger").length;
   const countWaspada = alerts.filter((a) => a.level === "warning").length;
   const countBelumDitangani = alerts.filter((a) => !a.isResolved).length;
 
-  // Proses Filter Data yang Ditampilkan Sesuai Tab yang Aktif
-  const filteredAlerts = alerts.filter((alert) => {
-    if (activeFilter === "bahaya") return alert.level === "danger";
-    if (activeFilter === "waspada") return alert.level === "warning";
-    if (activeFilter === "belum_ditangani") return !alert.isResolved;
+  // 3. Proses Filter Data untuk Ditampilkan di Tabel Sesuai Tab Aktif
+  const filteredAlerts = alerts.filter((item) => {
+    if (activeFilter === "bahaya") return item.level === "danger";
+    if (activeFilter === "waspada") return item.level === "warning";
+    if (activeFilter === "belum_ditangani") return !item.isResolved;
     return true;
   });
 
-  // Fungsi Format Waktu agar Tampil Sesuai Gambar Mockup (Contoh: "Hari ini, 14:32")
-  const formatAlertTime = (timestamp: any) => {
+  // 4. Fungsi Format Waktu tanpa Tipe 'any' (Aman dari ESLint)
+  const formatAlertTime = (timestamp: Timestamp | null) => {
     if (!timestamp || typeof timestamp.toDate !== "function") return "-";
     const date = timestamp.toDate();
     const today = new Date();
@@ -57,76 +60,41 @@ export default function AlertsPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-[#FDFBF7]">
-        <div className="text-center space-y-2">
-          <RefreshCw className="animate-spin text-amber-700 mx-auto" size={28} />
-          <p className="text-slate-600 font-medium text-xs">Menyelaraskan data log...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex bg-[#FDFBF7] min-h-screen text-slate-800 antialiased">
+    <div className="flex bg-[#FDFBF7] min-h-screen text-slate-800 antialiased font-sans">
+      {/* KONTROL NAVIGASI KIRI */}
       <Sidebar role="user" userEmail="khoirul@email.com" />
+      
+      {/* BAR ATAS */}
       <Navbar title="Alert" />
 
+      {/* KONTEN UTAMA */}
       <main className="md:ml-64 pt-20 px-6 md:px-8 pb-8 w-full max-w-5xl mx-auto">
         
         {/* TAB FILTER KATEGORI (ATAS) */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 my-6">
-          <button
-            onClick={() => setActiveFilter("semua")}
-            className={`p-3 rounded-xl border text-center transition-all ${
-              activeFilter === "semua"
-                ? "bg-white border-slate-400 font-bold text-slate-900 shadow-sm"
-                : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
-            }`}
-          >
-            <p className="text-xs font-semibold uppercase tracking-wider">Semua</p>
-            <p className="text-base font-black mt-0.5">({countAll})</p>
-          </button>
-
-          <button
-            onClick={() => setActiveFilter("bahaya")}
-            className={`p-3 rounded-xl border text-center transition-all ${
-              activeFilter === "bahaya"
-                ? "bg-white border-slate-400 font-bold text-slate-900 shadow-sm"
-                : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
-            }`}
-          >
-            <p className="text-xs font-semibold uppercase tracking-wider">Bahaya</p>
-            <p className="text-base font-black mt-0.5">({countBahaya})</p>
-          </button>
-
-          <button
-            onClick={() => setActiveFilter("waspada")}
-            className={`p-3 rounded-xl border text-center transition-all ${
-              activeFilter === "waspada"
-                ? "bg-white border-slate-400 font-bold text-slate-900 shadow-sm"
-                : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
-            }`}
-          >
-            <p className="text-xs font-semibold uppercase tracking-wider">Waspada</p>
-            <p className="text-base font-black mt-0.5">({countWaspada})</p>
-          </button>
-
-          <button
-            onClick={() => setActiveFilter("belum_ditangani")}
-            className={`p-3 rounded-xl border text-center transition-all ${
-              activeFilter === "belum_ditangani"
-                ? "bg-white border-slate-400 font-bold text-slate-900 shadow-sm"
-                : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
-            }`}
-          >
-            <p className="text-xs font-semibold uppercase tracking-wider">Belum ditangani</p>
-            <p className="text-base font-black mt-0.5">({countBelumDitangani})</p>
-          </button>
+          {(["semua", "bahaya", "waspada", "belum_ditangani"] as FilterType[]).map((filter) => {
+            const label = filter === "semua" ? "Semua" : filter === "bahaya" ? "Bahaya" : filter === "waspada" ? "Waspada" : "Belum ditangani";
+            const count = filter === "semua" ? countAll : filter === "bahaya" ? countBahaya : filter === "waspada" ? countWaspada : countBelumDitangani;
+            
+            return (
+              <button
+                key={filter}
+                onClick={() => setActiveFilter(filter)}
+                className={`p-3 rounded-xl border text-center transition-all ${
+                  activeFilter === filter
+                    ? "bg-white border-slate-400 font-bold text-slate-900 shadow-sm"
+                    : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
+                }`}
+              >
+                <p className="text-xs font-semibold uppercase tracking-wider">{label}</p>
+                <p className="text-base font-black mt-0.5">({count})</p>
+              </button>
+            );
+          })}
         </div>
 
-        {/* CONTAINER TABEL DATA (BAWAH) */}
+        {/* CONTAINER TABEL DATA LOG ALERTS */}
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -140,56 +108,67 @@ export default function AlertsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs">
-                {filteredAlerts.length === 0 ? (
+                {loading ? (
+                  <tr>
+                    <td colSpan={5} className="py-12 text-center bg-white">
+                      <RefreshCw className="animate-spin text-amber-700 mx-auto mb-2" size={24} />
+                      <p className="text-slate-400 font-medium text-[11px]">Menyelaraskan data log...</p>
+                    </td>
+                  </tr>
+                ) : filteredAlerts.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="py-12 text-center text-slate-400 font-medium bg-white">
                       Tidak ada rekaman data log peringatan untuk kategori ini.
                     </td>
                   </tr>
                 ) : (
-                  filteredAlerts.map((alert) => {
-                    const isDanger = alert.level === "danger";
-                    const isResolved = alert.isResolved;
-
+                  filteredAlerts.map((item) => {
+                    const isDanger = item.level === "danger";
                     return (
-                      <tr key={alert.id} className="hover:bg-slate-50/60 transition-colors">
-                        {/* 1. KOLOM WAKTU */}
-                        <td className="py-4 px-6 font-medium text-slate-500 white-space-nowrap">
-                          {formatAlertTime(alert.createdAt)}
-                        </td>
-
-                        {/* 2. KOLOM LOKASI */}
-                        <td className="py-4 px-6 font-bold text-slate-900">
-                          {alert.location || alert.sensorName}
-                        </td>
-
-                        {/* 3. KOLOM TINGKAT BADGE */}
+                      <tr key={item.id} className="hover:bg-slate-50/60 transition-colors">
+                        {/* 1. KOLOM FORMAT WAKTU */}
+                        <td className="py-4 px-6 font-medium text-slate-500">{formatAlertTime(item.createdAt)}</td>
+                        
+                        {/* 2. KOLOM IDENTITAS LOKASI SENSOR */}
+                        <td className="py-4 px-6 font-bold text-slate-900">{item.location || item.sensorName}</td>
+                        
+                        {/* 3. KOLOM BADGE STATUS INTENSITAS */}
                         <td className="py-4 px-6">
                           <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wide ${
-                            isDanger 
-                              ? "bg-red-50 text-red-600 border border-red-100" 
-                              : "bg-[#FDF0E1] text-[#A05E1A] border border-[#F3D5B5]"
+                            isDanger ? "bg-red-50 text-red-600 border border-red-100" : "bg-[#FDF0E1] text-[#A05E1A] border border-[#F3D5B5]"
                           }`}>
                             {isDanger ? "Bahaya" : "Waspada"}
                           </span>
                         </td>
-
-                        {/* 4. KOLOM AKSI SISTEM */}
+                        
+                        {/* 4. KOLOM LOGIKA DELEGASI RESPONS */}
                         <td className="py-4 px-6 text-slate-600 font-medium max-w-xs truncate">
-                          {isDanger 
-                            ? "Kipas menyala + WhatsApp ke manajer" 
-                            : "Notifikasi dikirim ke manajer"}
+                          {isDanger ? "Kipas menyala + WhatsApp ke manajer" : "Notifikasi dikirim ke manajer"}
                         </td>
-
-                        {/* 5. KOLOM STATUS PENANGANAN */}
+                        
+                        {/* 5. KOLOM AKSI: TOMBOL TANGANI DUA ARAH (Sudah Bebas Bentrok Nama) */}
                         <td className="py-4 px-6">
-                          <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wide text-center min-w-[90px] ${
-                            isResolved 
-                              ? "bg-emerald-50 text-emerald-700 border border-emerald-100" 
-                              : "bg-[#FDF0E1] text-[#9A622D] border border-[#ECD1B4]"
-                          }`}>
-                            {isResolved ? "Selesai" : "Perlu perhatian"}
-                          </span>
+                          {item.isResolved ? (
+                            <span className="inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wide text-center min-w-[90px] bg-emerald-50 text-emerald-700 border border-emerald-100">
+                              Selesai
+                            </span>
+                          ) : (
+                            <button
+                              onClick={async () => {
+                                if (confirm("Apakah Anda sudah memeriksa area dapur dan memastikan kondisi kebocoran gas aman?")) {
+                                  try {
+                                    await ClientAlertModel.resolveAlert(item.id);
+                                  } catch (err) {
+                                    console.error(err);
+                                    window.alert("Gagal memperbarui status penanganan.");
+                                  }
+                                }
+                              }}
+                              className="inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wide text-center min-w-[90px] bg-[#FDF0E1] text-[#9A622D] border border-[#ECD1B4] hover:bg-emerald-600 hover:text-white hover:border-emerald-700 transition-all cursor-pointer shadow-sm active:scale-95 animate-pulse"
+                            >
+                              Tangani •
+                            </button>
+                          )}
                         </td>
                       </tr>
                     );
@@ -199,7 +178,6 @@ export default function AlertsPage() {
             </table>
           </div>
         </div>
-
       </main>
     </div>
   );
