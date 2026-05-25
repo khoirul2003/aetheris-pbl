@@ -37,7 +37,7 @@ export default function AdminActivityLogPage() {
   });
 
   // Komponen Reusable untuk Pagination Controls (Atas & Bawah)
-  const PaginationControls = () => (
+  const renderPaginationControls = () => (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-slate-50 border-b border-t border-slate-200 text-slate-700 text-sm">
       <div className="flex items-center gap-2">
         <span>Tampilkan</span>
@@ -163,7 +163,7 @@ export default function AdminActivityLogPage() {
           </div>
 
           {/* 1. Control Pagination Bagian Atas */}
-          <PaginationControls />
+          {renderPaginationControls()}
 
           <div className="overflow-x-auto">
             <table className="w-full text-left table-auto">
@@ -228,7 +228,7 @@ export default function AdminActivityLogPage() {
           </div>
 
           {/* 2. Control Pagination Bagian Bawah */}
-          <PaginationControls />
+          {renderPaginationControls()}
 
         </div>
       </main>
