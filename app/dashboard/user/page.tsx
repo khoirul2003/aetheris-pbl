@@ -27,7 +27,6 @@ interface AlertLog {
   timeStr: string;
 }
 
-
 const LINE_COLORS = ["#4A6741", "#C67023", "#2E5A88", "#A04040", "#6D4C41", "#7B1FA2"];
 
 export default function UserDashboard() {
@@ -35,14 +34,13 @@ export default function UserDashboard() {
   const [loadingAuth, setLoadingAuth] = useState(true);
   const [loadingData, setLoadingData] = useState(true);
 
-  
   const [dynamicSensors, setDynamicSensors] = useState<FirestoreSensor[]>([]);
   const [liveSensors, setLiveSensors] = useState<{ [key: string]: LiveSensorData }>({});
   const [latestAlerts, setLatestAlerts] = useState<AlertLog[]>([]);
-  const [chartHistory, setChartHistory] = useState<any[]>([]);
+  const [chartHistory, setChartHistory] = useState<Record<string, string | number>[]>([]);
   const [stats, setStats] = useState({ totalToday: 0, unresolved: 0, lastCheck: "-" });
 
-  
+  // 1. Auth Checker
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -51,14 +49,13 @@ export default function UserDashboard() {
     return () => unsubscribeAuth();
   }, []);
 
-  
+  // 2. Hubungkan Semua Komponen ke Database secara 100% Dinamis
   useEffect(() => {
     if (loadingAuth || !user) return;
     
     const currentUserId = user.uid;
     let unsubscribeSummary: (() => void) | undefined;
 
-    
     const sensorsQ = query(collection(db, "sensors"), where("userId", "==", currentUserId));
     const unsubscribeSensors = onSnapshot(sensorsQ, (snapshot) => {
       const sensorList: FirestoreSensor[] = [];
@@ -69,7 +66,6 @@ export default function UserDashboard() {
       setDynamicSensors(sensorList);
       setLoadingData(false);
 
-      
       if (unsubscribeSummary) unsubscribeSummary();
       
       const summaryQ = query(
@@ -80,14 +76,16 @@ export default function UserDashboard() {
       );
 
       unsubscribeSummary = onSnapshot(summaryQ, (summarySnapshot) => {
-        const history: any[] = [];
+        // PERBAIKAN UTAMA: Mengubah dari any[] menjadi tipe structural object yang aman
+        const history: Record<string, string | number>[] = [];
         
         summarySnapshot.forEach((doc) => {
           const data = doc.data();
           const rawDate = data.date ? data.date.split("-") : [];
           const formattedDate = rawDate.length === 3 ? `${rawDate[2]}/${rawDate[1]}` : data.date;
           
-          const chartRow: any = { time: formattedDate };
+          // Deklarasi object row grafik dengan tipe data aman
+          const chartRow: Record<string, string | number> = { time: formattedDate };
           
           sensorList.forEach((sensor) => {
             chartRow[sensor.name] = data.avgGasPerSensor?.[sensor.id] || 0;
@@ -105,7 +103,6 @@ export default function UserDashboard() {
       setLoadingData(false);
     });
 
-    
     const alertsQ = query(
       collection(db, "alerts"),
       where("userId", "==", currentUserId),
@@ -145,7 +142,7 @@ export default function UserDashboard() {
     };
   }, [user, loadingAuth]);
 
-  
+  // 3. Ambil data realtime status sensor live
   useEffect(() => {
     if (dynamicSensors.length === 0) return;
 
@@ -154,12 +151,12 @@ export default function UserDashboard() {
 
     const unsubscribers = dynamicSensors.map((sensor) => {
       return ClientSensorModel.subscribeToLiveStatus(sensor.id, (data) => {
-        setLiveSensors((prev) => ({
+        setLiveSensors((prev: Record<string, LiveSensorData>) => ({
           ...prev,
           [sensor.id]: data,
         }));
         
-        setStats((prev) => ({
+        setStats((prev: typeof stats) => ({
           ...prev,
           lastCheck: timeString
         }));
@@ -171,7 +168,6 @@ export default function UserDashboard() {
     };
   }, [dynamicSensors]);
 
-  
   const getOverallStatus = () => {
     if (dynamicSensors.length === 0) return "Aman";
     const statuses = dynamicSensors.map(sensor => liveSensors[sensor.id]?.status || "safe");
@@ -275,7 +271,7 @@ export default function UserDashboard() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <span className={`inline-block px-3 py-1 rounded-mdll text-[12px] font-black uppercase tracking-wide ${
+                        <span className={`inline-block px-3 py-1 rounded-md text-[12px] font-black uppercase tracking-wide ${
                           live?.status === "danger" ? 'bg-red-100 text-red-700' : 
                           live?.status === "warning" ? 'bg-[#FDF0E1] text-[#A05E1A]' : 'bg-[#E9F2E4] text-[#4A6741]'
                         }`}>
@@ -310,7 +306,7 @@ export default function UserDashboard() {
                     <div className="flex items-center justify-between">
                       <span className="text-[12px] text-slate-600 font-bold font-mono">{live ? `${live.temperature}°C` : "-"}</span>
                       <div className="flex items-center gap-1.5">
-                        <div className={`w-1.5 h-1.5 rounded-mdll ${
+                        <div className={`w-1.5 h-1.5 rounded-md ${
                           live?.status === "danger" ? 'bg-red-500 animate-ping' : 
                           live?.status === "warning" ? 'bg-amber-500' : 'bg-emerald-500'
                         }`} />
@@ -326,9 +322,8 @@ export default function UserDashboard() {
           </div>
         </div>
 
-
+        {/* GRAFIK & LOGS */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
           <div className="bg-white border border-slate-200 p-6 rounded-md shadow-sm flex flex-col">
             <h3 className="text-xs font-black text-slate-600 tracking-widest uppercase mb-4 flex items-center gap-2">
               <TrendingUp size={14} className="text-slate-600" /> Tren Rata-rata Gas Mingguan
@@ -358,7 +353,6 @@ export default function UserDashboard() {
             </div>
           </div>
 
-          {/* LOG ALERTS */}
           <div className="bg-white border border-slate-200 p-6 rounded-md shadow-sm flex flex-col h-[324px]">
             <h3 className="text-xs font-black text-slate-600 tracking-widest uppercase mb-4 flex items-center gap-2">
               <BellRing size={14} className="text-slate-600" /> Riwayat Log Aktivitas Peringatan

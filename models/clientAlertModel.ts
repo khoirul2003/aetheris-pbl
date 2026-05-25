@@ -1,5 +1,5 @@
 import { db } from '@/lib/firebase';
-import { collection, query, where, orderBy, onSnapshot, doc, updateDoc } from 'firebase/firestore'; 
+import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, Timestamp } from 'firebase/firestore'; 
 
 export interface AlertData {
   id: string;
@@ -12,7 +12,7 @@ export interface AlertData {
   temperature: number;
   message: string;
   isResolved: boolean;
-  createdAt: any; 
+  createdAt: Timestamp | null; 
 }
 
 export const ClientAlertModel = {
