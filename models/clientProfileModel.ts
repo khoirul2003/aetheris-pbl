@@ -1,5 +1,5 @@
 import { db, auth } from '@/lib/firebase';
-import { doc, getDoc, updateDoc, collection, query, where, orderBy, onSnapshot, setDoc, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, query, where, orderBy, onSnapshot, setDoc, deleteDoc,Timestamp } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 
 export interface UserProfile {
@@ -11,14 +11,14 @@ export interface UserProfile {
     open: string;
     close: string;
   };
-  phone?: string;
-  plan?: 'basic' | 'pro';
-  planExpiry?: any;
+  phone?: string;          // Dibuat opsional agar fleksibel untuk profil Admin
+  plan?: 'basic' | 'pro';   // Dibuat opsional agar fleksibel untuk profil Admin
+  planExpiry?: Timestamp | null; // Menggunakan tipe data Timestamp spesifik dari origin/main
   notifWhatsapp?: boolean;
   notifPush?: boolean;
   notifOnlyOperational?: boolean;
-  role?: string;
-  isActive?: boolean;
+  role?: string;           // Dipertahankan dari HEAD untuk deteksi multi-role
+  isActive?: boolean;      // Dipertahankan dari HEAD untuk status keaktifan admin/user
 }
 
 export interface AdminUser {
@@ -35,6 +35,7 @@ export interface SystemConfig {
 
 export const ClientProfileModel = {
   // === MANAJEMEN PROFIL MITRA RESTORAN ===
+  
   async getUserProfile(userId: string): Promise<UserProfile | null> {
     const userRef = doc(db, 'users', userId);
     const docSnap = await getDoc(userRef);

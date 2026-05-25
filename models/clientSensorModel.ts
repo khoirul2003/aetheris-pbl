@@ -1,4 +1,4 @@
-import { db, rtdb } from '@/lib/firebase';
+import { db, getRtdb } from '@/lib/firebase'; 
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { ref, onValue, off } from 'firebase/database';
 
@@ -36,14 +36,18 @@ export const ClientSensorModel = {
     return sensors;
   },
 
-  // Berlangganan data live dari Realtime Database
-  subscribeToLiveStatus(callback: (data: any) => void) {
-    const liveRef = ref(rtdb, 'sensorLive');
+  /**
+   * Berlangganan data live dari sub-node Realtime Database secara spesifik
+   * @param sensorId ID Dokumen sensor (contoh: sensor_001)
+   * @param callback Fungsi pengirim pembaruan data state komponen
+   */
+  subscribeToLiveStatus(sensorId: string, callback: (data: LiveSensorData) => void) {
+    // PERBAIKAN: Menunjuk langsung ke jalur path spesifik sensorId (dinamis)
+    const liveRef = ref(getRtdb(), `sensorLive/${sensorId}`);
     
     onValue(liveRef, (snapshot) => {
-      // Validasi ketat: Pastikan snapshot ada DAN parameter callback benar-benar sebuah fungsi
       if (snapshot.exists() && typeof callback === 'function') {
-        callback(snapshot.val());
+        callback(snapshot.val() as LiveSensorData);
       }
     });
 

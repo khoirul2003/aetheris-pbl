@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Sidebar from "@/app/components/Sidebar";
 import Navbar from "@/app/components/Navbar";
-import { ClientProfileModel, AdminUser } from "@/models/clientProfileModel"; 
+import { ClientProfileModel, AdminUser, SystemConfig } from "@/models/clientProfileModel"; 
 import { auth, db } from "@/lib/firebase"; 
 import { onAuthStateChanged } from "firebase/auth"; 
 import { doc, updateDoc } from "firebase/firestore";
@@ -49,9 +49,13 @@ export default function AdminSettingsPage() {
     async function loadConfig() {
       try {
         const data = await ClientProfileModel.getSystemConfig();
+        // Berhasil mengatasi Type Mismatch dengan fallback data jika dokumen Firestore null
         if (data) {
           setDefaultThreshold(data.defaultThreshold || 400);
           setNotifyOnDanger(data.notifyOnDanger ?? true);
+        } else {
+          setDefaultThreshold(400);
+          setNotifyOnDanger(true);
         }
       } catch (err) {
         console.error(err);
@@ -92,10 +96,10 @@ export default function AdminSettingsPage() {
   const handleSubmitSystemConfig = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const updatePayload = {
-        defaultThreshold,
-        notifyOnDanger,
-        updatedAt: new Date()
+      // Membentuk payload murni bertipe SystemConfig agar diterima oleh Partial<SystemConfig> pada model
+      const updatePayload: SystemConfig = {
+        defaultThreshold: Number(defaultThreshold),
+        notifyOnDanger: Boolean(notifyOnDanger)
       };
 
       await ClientProfileModel.saveSystemConfig(updatePayload);
@@ -106,7 +110,6 @@ export default function AdminSettingsPage() {
     }
   };
 
-  // FIX KAPITALISASI: Mengubah dari huruf besar menjadi huruf kecil komparatif
   const handleSelectEditAdmin = (admin: AdminUser) => {
     setEditingAdminId(admin.id);
     setNewAdmin({ name: admin.name, email: admin.email, password: "" });
@@ -115,7 +118,6 @@ export default function AdminSettingsPage() {
     setIsModalOpen(true);
   };
 
-  // FIX KAPITALISASI: Mengubah E.stop menjadi e.stop, dan awalan huruf kecil fungsi state
   const handleDeleteAdmin = async (id: string, name: string, e: React.MouseEvent) => {
     e.stopPropagation(); 
     if (confirm(`Apakah Anda yakin ingin menghapus akun admin ${name}?`)) {
@@ -129,7 +131,6 @@ export default function AdminSettingsPage() {
     }
   };
 
-  // FIX KAPITALISASI: Mengubah pemicu submit penambahan admin baru dengan aturan camelCase
   const handleAddAdminSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newAdmin.name || !newAdmin.email) {
@@ -276,7 +277,9 @@ export default function AdminSettingsPage() {
                       </div>
                     </div>
                   ))
-                ) : <p className="text-center text-xs text-slate-400 py-6 font-medium">Belum ada akun admin terdaftar.</p>}
+                ) : (
+                  <p className="text-center text-xs text-slate-400 py-6 font-medium">Belum ada akun admin terdaftar.</p>
+                )}
               </div>
               
               <button type="button" onClick={() => { setEditingAdminId(null); setNewAdmin({ name: "", email: "", password: "" }); setModalPasswordError(""); setShowModalPassword(false); setIsModalOpen(true); }} className="w-full border-2 border-dashed border-slate-300 text-slate-700 hover:text-blue-600 hover:border-blue-400 font-medium text-xs py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 bg-white hover:bg-blue-50/30 cursor-pointer"><UserPlus size={14} /> + Tambah Admin Baru</button>

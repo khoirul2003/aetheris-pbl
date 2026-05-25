@@ -1,5 +1,5 @@
 import { db } from '@/lib/firebase';
-import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'; 
+import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, Timestamp } from 'firebase/firestore'; 
 
 export interface AlertData {
   id: string;
@@ -12,15 +12,16 @@ export interface AlertData {
   temperature: number;
   message: string;
   isResolved: boolean;
-  createdAt: any; 
-  restaurantName?: string; // Tambahkan ini agar tidak error TS(2339)
+  createdAt: Timestamp | null;
+  restaurantName?: string;    
 }
 
 export const ClientAlertModel = {
+  // Langganan data log alert secara dinamis & real-time
   subscribeToAlerts(userId: string, callback: (alerts: AlertData[]) => void) {
     const alertsRef = collection(db, 'alerts');
     
-    // Jika diakses oleh admin, kita hilangkan filter where userId agar bisa memantau semua restoran
+    // Jika diakses oleh admin ("ALL"), hilangkan filter where userId agar bisa memantau semua restoran
     const q = userId === "ALL" 
       ? query(alertsRef, orderBy('createdAt', 'desc'))
       : query(alertsRef, where('userId', '==', userId), orderBy('createdAt', 'desc'));
@@ -36,5 +37,18 @@ export const ClientAlertModel = {
     });
 
     return unsubscribe; 
+  },
+
+  // Mengubah status alert menjadi selesai ditangani di Firestore (Fitur baru dari origin/main)
+  async resolveAlertById(alertId: string): Promise<void> {
+    try {
+      const alertDocRef = doc(db, 'alerts', alertId);
+      await updateDoc(alertDocRef, {
+        isResolved: true
+      });
+    } catch (error) {
+      console.error("Gagal mengupdate status penanganan insiden:", error);
+      throw error;
+    }
   }
 };
