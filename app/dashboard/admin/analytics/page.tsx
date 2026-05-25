@@ -7,11 +7,18 @@ import { ClientAlertModel, AlertData } from "@/models/clientAlertModel";
 import { ClientProfileModel } from "@/models/clientProfileModel"; 
 import { Filter, FileText, BarChart3 } from "lucide-react";
 
+interface IncidentStat {
+  name: string;
+  count: number;
+  percent: number;
+  color: string;
+}
+
 export default function AdminAnalyticsPage() {
   const [timeRange, setTimeRange] = useState("semua_bulan");
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
-  const [incidentStats, setIncidentStats] = useState<any[]>([]);
+  const [incidentStats, setIncidentStats] = useState<IncidentStat[]>([]);
   const [usersMap, setUsersMap] = useState<{ [uid: string]: string }>({});
 
   // 1. Ambil data nama restoran secara terpusat melalui lapisan model profil

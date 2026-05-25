@@ -46,12 +46,17 @@ export default function AdminAlertsPage() {
     return () => unsubscribeAlerts();
   }, []);
 
-  // Konversi Timestamp aman
-  const formatAlertTime = (createdAt: any) => {
-    if (!createdAt) return "-";
-    const date = typeof createdAt.toDate === "function" ? createdAt.toDate() : new Date(createdAt);
-    return date.toISOString().replace('T', ' ').substring(0, 16);
-  };
+  // Konversi Timestamp aman tanpa explicit any
+  const formatAlertTime = (createdAt: { toDate?: () => Date } | Date | string | number | null | undefined) => {
+  if (!createdAt) return "-";
+  
+  // Deteksi jika merupakan objek Timestamp dari Firestore
+  const date = (createdAt && typeof createdAt === "object" && "toDate" in createdAt && typeof createdAt.toDate === "function")
+    ? createdAt.toDate()
+    : new Date(createdAt as string | number | Date);
+
+  return date.toISOString().replace('T', ' ').substring(0, 16);
+};
 
   // Filter & Transformasi Data
   const filteredAlerts = alertsData.filter((item) => {
@@ -205,14 +210,14 @@ export default function AdminAlertsPage() {
                   <input 
                     type="date" 
                     value={filterDate}
-                    onChange={(e) => setFilterDate(e.target.value)}
+                    onChange={(e) => { setFilterDate(e.target.value); setCurrentPage(1); }}
                     className="pl-9 pr-4 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer w-44 transition-colors"
                   />
                 </div>
 
                 <select 
                   value={filterLevel} 
-                  onChange={(e) => setFilterLevel(e.target.value)}
+                  onChange={(e) => { setFilterLevel(e.target.value); setCurrentPage(1); }}
                   className="bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer transition-colors"
                 >
                   <option value="ALL">Semua Tingkat Bahaya</option>
@@ -222,7 +227,7 @@ export default function AdminAlertsPage() {
 
                 <select 
                   value={filterStatus} 
-                  onChange={(e) => setFilterStatus(e.target.value)}
+                  onChange={(e) => { setFilterStatus(e.target.value); setCurrentPage(1); }}
                   className="bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer transition-colors"
                 >
                   <option value="ALL">Semua Status</option>
@@ -237,7 +242,7 @@ export default function AdminAlertsPage() {
                   type="text" 
                   placeholder="Cari restoran atau sensor..." 
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                   className="pl-9 pr-4 py-2 w-full bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-inner transition-all"
                 />
               </div>

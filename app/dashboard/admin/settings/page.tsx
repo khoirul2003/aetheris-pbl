@@ -143,7 +143,10 @@ export default function AdminSettingsPage() {
           return;
         }
 
-        const updateData: any = { name: newAdmin.name, email: newAdmin.email };
+        const updateData: { name: string; email: string; password?: string } = { 
+          name: newAdmin.name, 
+          email: newAdmin.email 
+        };
         if (newAdmin.password) {
           updateData.password = newAdmin.password; 
         }
@@ -312,7 +315,7 @@ export default function AdminSettingsPage() {
                     }}
                     onBlur={handleModalPasswordBlur}
                     className={`w-full bg-white border rounded-xl pl-2.5 pr-10 py-2.5 text-xs font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 transition-all shadow-inner ${modalPasswordError ? "border-rose-500 focus:ring-rose-500" : "border-slate-300 focus:ring-blue-500"}`}
-                    style={{ WebkitTextSecurity: showModalPassword ? "none" : "disc" } as any}
+                    style={{ WebkitTextSecurity: showModalPassword ? "none" : "disc" } as React.CSSProperties}
                   />
                   {newAdmin.password && (
                     <button type="button" onClick={() => setShowModalPassword(!showModalPassword)} className={`absolute right-3 focus:outline-none select-none z-10 ${modalPasswordError ? 'text-rose-500' : 'text-slate-400'}`}>{showModalPassword ? <EyeOff size={14} /> : <Eye size={14} />}</button>

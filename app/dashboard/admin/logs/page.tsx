@@ -44,7 +44,7 @@ export default function AdminActivityLogPage() {
       if (item.createdAt) {
         const timestamp = typeof item.createdAt.toDate === "function" 
           ? item.createdAt.toDate() 
-          : new Date(item.createdAt as any);
+          : new Date(item.createdAt as unknown as string | number | Date);
         timeStr = timestamp.toISOString().replace('T', ' ').substring(0, 16);
       }
       
@@ -81,18 +81,16 @@ export default function AdminActivityLogPage() {
   const indexOfFirstRow = indexOfLastRow - pageSize;
   const currentRows = filteredLogs.slice(indexOfFirstRow, indexOfLastRow);
 
-  // Auto Reset Halaman ke awal apabila filter diganti
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, filterAction, filterActor, filterDate, pageSize]);
-
   const renderPaginationControls = () => (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-slate-50 border-b border-t border-slate-200 text-slate-700 text-sm">
       <div className="flex items-center gap-2">
         <span>Tampilkan</span>
         <select
           value={pageSize}
-          onChange={(e) => setPageSize(Number(e.target.value))}
+          onChange={(e) => {
+            setPageSize(Number(e.target.value));
+            setCurrentPage(1);
+          }}
           className="bg-white border border-slate-300 rounded-lg px-2 py-1 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer transition-all"
         >
           <option value={10}>10</option>
@@ -149,14 +147,14 @@ export default function AdminActivityLogPage() {
                   <input 
                     type="date" 
                     value={filterDate}
-                    onChange={(e) => setFilterDate(e.target.value)}
+                    onChange={(e) => { setFilterDate(e.target.value); setCurrentPage(1); }}
                     className="pl-9 pr-4 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer w-44 transition-colors"
                   />
                 </div>
 
                 <select 
                   value={filterAction} 
-                  onChange={(e) => setFilterAction(e.target.value)}
+                  onChange={(e) => { setFilterAction(e.target.value); setCurrentPage(1); }}
                   className="bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer transition-colors"
                 >
                   <option value="ALL">Semua Jenis Aksi</option>
@@ -169,7 +167,7 @@ export default function AdminActivityLogPage() {
 
                 <select 
                   value={filterActor} 
-                  onChange={(e) => setFilterActor(e.target.value)}
+                  onChange={(e) => { setFilterActor(e.target.value); setCurrentPage(1); }}
                   className="bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer transition-colors"
                 >
                   <option value="ALL">Semua Pelaku</option>
@@ -184,7 +182,7 @@ export default function AdminActivityLogPage() {
                   type="text" 
                   placeholder="Cari target atau keterangan..." 
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                   className="pl-9 pr-4 py-2 w-full bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-inner transition-all"
                 />
               </div>

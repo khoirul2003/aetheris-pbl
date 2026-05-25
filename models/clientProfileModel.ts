@@ -103,19 +103,22 @@ export const ClientProfileModel = {
     });
   },
 
-  // Registrasi sub-admin baru ke Firebase Auth sekaligus menyimpan data entitas ke Firestore
-  async createAdmin(data: any): Promise<void> {
+  // Registrasi sub-admin baru ke Firebase Auth dengan type-safe data record parameter
+  // Registrasi sub-admin baru di models/clientProfileModel.ts
+  async createAdmin(data: { name: string; email: string; password?: string; isActive?: boolean }): Promise<void> {
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+      // Memastikan password ada sebelum diproses Auth
+      const password = data.password || "";
+      const userCredential = await createUserWithEmailAndPassword(auth, data.email, password);
       const uid = userCredential.user.uid;
 
       const docRef = doc(db, "users", uid);
       await setDoc(docRef, {
         name: data.name,
         email: data.email,
-        password: data.password,
+        password: password,
         role: "admin", 
-        isActive: false, 
+        isActive: data.isActive ?? false, 
         createdAt: new Date()
       });
     } catch (error) {
@@ -124,7 +127,7 @@ export const ClientProfileModel = {
     }
   },
 
-  async updateAdmin(id: string, data: any): Promise<void> {
+  async updateAdmin(id: string, data: Record<string, unknown>): Promise<void> {
     const docRef = doc(db, "users", id);
     await updateDoc(docRef, { ...data, updatedAt: new Date() });
   },
