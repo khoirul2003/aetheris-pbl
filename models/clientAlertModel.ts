@@ -1,6 +1,5 @@
 import { db } from '@/lib/firebase';
-// 1. Hapus 'off' dari firebase/firestore
-import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'; 
+import { collection, query, where, orderBy, onSnapshot, doc, updateDoc } from 'firebase/firestore'; 
 
 export interface AlertData {
   id: string;
@@ -13,17 +12,17 @@ export interface AlertData {
   temperature: number;
   message: string;
   isResolved: boolean;
-  createdAt: any; // Timestamp Firestore
+  createdAt: any; 
 }
 
 export const ClientAlertModel = {
-  // Berlangganan data riwayat alert secara real-time berdasarkan userId
+  // Langganan data log alert secara dinamis & real-time
   subscribeToAlerts(userId: string, callback: (alerts: AlertData[]) => void) {
     const alertsRef = collection(db, 'alerts');
     const q = query(
       alertsRef,
       where('userId', '==', userId),
-      orderBy('createdAt', 'desc') // Alert terbaru muncul paling atas
+      orderBy('createdAt', 'desc') 
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -36,7 +35,19 @@ export const ClientAlertModel = {
       console.error("Error fetching alerts real-time:", error);
     });
 
-    // 2. Kembalikan fungsi 'unsubscribe' bawaan dari onSnapshot Firestore
     return unsubscribe; 
+  },
+
+  // Fungsi Baru: Mengubah status alert menjadi selesai ditangani di Firestore
+  async resolveAlertById(alertId: string): Promise<void> {
+    try {
+      const alertDocRef = doc(db, 'alerts', alertId);
+      await updateDoc(alertDocRef, {
+        isResolved: true
+      });
+    } catch (error) {
+      console.error("Gagal mengupdate status penanganan insiden:", error);
+      throw error;
+    }
   }
 };

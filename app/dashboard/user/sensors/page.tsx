@@ -7,7 +7,7 @@ import { ClientSensorModel, FirestoreSensor, LiveSensorData } from "@/models/cli
 import { AlertTriangle, Check, RefreshCw, Radio } from "lucide-react";
 
 export default function SensorsPage() {
-  // Gunakan User ID sesuai data database Anda
+  // ID Pengguna utama sesuai data database Anda
   const userId = "O4O7ZiAKmCUoNtqBoJhTsk3prHW2";
 
   const [sensors, setSensors] = useState<FirestoreSensor[]>([]);
@@ -15,14 +15,14 @@ export default function SensorsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 1. Ambil data statis sensor dari Firestore
+  // 1. Ambil data konseptual statis sensor dari Firestore
   useEffect(() => {
     async function fetchSensors() {
       try {
         const fetchedSensors = await ClientSensorModel.getSensorsByUserId(userId);
         setSensors(fetchedSensors);
       } catch (err) {
-        console.error(err);
+        console.error("Gagal memuat profil koleksi sensor:", err);
         setError("Gagal memuat konfigurasi area & sensor.");
       } finally {
         setLoading(false);
@@ -31,10 +31,11 @@ export default function SensorsPage() {
     fetchSensors();
   }, [userId]);
 
-  // 2. Dengarkan data live secara realtime dari Realtime Database
+  // 2. Dengarkan data live telemetri dari Realtime Database (Telah Diperbaiki)
   useEffect(() => {
     if (sensors.length === 0) return;
 
+    // Membuka jembatan pemantauan terpisah untuk masing-masing sensor secara paralel
     const unsubscribers = sensors.map((sensor) => {
       return ClientSensorModel.subscribeToLiveStatus(sensor.id, (data) => {
         setLiveData((prev) => ({
@@ -44,6 +45,7 @@ export default function SensorsPage() {
       });
     });
 
+    // Jalankan fungsi pembersihan koneksi saat user berpindah halaman
     return () => {
       unsubscribers.forEach((unsub) => unsub());
     };
@@ -87,15 +89,15 @@ export default function SensorsPage() {
 
         {sensors.length === 0 ? (
           <div className="bg-white border border-slate-200 p-8 rounded-2xl text-center text-slate-500 text-sm">
-            Belum ada area atau sensor yang terdaftar.
+            Belum ada area atau sensor yang terdaftar untuk akun ini.
           </div>
         ) : (
-          /* GRID RESPONSIVE - MENYESUAIKAN GAMBAR MOCKUP */
+          /* GRID MONITORING KARTU SENSOR */
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {sensors.map((sensor) => {
               const currentLive = liveData[sensor.id];
               
-              // Mengambil status dari RTDB, jika belum ada gunakan default 'safe'
+              // Mengambil status realtime, default ke aman jika alat belum aktif
               const status = currentLive?.status || "safe";
               const isWarningOrDanger = status === "warning" || status === "danger";
 
@@ -103,67 +105,71 @@ export default function SensorsPage() {
                 <div 
                   key={sensor.id} 
                   className={`border p-6 rounded-2xl transition-all shadow-sm flex flex-col justify-between h-full ${
-                    status === "danger" ? "bg-red-50/60 border-red-200" : 
+                    status === "danger" ? "bg-red-50/60 border-red-200 shadow-red-100/50" : 
                     status === "warning" ? "bg-[#FDF0E1] border-[#F3D5B5]" : 
                     "bg-[#E9F2E4] border-[#D1E2C7]"
                   }`}
                 >
-                  {/* BARIS ATAS: IKON STATUS DAN LABEL BADGE */}
+                  {/* BARIS ATAS: IDENTITY & BADGE */}
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-4">
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                        isWarningOrDanger ? "bg-[#FDF0E1] text-[#C67023]" : "bg-[#E9F2E4] text-[#4A6741]"
+                        isWarningOrDanger 
+                          ? (status === "danger" ? "bg-red-100 text-red-600" : "bg-[#F3D5B5] text-[#C67023]") 
+                          : "bg-[#D1E2C7] text-[#4A6741]"
                       }`}>
                         {isWarningOrDanger ? <AlertTriangle size={18} /> : <Check size={18} strokeWidth={3} />}
                       </div>
                       <div className="min-w-0">
-                        <h3 className="font-black text-slate-800 text-sm truncate">{sensor.id}</h3>
-                        <p className="text-xs text-slate-500 truncate">{sensor.name} — {sensor.location}</p>
+                        <h3 className="font-black text-slate-800 text-sm truncate">{sensor.id.toUpperCase()}</h3>
+                        <p className="text-xs text-slate-500 font-medium truncate">{sensor.name} — {sensor.location}</p>
                       </div>
                     </div>
 
-                    {/* BADGE STATUS */}
+                    {/* LABEL STATUS */}
                     <span className={`px-4 py-1.5 rounded-full text-xs font-black shrink-0 uppercase tracking-wider ${
-                      status === "danger" ? "bg-red-100 text-red-700" :
-                      status === "warning" ? "bg-[#FDF0E1] text-[#A05E1A]" : 
-                      "bg-[#E9F2E4] text-[#4A6741]"
+                      status === "danger" ? "bg-red-500 text-white animate-pulse" :
+                      status === "warning" ? "bg-[#9A622D] text-white" : 
+                      "bg-[#4A6741] text-white"
                     }`}>
                       {status === "safe" ? "Aman" : status === "warning" ? "Waspada" : "Bahaya"}
                     </span>
                   </div>
 
-                  {/* BARIS TENGAH: DETAIL INDIKATOR LIVE */}
-                  <div className="space-y-3 bg-white/70 backdrop-blur-sm p-4 rounded-xl border border-slate-100/50 mb-4 flex-grow flex flex-col justify-center">
+                  {/* BARIS TENGAH: DETAIL PARAMETER TELEMETRI SENSOR */}
+                  <div className="space-y-3 bg-white/80 backdrop-blur-sm p-4 rounded-xl border border-slate-100/50 mb-4 flex-grow flex flex-col justify-center shadow-inner">
                     <div className="flex justify-between items-center text-sm">
-                      <span className="text-slate-500 font-medium">Kadar Gas:</span>
-                      <span className="font-mono font-bold text-slate-800">
+                      <span className="text-slate-500 font-semibold">Kadar Gas:</span>
+                      <span className={`font-mono font-black ${isWarningOrDanger ? "text-red-600 text-base" : "text-slate-800"}`}>
                         {currentLive ? `${currentLive.gas} PPM` : "-"}
                       </span>
                     </div>
                     
                     <div className="flex justify-between items-center text-sm">
-                      <span className="text-slate-500 font-medium">Suhu Ruangan:</span>
+                      <span className="text-slate-500 font-semibold">Suhu Ruangan:</span>
                       <span className="font-mono font-bold text-slate-800">
                         {currentLive ? `${currentLive.temperature} °C` : "-"}
                       </span>
                     </div>
 
                     <div className="flex justify-between items-center text-sm">
-                      <span className="text-slate-500 font-medium">Kelembapan:</span>
+                      <span className="text-slate-500 font-semibold">Kelembapan:</span>
                       <span className="font-mono font-bold text-slate-800">
                         {currentLive ? `${currentLive.humidity} %` : "-"}
                       </span>
                     </div>
                   </div>
 
-                  {/* BARIS BAWAH: STATUS PARAMETER AMBANG BATAS & KONEKSI */}
-                  <div className="pt-3 border-t border-slate-200/60 flex items-center justify-between text-[10px] text-slate-400 font-semibold tracking-wide">
+                  {/* BARIS BAWAH: METRICS THRESHOLD & ONLINE STATUS */}
+                  <div className="pt-3 border-t border-slate-200/60 flex items-center justify-between text-[10px] text-slate-400 font-bold tracking-wide">
                     <div>
-                      <span>BATAS AMAN: &lt;{sensor.thresholds.warning} PPM</span>
+                      <span>BATAS AMAN: &lt; {sensor.thresholds.warning} PPM</span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <div className={`w-1.5 h-1.5 rounded-full ${currentLive?.isOnline ? "bg-emerald-500 animate-pulse" : "bg-slate-400"}`} />
-                      <span className="uppercase">{currentLive?.isOnline ? "Connected" : "Offline"}</span>
+                    <div className="flex items-center gap-1.5">
+                      <div className={`w-2 h-2 rounded-full ${currentLive?.isOnline ? "bg-emerald-500 animate-ping" : "bg-slate-300"}`} />
+                      <span className={`uppercase font-black ${currentLive?.isOnline ? "text-emerald-600" : "text-slate-400"}`}>
+                        {currentLive?.isOnline ? "Connected" : "Offline"}
+                      </span>
                     </div>
                   </div>
 

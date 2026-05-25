@@ -1,34 +1,27 @@
-import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
-import { getAuth, Auth } from "firebase/auth";
-import { getFirestore, Firestore } from "firebase/firestore";
-import { getDatabase } from "firebase/database";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
+import { getDatabase, Database } from "firebase/database";
 
+// Masukkan kredensial Firebase Anda secara langsung di sini
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
+  apiKey: "AIzaSyDHJDIF1SYdlPVy7CNHVPfWo4u8xcMHe2w",
+  authDomain: "aetheris-pbl.firebaseapp.com",
+  projectId: "aetheris-pbl",
+  storageBucket: "aetheris-pbl.firebasestorage.app",
+  messagingSenderId: "425649596173",
+  appId: "1:425649596173:web:6dc0fa619265c884beb244"
 };
 
+// Inisialisasi tanpa pengecekan ENV (Sangat aman dari error Turbopack)
+const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 
-let app: FirebaseApp;
-let auth: Auth;
-let db: Firestore;
+const auth = getAuth(app);
+const db = getFirestore(app);
 
+// Fungsi pembungkus Realtime Database agar aman dari crash server-side Next.js
+export const getRtdb = (): Database => {
+  return getDatabase(app);
+};
 
-if (process.env.NEXT_PUBLIC_FIREBASE_API_KEY) {
-  app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  db = getFirestore(app);
-  
-} else {
-
-  app = {} as FirebaseApp;
-  auth = {} as Auth;
-  db = {} as Firestore;
-}
-
-export const rtdb = getDatabase(app);
 export { app, auth, db };

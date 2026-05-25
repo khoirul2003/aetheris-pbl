@@ -4,7 +4,9 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "next:dev": "next dev",
+    "watcher": "npx ts-node scripts/alertWatcher.ts",
+    "dev": "concurrently -n \"NEXT,WATCHER\" -c \"blue,magenta\" \"npm run next:dev\" \"npm run watcher\"",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -23,6 +25,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "concurrently": "^9.2.1",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
     "tailwindcss": "^4",
