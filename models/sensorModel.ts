@@ -1,4 +1,4 @@
-import { db, rtdb } from '@/lib/firebase';
+import { db, getRtdb } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, doc, setDoc } from 'firebase/firestore';
 import { ref, set } from 'firebase/database';
 
@@ -14,7 +14,7 @@ export const SensorModel = {
 
   // 2. Update data LIVE ke Realtime Database
   async updateLiveStatus(sensorId: string, data: any) {
-    const liveRef = ref(rtdb, `sensorLive/${sensorId}`);
+    const liveRef = ref(getRtdb(), `sensorLive/${sensorId}`);
     return await set(liveRef, {
       ...data,
       lastUpdate: Date.now()

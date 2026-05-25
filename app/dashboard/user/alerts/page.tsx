@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Sidebar from "@/app/components/Sidebar";
 import Navbar from "@/app/components/Navbar";
 import { ClientAlertModel, AlertData } from "@/models/clientAlertModel";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, CheckCircle2, Loader2 } from "lucide-react";
 
 type FilterType = "semua" | "bahaya" | "waspada" | "belum_ditangani";
 
@@ -13,6 +13,7 @@ export default function AlertsPage() {
 
   const [alerts, setAlerts] = useState<AlertData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [resolvingId, setResolvingId] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>("semua");
 
   useEffect(() => {
@@ -23,13 +24,23 @@ export default function AlertsPage() {
     return () => unsubscribe();
   }, [userId]);
 
-  // Logika Menghitung Angka Statistik di Dalam Tab Tombol
+  // Fungsi aksi eksekusi penanganan tombol klik
+  const handleResolve = async (alertId: string) => {
+    setResolvingId(alertId);
+    try {
+      await ClientAlertModel.resolveAlertById(alertId);
+    } catch (err) {
+      alert("Gagal memproses penanganan kendala dapur.");
+    } finally {
+      setResolvingId(null);
+    }
+  };
+
   const countAll = alerts.length;
   const countBahaya = alerts.filter((a) => a.level === "danger").length;
   const countWaspada = alerts.filter((a) => a.level === "warning").length;
   const countBelumDitangani = alerts.filter((a) => !a.isResolved).length;
 
-  // Proses Filter Data yang Ditampilkan Sesuai Tab yang Aktif
   const filteredAlerts = alerts.filter((alert) => {
     if (activeFilter === "bahaya") return alert.level === "danger";
     if (activeFilter === "waspada") return alert.level === "warning";
@@ -37,7 +48,6 @@ export default function AlertsPage() {
     return true;
   });
 
-  // Fungsi Format Waktu agar Tampil Sesuai Gambar Mockup (Contoh: "Hari ini, 14:32")
   const formatAlertTime = (timestamp: any) => {
     if (!timestamp || typeof timestamp.toDate !== "function") return "-";
     const date = timestamp.toDate();
@@ -75,7 +85,7 @@ export default function AlertsPage() {
 
       <main className="md:ml-64 pt-20 px-6 md:px-8 pb-8 w-full max-w-5xl mx-auto">
         
-        {/* TAB FILTER KATEGORI (ATAS) */}
+        {/* TAB FILTER KATEGORI */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 my-6">
           <button
             onClick={() => setActiveFilter("semua")}
@@ -126,7 +136,7 @@ export default function AlertsPage() {
           </button>
         </div>
 
-        {/* CONTAINER TABEL DATA (BAWAH) */}
+        {/* CONTAINER TABEL DATA LOG ALERTS */}
         <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -136,7 +146,7 @@ export default function AlertsPage() {
                   <th className="py-4 px-6">Lokasi</th>
                   <th className="py-4 px-6">Tingkat</th>
                   <th className="py-4 px-6">Yang dilakukan sistem</th>
-                  <th className="py-4 px-6">Status</th>
+                  <th className="py-4 px-6 text-center">Aksi / Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs">
@@ -153,17 +163,14 @@ export default function AlertsPage() {
 
                     return (
                       <tr key={alert.id} className="hover:bg-slate-50/60 transition-colors">
-                        {/* 1. KOLOM WAKTU */}
-                        <td className="py-4 px-6 font-medium text-slate-500 white-space-nowrap">
+                        <td className="py-4 px-6 font-medium text-slate-500 whitespace-nowrap">
                           {formatAlertTime(alert.createdAt)}
                         </td>
 
-                        {/* 2. KOLOM LOKASI */}
                         <td className="py-4 px-6 font-bold text-slate-900">
                           {alert.location || alert.sensorName}
                         </td>
 
-                        {/* 3. KOLOM TINGKAT BADGE */}
                         <td className="py-4 px-6">
                           <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wide ${
                             isDanger 
@@ -174,22 +181,31 @@ export default function AlertsPage() {
                           </span>
                         </td>
 
-                        {/* 4. KOLOM AKSI SISTEM */}
                         <td className="py-4 px-6 text-slate-600 font-medium max-w-xs truncate">
                           {isDanger 
-                            ? "Kipas menyala + WhatsApp ke manajer" 
-                            : "Notifikasi dikirim ke manajer"}
+                            ? `${alert.message} (Kipas Aktif)` 
+                            : alert.message}
                         </td>
 
-                        {/* 5. KOLOM STATUS PENANGANAN */}
-                        <td className="py-4 px-6">
-                          <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wide text-center min-w-[90px] ${
-                            isResolved 
-                              ? "bg-emerald-50 text-emerald-700 border border-emerald-100" 
-                              : "bg-[#FDF0E1] text-[#9A622D] border border-[#ECD1B4]"
-                          }`}>
-                            {isResolved ? "Selesai" : "Perlu perhatian"}
-                          </span>
+                        {/* KOLOM AKSI STATUS PENANGANAN - TOMBOL DINAMIS */}
+                        <td className="py-4 px-6 flex justify-center items-center">
+                          {isResolved ? (
+                            <span className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wide text-emerald-700 bg-emerald-50 border border-emerald-100 min-w-[100px] justify-center">
+                              <CheckCircle2 size={12} /> Selesai
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handleResolve(alert.id)}
+                              disabled={resolvingId === alert.id}
+                              className="px-4 py-1.5 rounded-xl bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white font-black uppercase tracking-wider text-[10px] transition-all shadow-sm shadow-orange-200 active:scale-95 flex items-center gap-1 min-w-[100px] justify-center cursor-pointer"
+                            >
+                              {resolvingId === alert.id ? (
+                                <Loader2 size={12} className="animate-spin" />
+                              ) : (
+                                "Tangani"
+                              )}
+                            </button>
+                          )}
                         </td>
                       </tr>
                     );
