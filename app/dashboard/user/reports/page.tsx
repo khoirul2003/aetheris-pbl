@@ -41,8 +41,8 @@ export default function ReportsPage() {
   // Data dummy untuk grafik jika database summary masih kosong
   const chartData = summaries.length > 0 ? summaries.map(s => ({
     name: s.date.split('-').slice(2).join('/'), // ambil tgl/bln
-    "Kompor utama": s.avgGasPerSensor?.["sensor_001"] || Math.floor(Math.random() * 200),
-    "Kompor kanan": s.avgGasPerSensor?.["sensor_002"] || Math.floor(Math.random() * 300),
+    "Kompor utama": s.avgGasPerSensor?.["sensor_001"] || 0,
+    "Kompor kanan": s.avgGasPerSensor?.["sensor_002"] || 0,
   })) : [
     { name: 'Sen', "Kompor utama": 120, "Kompor kanan": 210 },
     { name: 'Sel', "Kompor utama": 150, "Kompor kanan": 280 },

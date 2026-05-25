@@ -1,5 +1,5 @@
 import { db } from '@/lib/firebase';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, Timestamp } from 'firebase/firestore'; 
 
 export interface UserProfile {
   name: string;
@@ -12,14 +12,14 @@ export interface UserProfile {
   };
   phone: string;
   plan: 'basic' | 'pro';
-  planExpiry: any;
+  planExpiry: Timestamp | null; 
   notifWhatsapp: boolean;
   notifPush: boolean;
   notifOnlyOperational: boolean;
 }
 
 export const ClientProfileModel = {
-  // Mengambil data profil user secara real-time/sekali panggil
+  
   async getUserProfile(userId: string): Promise<UserProfile | null> {
     const userRef = doc(db, 'users', userId);
     const docSnap = await getDoc(userRef);
@@ -30,7 +30,7 @@ export const ClientProfileModel = {
     return null;
   },
 
-  // Memperbarui pengaturan tertentu (misal: toggle notifikasi atau jam operasional)
+  
   async updateSettings(userId: string, updatedFields: Partial<UserProfile>): Promise<void> {
     const userRef = doc(db, 'users', userId);
     await updateDoc(userRef, updatedFields);

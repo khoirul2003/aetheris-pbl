@@ -30,6 +30,7 @@ export default function AlertsPage() {
     try {
       await ClientAlertModel.resolveAlertById(alertId);
     } catch (err) {
+      console.error("Gagal mereset insiden:", err);
       alert("Gagal memproses penanganan kendala dapur.");
     } finally {
       setResolvingId(null);
@@ -48,7 +49,7 @@ export default function AlertsPage() {
     return true;
   });
 
-  const formatAlertTime = (timestamp: any) => {
+  const formatAlertTime = (timestamp: { toDate: () => Date } | null | undefined) => {
     if (!timestamp || typeof timestamp.toDate !== "function") return "-";
     const date = timestamp.toDate();
     const today = new Date();
