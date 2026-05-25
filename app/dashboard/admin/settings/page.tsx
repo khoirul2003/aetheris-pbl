@@ -49,7 +49,6 @@ export default function AdminSettingsPage() {
     async function loadConfig() {
       try {
         const data = await ClientProfileModel.getSystemConfig();
-        // Berhasil mengatasi Type Mismatch dengan fallback data jika dokumen Firestore null
         if (data) {
           setDefaultThreshold(data.defaultThreshold || 400);
           setNotifyOnDanger(data.notifyOnDanger ?? true);
@@ -96,7 +95,6 @@ export default function AdminSettingsPage() {
   const handleSubmitSystemConfig = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // Membentuk payload murni bertipe SystemConfig agar diterima oleh Partial<SystemConfig> pada model
       const updatePayload: SystemConfig = {
         defaultThreshold: Number(defaultThreshold),
         notifyOnDanger: Boolean(notifyOnDanger)
@@ -145,11 +143,7 @@ export default function AdminSettingsPage() {
           return;
         }
 
-        const updateData: any = { name: newAdmin.name, email: newAdmin.email };
-        if (newAdmin.password) {
-          updateData.password = newAdmin.password; 
-        }
-
+        const updateData: Partial<AdminUser> = { name: newAdmin.name, email: newAdmin.email };
         await ClientProfileModel.updateAdmin(editingAdminId, updateData);
         showToast("Data admin " + newAdmin.name + " berhasil diperbarui!");
       } else {
@@ -307,7 +301,7 @@ export default function AdminSettingsPage() {
                 <input type="email" placeholder="Contoh: john@aetheris.com" value={newAdmin.email} onChange={(e) => setNewAdmin({ ...newAdmin, email: e.target.value })} className="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-xs font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-inner" />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">{editingAdminId ? "Password Baru (Kosongkan jika tetap)" : "Password Akses Awal"}</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">{editingAdminId ? "Password Baru (Kosongkan jika tetap)" : "Password Akses Awal"} *</label>
                 <div className="relative flex items-center">
                   <input 
                     type="text" 

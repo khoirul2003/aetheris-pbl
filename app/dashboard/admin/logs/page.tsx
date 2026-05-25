@@ -17,7 +17,7 @@ export default function AdminActivityLogPage() {
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // State mentah untuk menampung dokumen alerts dari model
+  // State menampung dokumen alerts mentah dari model
   const [rawAlerts, setRawAlerts] = useState<AlertData[]>([]);
   
   // State Kamus Peta LookUp Relasional (userId -> restaurantName)
@@ -31,20 +31,18 @@ export default function AdminActivityLogPage() {
     return () => unsubscribeUsers();
   }, []);
 
-  // 2. Ambil data aktivitas sistem secara real-time (Hanya di-mount sekali)
+  // 2. Ambil data aktivitas sistem secara real-time
   useEffect(() => {
     const unsubscribeAlerts = ClientAlertModel.subscribeToAlerts("ALL", (snapshotData: AlertData[]) => {
       setRawAlerts(snapshotData);
     });
-
     return () => unsubscribeAlerts();
   }, []); 
 
-  // 3. Transformasi dan Mapping Data menggunakan useMemo agar tidak memicu re-render looping
+  // 3. Transformasi dan Mapping Data menggunakan useMemo agar tidak looping infinite re-render
   const logsData = useMemo(() => {
     let idx = 1;
     return rawAlerts.map((item) => {
-      // Penanganan konversi Timestamp yang aman dari null / undefined
       let timeStr = "-";
       if (item.createdAt) {
         const timestamp = typeof item.createdAt.toDate === "function" 
@@ -53,7 +51,6 @@ export default function AdminActivityLogPage() {
         timeStr = timestamp.toISOString().replace('T', ' ').substring(0, 16);
       }
       
-      // Cari nama restoran terhubung dari usersMap berdasarkan userId dokumen alert secara dinamis
       const currentRestaurantName = usersMap[item.userId] || item.restaurantName || "Sektor Restoran";
 
       return {
@@ -92,8 +89,8 @@ export default function AdminActivityLogPage() {
     setCurrentPage(1);
   }, [searchQuery, filterAction, filterActor, filterDate, pageSize]);
 
-  // Komponen Reusable untuk Pagination Controls (Atas & Bawah)
-  const renderPaginationControls = () => (
+  // Komponen Reusable untuk Pagination Controls
+  const PaginationControls = () => (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-slate-50 border-b border-t border-slate-200 text-slate-700 text-sm">
       <div className="flex items-center gap-2">
         <span>Tampilkan</span>
@@ -136,10 +133,7 @@ export default function AdminActivityLogPage() {
   );
 
   return (
-    <div 
-      className="flex bg-slate-50 min-h-screen font-sans text-slate-800 overflow-y-scroll" 
-      style={{ scrollbarGutter: "stable" }}
-    >
+    <div className="flex bg-slate-50 min-h-screen font-sans text-slate-800 overflow-y-scroll" style={{ scrollbarGutter: "stable" }}>
       <div className="print:hidden">
         <Sidebar role="admin" />
       </div>
@@ -148,18 +142,14 @@ export default function AdminActivityLogPage() {
         <Navbar title="Log Aktivitas Sistem" />
 
         <main className="md:ml-64 pt-24 px-8 pb-8 w-auto print:ml-0 print:p-0 transition-all flex-grow">
-          {/* Header Section */}
           <header className="mb-8 border-b border-slate-200 pb-5">
             <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Activity Log</h1>
             <p className="text-slate-500 text-sm mt-1">Daftar rekaman seluruh aktivitas krusial sistem otomatis serta tindakan penyesuaian administrator.</p>
           </header>
 
-          {/* Panel Kontrol Filter & Pencarian */}
           <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-6">
             <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
-              
               <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-                {/* 1. Filter Tanggal */}
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                   <input 
@@ -170,7 +160,6 @@ export default function AdminActivityLogPage() {
                   />
                 </div>
 
-                {/* 2. Filter Jenis Aksi */}
                 <select 
                   value={filterAction} 
                   onChange={(e) => setFilterAction(e.target.value)}
@@ -184,7 +173,6 @@ export default function AdminActivityLogPage() {
                   <option value="Firmware Diupdate">Firmware Diupdate</option>
                 </select>
 
-                {/* 3. Filter Pelaku */}
                 <select 
                   value={filterActor} 
                   onChange={(e) => setFilterActor(e.target.value)}
@@ -196,7 +184,6 @@ export default function AdminActivityLogPage() {
                 </select>
               </div>
 
-              {/* Bagian Kanan: Kotak Pencarian */}
               <div className="relative w-full lg:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
                 <input 
@@ -207,20 +194,16 @@ export default function AdminActivityLogPage() {
                   className="pl-9 pr-4 py-2 w-full bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-inner transition-all"
                 />
               </div>
-
             </div>
           </div>
 
-          {/* Container Tabel Utama */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            
             <div className="p-4 bg-amber-50/50 border-b border-slate-200 flex items-center gap-2.5 text-xs text-amber-800 font-medium">
               <Info size={15} className="text-amber-600 shrink-0" />
               <span>Catatan audit log bersifat <strong>Read-Only</strong>. Data ini disimpan permanen dan tidak dapat diedit atau dihapus demi pemenuhan validitas keamanan data platform.</span>
             </div>
 
-          {/* 1. Control Pagination Bagian Atas */}
-          {renderPaginationControls()}
+            <PaginationControls />
 
             <div className="overflow-x-auto">
               <table className="w-full text-left table-auto">
@@ -273,9 +256,7 @@ export default function AdminActivityLogPage() {
               </table>
             </div>
 
-          {/* 2. Control Pagination Bagian Bawah */}
-          {renderPaginationControls()}
-
+            <PaginationControls />
           </div>
         </main>
       </div>

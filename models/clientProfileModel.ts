@@ -1,5 +1,17 @@
 import { db, auth } from '@/lib/firebase';
-import { doc, getDoc, updateDoc, collection, query, where, orderBy, onSnapshot, setDoc, deleteDoc,Timestamp } from 'firebase/firestore';
+import { 
+  doc, 
+  getDoc, 
+  updateDoc, 
+  collection, 
+  query, 
+  where, 
+  orderBy, 
+  onSnapshot, 
+  setDoc, 
+  deleteDoc,
+  Timestamp 
+} from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 
 export interface UserProfile {
@@ -11,14 +23,14 @@ export interface UserProfile {
     open: string;
     close: string;
   };
-  phone?: string;          // Dibuat opsional agar fleksibel untuk profil Admin
-  plan?: 'basic' | 'pro';   // Dibuat opsional agar fleksibel untuk profil Admin
-  planExpiry?: Timestamp | null; // Menggunakan tipe data Timestamp spesifik dari origin/main
+  phone?: string;
+  plan?: 'basic' | 'pro';
+  planExpiry?: Timestamp | null;
   notifWhatsapp?: boolean;
   notifPush?: boolean;
   notifOnlyOperational?: boolean;
-  role?: string;           // Dipertahankan dari HEAD untuk deteksi multi-role
-  isActive?: boolean;      // Dipertahankan dari HEAD untuk status keaktifan admin/user
+  role?: string;
+  isActive?: boolean;
 }
 
 export interface AdminUser {
@@ -35,7 +47,6 @@ export interface SystemConfig {
 
 export const ClientProfileModel = {
   // === MANAJEMEN PROFIL MITRA RESTORAN ===
-  
   async getUserProfile(userId: string): Promise<UserProfile | null> {
     const userRef = doc(db, 'users', userId);
     const docSnap = await getDoc(userRef);
@@ -63,7 +74,7 @@ export const ClientProfileModel = {
     });
   },
 
-  // === MANAJEMEN SISTEM CONFIG (Hanya Menyimpan Parameter Global) ===
+  // === MANAJEMEN SISTEM CONFIG (Global Parameter) ===
   async getSystemConfig(): Promise<SystemConfig | null> {
     const docRef = doc(db, "systemConfig", "global");
     const snap = await getDoc(docRef);
@@ -73,23 +84,21 @@ export const ClientProfileModel = {
     return null;
   },
 
-  async saveSystemConfig(payload: Partial<SystemConfig>): Promise<void> {
+  async saveSystemConfig(payload: SystemConfig): Promise<void> {
     const docRef = doc(db, "systemConfig", "global");
     await setDoc(docRef, payload, { merge: true });
   },
 
-  // FIX VALIDASI: Mengeliminasi dokumen konfigurasi yang tidak memiliki field email agar card kosong hilang
   subscribeToAdmins(callback: (admins: AdminUser[]) => void) {
     const q = query(
       collection(db, "users"), 
       where("role", "==", "admin"),
-      orderBy("email") // Diperlukan orderBy agar validasi filter field firestore bekerja rapi
+      orderBy("email")
     );
     return onSnapshot(q, (snapshot) => {
       const admins: AdminUser[] = [];
       snapshot.forEach((doc) => {
         const data = doc.data();
-        // Memastikan hanya dokumen yang memiliki properti nama dan email valid yang dimasukkan ke list
         if (data.email && data.name) {
           admins.push({
             id: doc.id,
@@ -103,9 +112,9 @@ export const ClientProfileModel = {
     });
   },
 
-  // Pembuatan Akun Sub-Admin Baru Langsung Menembak Firebase Auth dan Masuk Koleksi 'users'
-  async createAdmin(data: any): Promise<void> {
+  async createAdmin(data: Omit<AdminUser, 'id'> & { password?: string }): Promise<void> {
     try {
+      if (!data.password) throw new Error("Password wajib diisi.");
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       const uid = userCredential.user.uid;
 
@@ -113,9 +122,8 @@ export const ClientProfileModel = {
       await setDoc(docRef, {
         name: data.name,
         email: data.email,
-        password: data.password,
         role: "admin", 
-        isActive: false, 
+        isActive: data.isActive ?? false, 
         createdAt: new Date()
       });
     } catch (error) {
@@ -124,7 +132,7 @@ export const ClientProfileModel = {
     }
   },
 
-  async updateAdmin(id: string, data: any): Promise<void> {
+  async updateAdmin(id: string, data: Partial<AdminUser>): Promise<void> {
     const docRef = doc(db, "users", id);
     await updateDoc(docRef, { ...data, updatedAt: new Date() });
   },
