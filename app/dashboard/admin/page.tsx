@@ -27,105 +27,173 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <div className="flex bg-slate-50 min-h-screen">
-      {/* Sidebar Navigation */}
+    <div className="flex bg-gray-50 min-h-screen">
       <Sidebar role="admin" />
 
-      {/* Main Content */}
-      <main className="ml-64 p-8 w-full">
-        {/* Header Section */}
-        <header className="flex justify-between items-center mb-10">
-          <div>
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight">Dashboard Admin</h1>
-            <p className="text-slate-500 text-sm">Pantau keamanan gas seluruh mitra restoran Aetheris.</p>
+      <main className="ml-64 p-6 w-full">
+        {/* Top Control Bar */}
+        <div className="flex items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-4">
+            <h2 className="text-2xl font-extrabold text-slate-900">Overview</h2>
+            <p className="text-sm text-slate-500">Real-time telemetry and operational status</p>
           </div>
-          
-          <div className="flex gap-3">
-            <div className="relative">
+
+          <div className="flex items-center gap-3">
+            <div className="relative hidden md:block">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-              <input 
-                type="text" 
-                placeholder="Cari restoran..." 
-                className="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all w-64"
+              <input
+                className="pl-10 pr-4 py-2 w-80 rounded-full border border-slate-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-slate-300"
+                placeholder="Search operations, sensors..."
               />
             </div>
-            <button className="bg-white p-2 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 transition-all">
-              <BellRing size={20} />
-            </button>
-          </div>
-        </header>
 
-        {/* Stats Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-          {stats.map((stat, i) => (
-            <div key={i} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow group">
-              <div className="flex justify-between items-start mb-4">
-                <div className={`${stat.bg} ${stat.color} p-3 rounded-xl transition-transform group-hover:scale-110`}>
-                  <stat.icon size={24} />
-                </div>
-                <button className="text-slate-300 hover:text-slate-600">
-                  <ArrowUpRight size={20} />
-                </button>
-              </div>
-              <div>
-                <p className="text-slate-500 text-sm font-medium uppercase tracking-wider">{stat.label}</p>
-                <p className="text-3xl font-black text-slate-800 mt-1">{stat.value}</p>
-              </div>
-            </div>
-          ))}
+            <button className="rounded-full bg-rose-50 text-rose-700 px-4 py-2 text-sm font-semibold border border-rose-100 shadow-sm">
+              Emergency Shutdown
+            </button>
+
+            <button className="rounded-full bg-black text-white px-4 py-2 text-sm font-medium shadow-sm">
+              Add Device
+            </button>
+
+            <button className="p-2 rounded-lg bg-white border border-slate-200">
+              <BellRing size={18} />
+            </button>
+            <button className="p-2 rounded-lg bg-white border border-slate-200">?</button>
+            <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center">OM</div>
+          </div>
         </div>
 
-        {/* Tables Section */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-            <h3 className="font-bold text-slate-800">Status Keamanan Restoran Terkini</h3>
-            <button className="text-blue-600 text-sm font-bold hover:underline">Lihat Semua</button>
+        {/* Top summary cards + content grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Summary cards row (3) */}
+            <div className="col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6">
+              {stats.map((stat, i) => (
+                <div key={i} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className={`${stat.bg} ${stat.color} p-2 rounded-md flex items-center justify-center`}>
+                        <stat.icon size={18} />
+                      </div>
+                      <span className="inline-flex items-center text-xs font-semibold text-slate-600 uppercase tracking-wide rounded-md px-2 py-1 bg-slate-50">{stat.label}</span>
+                    </div>
+                    <button className="text-slate-300"><ArrowUpRight size={20} /></button>
+                  </div>
+                  <div className="mt-2">
+                    <p className="text-3xl font-extrabold text-slate-900">{stat.value}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-slate-50 text-slate-500 text-[10px] uppercase font-bold tracking-[0.1em]">
-                <tr>
-                  <th className="px-6 py-4">Informasi Restoran</th>
-                  <th className="px-6 py-4">Lokasi</th>
-                  <th className="px-6 py-4">Kadar Gas</th>
-                  <th className="px-6 py-4">Status Keamanan</th>
-                  <th className="px-6 py-4"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {restaurants.map((res) => (
-                  <tr key={res.id} className="hover:bg-slate-50/50 transition-colors group">
-                    <td className="px-6 py-4">
-                      <p className="font-bold text-slate-800 text-sm">{res.name}</p>
-                      <p className="text-xs text-slate-400">ID: RES-00{res.id}</p>
-                    </td>
-                    <td className="px-6 py-4 text-slate-500 text-sm italic">{res.location}</td>
-                    <td className="px-6 py-4">
-                      <span className="font-mono font-bold text-slate-700">{res.level}</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-[10px] font-black flex items-center gap-1.5 w-fit ${
-                        res.status === "AMAN" ? "bg-emerald-100 text-emerald-700" : 
-                        res.status === "WASPADA" ? "bg-amber-100 text-amber-700" : "bg-rose-100 text-rose-700"
-                      }`}>
-                        <div className={`w-1.5 h-1.5 rounded-full ${
-                          res.status === "AMAN" ? "bg-emerald-500" : 
-                          res.status === "WASPADA" ? "bg-amber-500" : "bg-rose-500 animate-pulse"
-                        }`} />
-                        {res.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button className="text-slate-400 hover:text-slate-800 transition-colors">
-                        <MoreVertical size={18} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+
+          {/* Alerts Today card */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <div className="flex items-start justify-between mb-2">
+              <h4 className="text-sm font-bold text-slate-800">Alerts Today</h4>
+              <div className="text-xs text-slate-400">LAST SYNC: JUST NOW</div>
+            </div>
+            <div className="mt-4 text-3xl font-extrabold text-rose-600">12</div>
           </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            {/* Charts and table area */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                <h5 className="text-sm font-semibold text-slate-700 mb-4">Alert Trend (7 Days)</h5>
+                <div className="h-40 bg-gradient-to-b from-slate-50 to-white rounded" />
+              </div>
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+                <h5 className="text-sm font-semibold text-slate-700 mb-4">User Growth</h5>
+                <div className="h-40 bg-gradient-to-b from-slate-50 to-white rounded" />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+              <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                <h3 className="font-bold text-slate-800">Offline Sensors</h3>
+                <div className="text-sm text-slate-500">4 Items</div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead className="bg-slate-50 text-slate-500 text-[11px] uppercase font-bold tracking-wide">
+                    <tr>
+                      <th className="px-6 py-4">Sensor ID</th>
+                      <th className="px-6 py-4">Restaurant</th>
+                      <th className="px-6 py-4">Last Seen</th>
+                      <th className="px-6 py-4">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {restaurants.map((r) => (
+                      <tr key={r.id} className="group hover:bg-slate-50 transition-colors">
+                        <td className="px-6 py-4 font-mono font-bold">SN-49{r.id}</td>
+                        <td className="px-6 py-4">{r.name}</td>
+                        <td className="px-6 py-4 text-sm text-slate-500">2 hours ago</td>
+                        <td className="px-6 py-4 text-right"><button className="text-blue-600 font-medium">Diagnose</button></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          {/* Right column: Real-time Alerts */}
+          <aside className="space-y-4">
+            <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 sticky top-6">
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-bold text-slate-800">Real-time Alerts</h4>
+                <button className="text-slate-400">↻</button>
+              </div>
+              <div className="space-y-3">
+                <div className="border rounded-lg p-3 flex items-start gap-3 relative bg-white">
+                  <div className="absolute -left-1 top-3 h-10 w-1.5 bg-rose-500 rounded-md"></div>
+                  <div className="w-10 h-10 rounded-md bg-rose-50 flex items-center justify-center text-rose-600 font-bold">!</div>
+                  <div className="flex-1 pl-4">
+                    <div className="flex items-center justify-between">
+                      <div className="font-semibold">Kitchen Pusat - McD</div>
+                      <div className="text-xs text-rose-600 font-bold bg-rose-50 px-2 py-1 rounded-md">DANGER</div>
+                    </div>
+                    <div className="text-sm text-slate-500 mt-1">Exhaust hood temperature exceeded 85°C.</div>
+                    <div className="text-xs text-slate-400 mt-2">10 mins ago</div>
+                  </div>
+                </div>
+
+                <div className="border rounded-lg p-3 flex items-start gap-3 relative bg-white">
+                  <div className="absolute -left-1 top-3 h-10 w-1.5 bg-amber-500 rounded-md"></div>
+                  <div className="w-10 h-10 rounded-md bg-amber-50 flex items-center justify-center text-amber-600 font-bold">!</div>
+                  <div className="flex-1 pl-4">
+                    <div className="flex items-center justify-between">
+                      <div className="font-semibold">Cabang Sudirman</div>
+                      <div className="text-xs text-amber-600 font-bold bg-amber-50 px-2 py-1 rounded-md">WARNING</div>
+                    </div>
+                    <div className="text-sm text-slate-500 mt-1">Freezer ambient temp rising slowly (+2°C).</div>
+                    <div className="text-xs text-slate-400 mt-2">45 mins ago</div>
+                  </div>
+                </div>
+
+                <div className="border rounded-lg p-3 flex items-start gap-3 relative bg-white">
+                  <div className="absolute -left-1 top-3 h-10 w-1.5 bg-emerald-500 rounded-md"></div>
+                  <div className="w-10 h-10 rounded-md bg-emerald-50 flex items-center justify-center text-emerald-600 font-bold">✓</div>
+                  <div className="flex-1 pl-4">
+                    <div className="flex items-center justify-between">
+                      <div className="font-semibold">Wendy's - Blok M</div>
+                      <div className="text-xs text-emerald-600 font-bold bg-emerald-50 px-2 py-1 rounded-md">RESOLVED</div>
+                    </div>
+                    <div className="text-sm text-slate-500 mt-1">Gas valve pressure normalized.</div>
+                    <div className="text-xs text-slate-400 mt-2">2 hrs ago</div>
+                  </div>
+                </div>
+
+              </div>
+              <div className="mt-4 text-center">
+                <button className="text-sm text-slate-600 px-3 py-2 bg-slate-50 rounded">View All Activity Logs</button>
+              </div>
+            </div>
+          </aside>
         </div>
       </main>
     </div>
