@@ -92,8 +92,8 @@ export default function AdminActivityLogPage() {
     setCurrentPage(1);
   }, [searchQuery, filterAction, filterActor, filterDate, pageSize]);
 
-  // Komponen Reusable untuk Pagination Controls
-  const PaginationControls = () => (
+  // Komponen Reusable untuk Pagination Controls (Atas & Bawah)
+  const renderPaginationControls = () => (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-slate-50 border-b border-t border-slate-200 text-slate-700 text-sm">
       <div className="flex items-center gap-2">
         <span>Tampilkan</span>
@@ -219,7 +219,8 @@ export default function AdminActivityLogPage() {
               <span>Catatan audit log bersifat <strong>Read-Only</strong>. Data ini disimpan permanen dan tidak dapat diedit atau dihapus demi pemenuhan validitas keamanan data platform.</span>
             </div>
 
-            <PaginationControls />
+          {/* 1. Control Pagination Bagian Atas */}
+          {renderPaginationControls()}
 
             <div className="overflow-x-auto">
               <table className="w-full text-left table-auto">
@@ -272,7 +273,8 @@ export default function AdminActivityLogPage() {
               </table>
             </div>
 
-            <PaginationControls />
+          {/* 2. Control Pagination Bagian Bawah */}
+          {renderPaginationControls()}
 
           </div>
         </main>

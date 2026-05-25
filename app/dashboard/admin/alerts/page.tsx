@@ -130,7 +130,7 @@ export default function AdminAlertsPage() {
   };
 
   // Komponen Reusable untuk Pagination Controls (Atas & Bawah)
-  const PaginationControls = () => (
+  const renderPaginationControls = () => (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-slate-50 border-b border-t border-slate-200 print:hidden text-slate-700 text-sm">
       <div className="flex items-center gap-2">
         <span>Tampilkan</span>
@@ -265,10 +265,11 @@ export default function AdminAlertsPage() {
             </div>
           </div>
 
-          {/* Container Tabel Utama */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print:border-none print:shadow-none">
-            
-            <PaginationControls />
+        {/* Container Tabel Utama */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print:border-none print:shadow-none">
+          
+          {/* 1. Control Pagination Bagian Atas */}
+          {renderPaginationControls()}
 
             <div className="overflow-x-auto">
               <table className="w-full text-left table-auto">
@@ -329,7 +330,8 @@ export default function AdminAlertsPage() {
               </table>
             </div>
 
-            <PaginationControls />
+          {/* 2. Control Pagination Bagian Bawah */}
+          {renderPaginationControls()}
 
           </div>
         </main>
