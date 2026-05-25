@@ -8,7 +8,7 @@ interface NavbarProps {
 
 export default function Navbar({ title }: NavbarProps) {
   return (
-    <header className="fixed top-0 left-0 md:left-64 right-0 h-[73px] bg-white border-b border-slate-200 z-40 flex items-center justify-between px-6 md:px-8">
+    <header className="fixed top-0 left-0 md:left-64 right-0 h-[69px] bg-white border-b border-slate-200 z-40 flex items-center justify-between px-6 md:px-8">
       <h2 className="text-lg font-bold text-slate-800">{title}</h2>
       
       <div className="flex items-center gap-4">
