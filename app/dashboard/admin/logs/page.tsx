@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Sidebar from "@/app/components/Sidebar";
 import Navbar from "@/app/components/Navbar";
-import { ClientAlertModel, AlertData } from "@/models/clientAlertModel"; // Memanggil model alert terpusat
-import { ClientProfileModel } from "@/models/clientProfileModel"; // Memanggil model profil untuk lookup relasi
+import { ClientAlertModel, AlertData } from "@/models/clientAlertModel"; 
+import { ClientProfileModel } from "@/models/clientProfileModel"; 
 import { Search, Calendar, ChevronLeft, ChevronRight, Info } from "lucide-react";
 
 export default function AdminActivityLogPage() {
@@ -17,8 +17,8 @@ export default function AdminActivityLogPage() {
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Mengubah data dummy array ke State dinamis terikat model
-  const [logsData, setLogsData] = useState<any[]>([]);
+  // State mentah untuk menampung dokumen alerts dari model
+  const [rawAlerts, setRawAlerts] = useState<AlertData[]>([]);
   
   // State Kamus Peta LookUp Relasional (userId -> restaurantName)
   const [usersMap, setUsersMap] = useState<{ [uid: string]: string }>({});
@@ -31,53 +31,68 @@ export default function AdminActivityLogPage() {
     return () => unsubscribeUsers();
   }, []);
 
-  // 2. Ambil data aktivitas sistem secara real-time menggunakan fungsi model proyek
+  // 2. Ambil data aktivitas sistem secara real-time (Hanya di-mount sekali)
   useEffect(() => {
-    // Memanggil stream model dengan parameter "ALL" khusus untuk kebutuhan admin global
     const unsubscribeAlerts = ClientAlertModel.subscribeToAlerts("ALL", (snapshotData: AlertData[]) => {
-      let idx = 1;
-      const logs = snapshotData.map((item) => {
-        const timestamp = item.createdAt?.toDate ? item.createdAt.toDate() : new Date(item.createdAt);
-        const timeStr = item.createdAt ? timestamp.toISOString().replace('T', ' ').substring(0, 16) : "-";
-        
-        // Cari nama restoran terhubung dari usersMap berdasarkan userId dokumen alert
-        const currentRestaurantName = usersMap[item.userId] || item.restaurantName || "Sektor Restoran";
-
-        return {
-          id: `LOG-0${idx++}`,
-          time: timeStr,
-          actor: item.level === "danger" ? "Sistem" : "Admin",
-          action: item.level === "danger" ? "Threshold Diubah" : "Firmware Diupdate",
-          target: currentRestaurantName, // KONEKSI REAL DATABASE: Otomatis membaca nama restoran aktual
-          desc: item.message || "Pemicu otomatisasi deteksi sensor gas mitigasi bahaya",
-        };
-      });
-      
-      setLogsData(logs);
+      setRawAlerts(snapshotData);
     });
 
     return () => unsubscribeAlerts();
-  }, [usersMap]); // Me-re-run efek ketika data peta usersMap masuk agar nama langsung ter-render dinamis
+  }, []); 
 
-  // Logika Penyaringan / Filter Data secara Dinamis langsung dari State atas
-  const filteredLogs = logsData.filter((item) => {
-    const matchesSearch = 
-      item.target.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.desc.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesAction = filterAction === "ALL" || item.action === filterAction;
-    const matchesActor = filterActor === "ALL" || item.actor === filterActor;
-    const matchesDate = !filterDate || item.time.startsWith(filterDate);
+  // 3. Transformasi dan Mapping Data menggunakan useMemo agar tidak memicu re-render looping
+  const logsData = useMemo(() => {
+    let idx = 1;
+    return rawAlerts.map((item) => {
+      // Penanganan konversi Timestamp yang aman dari null / undefined
+      let timeStr = "-";
+      if (item.createdAt) {
+        const timestamp = typeof item.createdAt.toDate === "function" 
+          ? item.createdAt.toDate() 
+          : new Date(item.createdAt as any);
+        timeStr = timestamp.toISOString().replace('T', ' ').substring(0, 16);
+      }
+      
+      // Cari nama restoran terhubung dari usersMap berdasarkan userId dokumen alert secara dinamis
+      const currentRestaurantName = usersMap[item.userId] || item.restaurantName || "Sektor Restoran";
 
-    return matchesSearch && matchesAction && matchesActor && matchesDate;
-  });
+      return {
+        id: `LOG-0${idx++}`,
+        time: timeStr,
+        actor: item.level === "danger" ? "Sistem" : "Admin",
+        action: item.level === "danger" ? "Threshold Diubah" : "Firmware Diupdate",
+        target: currentRestaurantName,
+        desc: item.message || "Pemicu otomatisasi deteksi sensor gas mitigasi bahaya",
+      };
+    });
+  }, [rawAlerts, usersMap]);
+
+  // Logika Penyaringan / Filter Data secara Dinamis
+  const filteredLogs = useMemo(() => {
+    return logsData.filter((item) => {
+      const matchesSearch = 
+        item.target.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.desc.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesAction = filterAction === "ALL" || item.action === filterAction;
+      const matchesActor = filterActor === "ALL" || item.actor === filterActor;
+      const matchesDate = !filterDate || item.time.startsWith(filterDate);
+
+      return matchesSearch && matchesAction && matchesActor && matchesDate;
+    });
+  }, [logsData, searchQuery, filterAction, filterActor, filterDate]);
 
   // Logika Pemotongan Baris Data Per Halaman (Pagination)
   const indexOfLastRow = currentPage * pageSize;
   const indexOfFirstRow = indexOfLastRow - pageSize;
   const currentRows = filteredLogs.slice(indexOfFirstRow, indexOfLastRow);
 
-  // Komponen Reusable untuk Pagination Controls (Atas & Bawah)
+  // Reset ke halaman 1 jika filter berubah
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterAction, filterActor, filterDate, pageSize]);
+
+  // Komponen Reusable untuk Pagination Controls
   const PaginationControls = () => (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-slate-50 border-b border-t border-slate-200 text-slate-700 text-sm">
       <div className="flex items-center gap-2">
@@ -86,7 +101,6 @@ export default function AdminActivityLogPage() {
           value={pageSize}
           onChange={(e) => {
             setPageSize(Number(e.target.value));
-            setCurrentPage(1);
           }}
           className="bg-white border border-slate-300 rounded-lg px-2 py-1 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer transition-all"
         >
@@ -99,7 +113,7 @@ export default function AdminActivityLogPage() {
 
       <div className="flex items-center gap-4">
         <span className="text-xs text-slate-500 font-medium">
-          Menampilkan {indexOfFirstRow + 1} - {Math.min(indexOfLastRow, filteredLogs.length)} dari {filteredLogs.length} log
+          Menampilkan {filteredLogs.length === 0 ? 0 : indexOfFirstRow + 1} - {Math.min(indexOfLastRow, filteredLogs.length)} dari {filteredLogs.length} log
         </span>
         <div className="flex gap-1">
           <button 
@@ -130,7 +144,6 @@ export default function AdminActivityLogPage() {
         <Sidebar role="admin" />
       </div>
       
-      {/* Pembungkus layout utama satu arah kolom agar penempatan komponen Navbar teratur rapi */}
       <div className="flex flex-col flex-grow min-w-0">
         <Navbar title="Log Aktivitas Sistem" />
 
@@ -141,11 +154,10 @@ export default function AdminActivityLogPage() {
             <p className="text-slate-500 text-sm mt-1">Daftar rekaman seluruh aktivitas krusial sistem otomatis serta tindakan penyesuaian administrator.</p>
           </header>
 
-          {/* Panel Kontrol Filter & Pencarian (Dinamis Instan di Atas Tabel) */}
+          {/* Panel Kontrol Filter & Pencarian */}
           <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-6">
             <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
               
-              {/* Bagian Kiri: Urutan Filter */}
               <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
                 {/* 1. Filter Tanggal */}
                 <div className="relative">
@@ -202,7 +214,6 @@ export default function AdminActivityLogPage() {
           {/* Container Tabel Utama */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             
-            {/* Banner Informasi Read-Only Khas Audit Trail */}
             <div className="p-4 bg-amber-50/50 border-b border-slate-200 flex items-center gap-2.5 text-xs text-amber-800 font-medium">
               <Info size={15} className="text-amber-600 shrink-0" />
               <span>Catatan audit log bersifat <strong>Read-Only</strong>. Data ini disimpan permanen dan tidak dapat diedit atau dihapus demi pemenuhan validitas keamanan data platform.</span>
