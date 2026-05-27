@@ -4,9 +4,8 @@ import { useEffect, useState } from "react";
 import Sidebar from "@/app/components/Sidebar";
 import Navbar from "@/app/components/Navbar";
 import { ClientProfileModel, UserProfile } from "@/models/clientProfileModel";
-import { RefreshCw, ChevronRight, X, Save, Loader2 } from "lucide-react";
+import { RefreshCw, ChevronRight, X, Save, Loader2, Wifi, HelpCircle } from "lucide-react";
 
-// PERBAIKAN: Tambahkan tipe "phone" ke dalam modal
 type ModalType = "name" | "address" | "hours" | "phone" | null;
 
 export default function SettingsPage() {
@@ -20,7 +19,7 @@ export default function SettingsPage() {
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [editName, setEditName] = useState("");
   const [editAddress, setEditAddress] = useState("");
-  const [editPhone, setEditPhone] = useState(""); // ➔ Tambah state form phone
+  const [editPhone, setEditPhone] = useState("");
   const [editOpenHour, setEditOpenHour] = useState("08:00");
   const [editCloseHour, setEditCloseHour] = useState("22:00");
 
@@ -32,7 +31,7 @@ export default function SettingsPage() {
           setProfile(data);
           setEditName(data.restaurantName || "");
           setEditAddress(data.address || "");
-          setEditPhone(data.phone || ""); // ➔ Inisialisasi data phone
+          setEditPhone(data.phone || "");
           if (data.operationalHours) {
             setEditOpenHour(data.operationalHours.open || "08:00");
             setEditCloseHour(data.operationalHours.close || "22:00");
@@ -61,7 +60,6 @@ export default function SettingsPage() {
     }
   };
 
-  // Fungsi untuk menyimpan perubahan data modal ke Firestore
   const handleSaveChanges = async () => {
     if (!profile) return;
     setIsSaving(true);
@@ -70,7 +68,7 @@ export default function SettingsPage() {
 
     if (activeModal === "name") updatedFields = { restaurantName: editName };
     if (activeModal === "address") updatedFields = { address: editAddress };
-    if (activeModal === "phone") updatedFields = { phone: editPhone }; // ➔ Kondisi simpan phone
+    if (activeModal === "phone") updatedFields = { phone: editPhone };
     if (activeModal === "hours") {
       updatedFields = {
         operationalHours: { open: editOpenHour, close: editCloseHour }
@@ -171,14 +169,12 @@ export default function SettingsPage() {
               <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Notifikasi & Kontak</h3>
               <div className="space-y-4 text-xs">
                 
-                {/* WHATSAPP + TOMBOL EDIT NOMOR */}
                 <div className="flex justify-between items-center gap-4">
                   <div className="min-w-0">
                     <p className="font-bold text-slate-900">Notifikasi WhatsApp</p>
                     <p className="text-slate-400 mt-0.5 font-mono truncate">{profile?.phone || "+62 812-3456-7890"}</p>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
-                    {/* ➔ PERBAIKAN: Ditambahkan tombol Edit HP */}
                     <button 
                       onClick={() => setActiveModal("phone")}
                       className="px-2.5 py-1 bg-white border border-slate-200 rounded-lg font-bold hover:bg-slate-50 text-[11px] shadow-sm transition-all cursor-pointer border-none"
@@ -227,6 +223,30 @@ export default function SettingsPage() {
 
           {/* KOLOM KANAN */}
           <div className="space-y-6">
+
+            {/* ➔ TAMBAHAN UTAMA: KARTU INSTRUKSI PANDUAN PENGATURAN WI-FI UNTUK USER */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 md:p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <Wifi size={18} className="text-[#4A6741]" />
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Panduan Ganti Wi-Fi Perangkat</h3>
+              </div>
+              <div className="bg-[#F8FAFC] border border-slate-100 p-4 rounded-xl text-xs space-y-3 leading-relaxed text-slate-600">
+                <p className="font-bold text-slate-800">Jika Wi-Fi restoran Anda diganti atau berubah password:</p>
+                <ol className="list-decimal list-inside space-y-1.5 font-medium">
+                  <li>Perangkat sensor otomatis akan mendeteksi putusnya koneksi.</li>
+                  <li>Layar LCD pada alat akan menampilkan tulisan <span className="font-mono bg-slate-200 px-1 py-0.5 rounded text-[11px] font-bold text-slate-800">Wi-Fi Lost!</span></li>
+                  <li>Ambil HP Anda, buka pengaturan Wi-Fi, lalu sambungkan ke hotspot sementara bernama <span className="font-bold text-slate-900">"Aetheris-Setup"</span>.</li>
+                  <li>Halaman konfigurasi otomatis akan muncul di layar HP Anda.</li>
+                  <li>Pilih nama Wi-Fi baru Anda, masukkan kata sandi, lalu klik <span className="font-bold text-[#4A6741]">Save</span>.</li>
+                </ol>
+                <div className="flex items-start gap-2 pt-2 border-t border-slate-200/60 text-[11px] font-medium text-amber-700">
+                  <HelpCircle size={14} className="shrink-0 mt-0.5" />
+                  <span>Alat akan otomatis merestart dan terhubung kembali ke Dashboard tanpa perlu bongkar kode program!</span>
+                </div>
+              </div>
+            </div>
+
+            {/* KARTU PAKET LANGGANAN */}
             <div className="bg-white border border-slate-200 rounded-2xl p-5 md:p-6 shadow-sm">
               <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Paket Langganan</h3>
               <div className="bg-[#E9F2E4] border border-[#D1E2C7] p-4 rounded-xl mb-4">
@@ -248,23 +268,6 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 md:p-6 shadow-sm">
-              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Bantuan & Support</h3>
-              <div className="divide-y divide-slate-100 text-xs">
-                <button className="w-full flex justify-between items-center py-3.5 font-bold text-slate-700 hover:text-slate-900 group text-left border-none bg-transparent cursor-pointer">
-                  <span>Hubungi support teknis tim PBL</span>
-                  <ChevronRight size={16} className="text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-                </button>
-                <button className="w-full flex justify-between items-center py-3.5 font-bold text-slate-700 hover:text-slate-900 group text-left border-none bg-transparent cursor-pointer">
-                  <span>Panduan integrasi hardware ESP32</span>
-                  <ChevronRight size={16} className="text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-                </button>
-                <button className="w-full flex justify-between items-center py-3.5 font-bold text-slate-700 hover:text-slate-900 group text-left border-none bg-transparent cursor-pointer">
-                  <span>Pertanyaan umum infrastruktur (FAQ)</span>
-                  <ChevronRight size={16} className="text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-                </button>
-              </div>
-            </div>
           </div>
 
         </div>
@@ -312,7 +315,6 @@ export default function SettingsPage() {
                 </div>
               )}
 
-              {/* ➔ PERBAIKAN: Form Input Khusus Nomor HP */}
               {activeModal === "phone" && (
                 <div>
                   <label className="block text-[11px] font-bold uppercase text-slate-400 mb-1.5">Nomor WhatsApp Gateway</label>
@@ -323,7 +325,7 @@ export default function SettingsPage() {
                     onChange={(e) => setEditPhone(e.target.value)}
                     className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-slate-400 font-mono font-bold"
                   />
-                  <p className="text-[10px] text-slate-400 mt-1">Pastikan nomor aktif agar bot Fonnte / WhatsApp script dapat mengirim pesan dengan lancar.</p>
+                  <p className="text-[10px] text-slate-400 mt-1">Pastikan nomor aktif agar bot WhatsApp script dapat mengirim pesan dengan lancar.</p>
                 </div>
               )}
 
