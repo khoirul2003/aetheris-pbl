@@ -103,11 +103,11 @@ export default function AdminDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
                 <h5 className="text-sm font-semibold text-slate-700 mb-4">Alert Trend (7 Days)</h5>
-                <div className="h-40 bg-gradient-to-b from-slate-50 to-white rounded" />
+                <div className="h-40 bg-linear-to-b from-slate-50 to-white rounded" />
               </div>
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
                 <h5 className="text-sm font-semibold text-slate-700 mb-4">User Growth</h5>
-                <div className="h-40 bg-gradient-to-b from-slate-50 to-white rounded" />
+                <div className="h-40 bg-linear-to-b from-slate-50 to-white rounded" />
               </div>
             </div>
 
