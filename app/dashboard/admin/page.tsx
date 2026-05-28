@@ -180,7 +180,7 @@ export default function AdminDashboard() {
                   <div className="w-10 h-10 rounded-md bg-emerald-50 flex items-center justify-center text-emerald-600 font-bold">✓</div>
                   <div className="flex-1 pl-4">
                     <div className="flex items-center justify-between">
-                      <div className="font-semibold">Wendy's - Blok M</div>
+                      <div className="font-semibold">Wendys - Blok M</div>
                       <div className="text-xs text-emerald-600 font-bold bg-emerald-50 px-2 py-1 rounded-md">RESOLVED</div>
                     </div>
                     <div className="text-sm text-slate-500 mt-1">Gas valve pressure normalized.</div>
