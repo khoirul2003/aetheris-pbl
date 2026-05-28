@@ -1,5 +1,5 @@
 import { db } from '@/lib/firebase';
-import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, Timestamp } from 'firebase/firestore'; 
+import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, Timestamp, Query } from 'firebase/firestore'; 
 
 export interface AlertData {
   id: string;
@@ -13,17 +13,28 @@ export interface AlertData {
   message: string;
   isResolved: boolean;
   createdAt: Timestamp | null; 
+  restaurantName?: string; // Dipertahankan sebagai properti opsional untuk fallback data
 }
 
 export const ClientAlertModel = {
   // Langganan data log alert secara dinamis & real-time
   subscribeToAlerts(userId: string, callback: (alerts: AlertData[]) => void) {
     const alertsRef = collection(db, 'alerts');
-    const q = query(
-      alertsRef,
-      where('userId', '==', userId),
-      orderBy('createdAt', 'desc') 
-    );
+    
+    // FIX CI/CD: Mendukung parameter "ALL" agar admin bisa menarik seluruh data alert tanpa filter userId
+    let q: Query;
+    if (userId === "ALL") {
+      q = query(
+        alertsRef,
+        orderBy('createdAt', 'desc')
+      );
+    } else {
+      q = query(
+        alertsRef,
+        where('userId', '==', userId),
+        orderBy('createdAt', 'desc') 
+      );
+    }
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const alerts: AlertData[] = [];
@@ -38,7 +49,7 @@ export const ClientAlertModel = {
     return unsubscribe; 
   },
 
-  // Fungsi Baru: Mengubah status alert menjadi selesai ditangani di Firestore
+  // Fungsi Mengubah status alert menjadi selesai ditangani di Firestore
   async resolveAlertById(alertId: string): Promise<void> {
     try {
       const alertDocRef = doc(db, 'alerts', alertId);
