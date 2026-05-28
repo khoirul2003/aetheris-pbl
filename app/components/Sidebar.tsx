@@ -5,11 +5,15 @@ import {
   MapPin, 
   Bell, 
   BarChart2, 
+  Cpu,
+  Users,
   Settings,
   Flame,
   LogOut,
   ShieldAlert,
-  History
+  History,
+  Radio,
+  CreditCard,
 } from "lucide-react";
 import { auth } from "@/lib/firebase";
 import { useRouter, usePathname } from "next/navigation";
@@ -35,18 +39,22 @@ export default function Sidebar({ role, userEmail }: SidebarProps) {
 
   const isActive = (path: string) => pathname === path;
 
-  // Struktur Data Navigasi Dinamis agar tidak terjadi pengulangan kode (DRY)
+  // Struktur Data Navigasi Dinamis (Sudah menggabungkan menu baru dari branch-baihaqi)
   const menuItems = role === "admin" 
     ? [
-        { name: "Dashboard", path: "/dashboard/admin", icon: Home },
-        { name: "Alert", path: "/dashboard/admin/alerts", icon: ShieldAlert },
-        { name: "Analitik", path: "/dashboard/admin/analytics", icon: BarChart2 },
-        { name: "Activity", path: "/dashboard/admin/logs", icon: History },
-        { name: "Pengaturan", path: "/dashboard/admin/settings", icon: Settings },
+        { name: "Dashboard Admin", path: "/dashboard/admin", icon: Home },
+        { name: "Manajemen Sensor", path: "/dashboard/admin/sensors", icon: Radio },
+        { name: "Riwayat Alert", path: "/dashboard/admin/alerts", icon: ShieldAlert },
+        { name: "Laporan & Analitik", path: "/dashboard/admin/analytics", icon: BarChart2 },
+        { name: "Paket & Billing", path: "/dashboard/admin/subscriptions", icon: CreditCard },
+        { name: "Activity Log", path: "/dashboard/admin/logs", icon: History },
+        { name: "Manajemen User", path: "/dashboard/admin/users", icon: Users },
+        { name: "Manajemen Sistem", path: "/dashboard/admin/sensors-dev", icon: Cpu }, // Sesuai ikon Cpu punyamu
+        { name: "Pengaturan Admin", path: "/dashboard/admin/settings", icon: Settings },
       ]
     : [
         { name: "Beranda", path: "/dashboard/user", icon: Home },
-        { name: "Sensor", path: "/dashboard/user/sensors", icon: MapPin },
+        { name: "Area & Sensor", path: "/dashboard/user/sensors", icon: MapPin },
         { name: "Alert", path: "/dashboard/user/alerts", icon: Bell },
         { name: "Laporan", path: "/dashboard/user/reports", icon: BarChart2 },
         { name: "Pengaturan", path: "/dashboard/user/settings", icon: Settings },
@@ -85,7 +93,7 @@ export default function Sidebar({ role, userEmail }: SidebarProps) {
                     : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium"}`}
               >
                 <Icon size={18} strokeWidth={active ? 2.5 : 2} /> 
-                <span>{item.name === "Dashboard" && role === "admin" ? "Dashboard Admin" : item.name === "Alert" && role === "admin" ? "Riwayat Alert" : item.name === "Analitik" ? "Laporan & Analitik" : item.name === "Activity" ? "Activity Log" : item.name === "Pengaturan" && role === "admin" ? "Pengaturan Admin" : item.name === "Sensor" ? "Area & Sensor" : item.name}</span>
+                <span>{item.name}</span>
               </button>
             );
           })}
@@ -125,7 +133,7 @@ export default function Sidebar({ role, userEmail }: SidebarProps) {
             <button
               key={item.path}
               onClick={() => router.push(item.path)}
-              className={`flex flex-col items-center justify-center w-16 h-full gap-1 transition-all relative border-none bg-transparent cursor-pointer
+              className={`flex flex-col items-center justify-center flex-1 h-full gap-1 transition-all relative border-none bg-transparent cursor-pointer
                 ${active ? "text-blue-900 font-bold scale-105" : "text-slate-400 font-medium"}`}
             >
               {/* Garis Indikator Aktif di Atas Ikon */}
@@ -133,7 +141,7 @@ export default function Sidebar({ role, userEmail }: SidebarProps) {
                 <div className="absolute top-0 w-8 h-0.5 bg-blue-900 rounded-full animate-fade-in" />
               )}
               <Icon size={19} strokeWidth={active ? 2.5 : 2} />
-              <span className="text-[9px] tracking-tight">{item.name}</span>
+              <span className="text-[9px] tracking-tight truncate max-w-[60px]">{item.name.split(" ")[0]}</span>
             </button>
           );
         })}
@@ -141,7 +149,7 @@ export default function Sidebar({ role, userEmail }: SidebarProps) {
         {/* Tombol Logout Khusus Versi Mobile */}
         <button
           onClick={handleLogout}
-          className="flex flex-col items-center justify-center w-16 h-full gap-1 text-slate-400 hover:text-red-500 border-none bg-transparent cursor-pointer"
+          className="flex flex-col items-center justify-center w-14 h-full gap-1 text-slate-400 hover:text-red-500 border-none bg-transparent cursor-pointer"
         >
           <LogOut size={19} />
           <span className="text-[9px] tracking-tight">Keluar</span>
