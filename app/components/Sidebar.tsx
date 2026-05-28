@@ -1,10 +1,12 @@
 "use client";
 
-import {
-  Home,
-  MapPin,
-  Bell,
-  BarChart2,
+import { 
+  Home, 
+  MapPin, 
+  Bell, 
+  BarChart2, 
+  Cpu,
+  Users,
   Settings,
   Flame,
   LogOut,
@@ -157,6 +159,28 @@ export default function Sidebar({ role, userEmail }: SidebarProps) {
                 strokeWidth={isActive("/dashboard/admin/logs") ? 2.5 : 2}
               />
               <span>Activity Log</span>
+            </button>
+
+            <button 
+              onClick={() => router.push("/dashboard/admin/users")}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all text-sm cursor-pointer
+                ${isActive("/dashboard/admin/users") 
+                  ? "bg-slate-100 text-slate-900 font-semibold shadow-sm" 
+                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium"}`}
+            >
+              <Users size={18} strokeWidth={isActive("/dashboard/admin/users") ? 2.5 : 2} /> 
+              <span>Manajemen User</span>
+            </button>
+
+            <button 
+              onClick={() => router.push("/dashboard/admin/sensors")}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all text-sm cursor-pointer
+                ${isActive("/dashboard/admin/sensors") 
+                  ? "bg-slate-100 text-slate-900 font-semibold shadow-sm" 
+                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium"}`}
+            >
+              <Cpu size={18} strokeWidth={isActive("/dashboard/admin/sensors") ? 2.5 : 2} /> 
+              <span>Manajemen Sensor</span>
             </button>
 
             <button
