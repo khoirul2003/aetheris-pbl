@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { 
-  ShieldAlert, 
+
   Wifi, 
   Smartphone, 
   BarChart3, 
@@ -261,7 +261,7 @@ export default function LandingPage() {
               </div>
               <div className="py-3 flex justify-between">
                 <span>3. Transmisi Cloud Firebase</span>
-                <span className="text-blue-400">Status Node Berubah "danger"</span>
+                <span className="text-blue-400">Status Node Berubah &quot;danger&quot;</span>
               </div>
               <div className="py-3 flex justify-between">
                 <span>4. Alert Dashboard Web</span>
