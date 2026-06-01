@@ -1,66 +1,451 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import Sidebar from "@/app/components/Sidebar";
-import { 
-  Activity, 
-  AlertTriangle, 
-  ArrowUpRight, 
+import {
+  collection,
+  onSnapshot,
+  type Timestamp,
+} from "firebase/firestore";
+import { onValue, ref } from "firebase/database";
+import {
+  AlertTriangle,
+  ArrowUpRight,
   Bell,
   Building2,
   Download,
   MoreVertical,
   Radio,
   Search,
-  WifiOff
+  WifiOff,
 } from "lucide-react";
+import { db, getRtdb } from "@/lib/firebase";
+
+interface UserDoc {
+  id: string;
+  name?: string;
+  email?: string;
+  restaurantName?: string;
+  role?: string;
+  createdAt?: Timestamp | Date | null;
+}
+
+interface SensorDoc {
+  id: string;
+  userId?: string;
+  name?: string;
+  location?: string;
+  isActive?: boolean;
+  isOnline?: boolean;
+  lastOnline?: Timestamp | Date | number | null;
+}
+
+interface AlertDoc {
+  id: string;
+  userId?: string;
+  sensorName?: string;
+  restaurantName?: string;
+  location?: string;
+  level?: "warning" | "danger" | string;
+  message?: string;
+  isResolved?: boolean;
+  createdAt?: Timestamp | Date | number | null;
+}
+
+interface SubscriptionLog {
+  id: string;
+  restaurantName?: string;
+  packageName?: string;
+  paymentStatus?: "paid" | "pending" | "expired" | string;
+  amount?: number;
+  startDate?: Timestamp | Date | number | null;
+  endDate?: Timestamp | Date | number | null;
+}
+
+interface LiveSensorStatus {
+  gas?: number;
+  temperature?: number;
+  humidity?: number;
+  status?: string;
+  isOnline?: boolean;
+  lastUpdate?: number;
+}
+
+interface DashboardStat {
+  label: string;
+  value: string;
+  detail: string;
+  icon: typeof Building2;
+  tone: "blue" | "emerald" | "amber" | "rose";
+}
+
+interface AlertTrendPoint {
+  day: string;
+  value: number;
+}
+
+interface UserTrendPoint {
+  month: string;
+  value: number;
+}
+
+function toDate(value: AlertDoc["createdAt"] | SubscriptionLog["startDate"] | SensorDoc["lastOnline"] | UserDoc["createdAt"]): Date | null {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (typeof value === "number") return new Date(value);
+  if (typeof value === "object" && "toDate" in value) {
+    return value.toDate();
+  }
+  return null;
+}
+
+function formatRelativeTime(value: SensorDoc["lastOnline"] | number | null | undefined) {
+  const date = toDate(value ?? null);
+  if (!date) return "Tidak tersedia";
+
+  const diffMinutes = Math.max(1, Math.round((Date.now() - date.getTime()) / 60000));
+  if (diffMinutes < 60) {
+    return `${diffMinutes} menit lalu`;
+  }
+
+  const diffHours = Math.round(diffMinutes / 60);
+  if (diffHours < 24) {
+    return `${diffHours} jam lalu`;
+  }
+
+  const diffDays = Math.round(diffHours / 24);
+  return `${diffDays} hari lalu`;
+}
+
+function formatCurrency(amount: number) {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+function getRestaurantName(userId: string | undefined, restaurantNameByUserId: Record<string, string>) {
+  if (!userId) return "Restoran Mitra";
+  return restaurantNameByUserId[userId] || "Restoran Mitra";
+}
+
+function getMonthKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function getMonthLabel(date: Date) {
+  return new Intl.DateTimeFormat("id-ID", { month: "short" }).format(date);
+}
+
+function getDayLabel(date: Date) {
+  return new Intl.DateTimeFormat("id-ID", { weekday: "short" }).format(date).slice(0, 3);
+}
+
+function getStartOfDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function getLastNDays(count: number) {
+  const days: { key: string; label: string; date: Date }[] = [];
+  const today = new Date();
+  for (let offset = count - 1; offset >= 0; offset -= 1) {
+    const date = new Date(today);
+    date.setDate(today.getDate() - offset);
+    days.push({ key: getMonthKey(date) + `-${date.getDate()}`, label: getDayLabel(date), date });
+  }
+  return days;
+}
+
+function buildPath(values: number[], width: number, height: number) {
+  const max = Math.max(...values, 1);
+  const step = width / Math.max(values.length - 1, 1);
+  return values
+    .map((value, index) => {
+      const x = step * index;
+      const y = height - (value / max) * height;
+      return `${index === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+}
+
+function SectionHeading({
+  title,
+  description,
+  compact = false,
+}: {
+  title: string;
+  description?: string;
+  compact?: boolean;
+}) {
+  return (
+    <div>
+      <h3 className={`font-bold text-slate-900 ${compact ? "text-sm" : "text-lg"}`}>{title}</h3>
+      {description ? <p className="mt-1 text-xs text-slate-400">{description}</p> : null}
+    </div>
+  );
+}
+
+function ChartPanel({
+  title,
+  accent,
+  data,
+  labels,
+}: {
+  title: string;
+  accent: "blue" | "rose" | "emerald";
+  data: number[];
+  labels: string[];
+}) {
+  const accentClass =
+    accent === "blue"
+      ? "bg-blue-500"
+      : accent === "emerald"
+        ? "bg-emerald-500"
+        : "bg-rose-500";
+
+  return (
+    <div className="rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm">
+      <div className="mb-5 flex items-center justify-between gap-4">
+        <SectionHeading title={title} description="Data diambil langsung dari Firestore." />
+      </div>
+      <div className="flex h-56 items-end gap-2 border-b border-l border-slate-200 px-2 pt-4 text-[10px] text-slate-400">
+        {data.map((value, index) => (
+          <div key={labels[index] ?? index} className="group flex h-full min-w-8 flex-1 flex-col items-center justify-end gap-2">
+            <div className="flex w-full items-end justify-center gap-1">
+              <div
+                className={`${accentClass} relative flex-1 rounded-t-md transition-all group-hover:opacity-90`}
+                style={{ height: `${Math.max(8, value)}%` }}
+              >
+                <span className="absolute -top-6 left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded bg-slate-900 px-1.5 py-0.5 font-sans text-[9px] text-white opacity-0 transition-opacity group-hover:opacity-100 sm:block">
+                  {value}
+                </span>
+              </div>
+            </div>
+            <span className="font-medium text-slate-500">{labels[index]}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function AdminDashboard() {
-  const stats = [
-    { label: "Total Restoran", value: "124", delta: "+4%", tone: "blue", icon: Building2 },
-    { label: "Sensor Aktif", value: "1,562", delta: "Healthy", tone: "emerald", icon: Radio },
-    { label: "Alert Hari Ini", value: "18", delta: "Warning", tone: "amber", icon: Bell },
-    { label: "Sensor Offline", value: "5", delta: "Danger", tone: "rose", icon: WifiOff },
-  ] as const;
+  const [users, setUsers] = useState<UserDoc[]>([]);
+  const [sensors, setSensors] = useState<SensorDoc[]>([]);
+  const [alerts, setAlerts] = useState<AlertDoc[]>([]);
+  const [subscriptionLogs, setSubscriptionLogs] = useState<SubscriptionLog[]>([]);
+  const [liveSensors, setLiveSensors] = useState<Record<string, LiveSensorStatus>>({});
 
-  const warnings = [
-    {
-      name: "Steak House Central",
-      message: "High Temp Anomaly di Ruang Pendingin B",
-      badge: "BAHAYA",
-      badgeTone: "rose",
-      action: "Investigasi",
-      icon: AlertTriangle,
-    },
-    {
-      name: "Pasta Palace",
-      message: "Low Humidity Alert di Area Gudang Kering",
-      badge: "WASPADA",
-      badgeTone: "amber",
-      action: "Investigasi",
-      icon: Activity,
-    },
-    {
-      name: "The Burger Joint",
-      message: "Power Outage pada Panel Utama",
-      badge: "BAHAYA",
-      badgeTone: "rose",
-      action: "Investigasi",
-      icon: WifiOff,
-    },
-  ] as const;
+  useEffect(() => {
+    const unsubUsers = onSnapshot(collection(db, "users"), (snapshot) => {
+      setUsers(snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...(docSnap.data() as Omit<UserDoc, "id">) })));
+    });
 
-  const chartLabels = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
-  const alertBars = [34, 26, 52, 30, 68, 42, 58];
-  const userBars = [22, 28, 18, 40, 52, 66, 78];
+    const unsubSensors = onSnapshot(collection(db, "sensors"), (snapshot) => {
+      setSensors(snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...(docSnap.data() as Omit<SensorDoc, "id">) })));
+    });
 
-  const revenueBars = [
-    { label: "Jan", value: 28 },
-    { label: "Feb", value: 34 },
-    { label: "Mar", value: 26 },
-    { label: "Apr", value: 48 },
-    { label: "Mei", value: 62 },
-    { label: "Jun", value: 74 },
-  ];
+    const unsubAlerts = onSnapshot(collection(db, "alerts"), (snapshot) => {
+      setAlerts(snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...(docSnap.data() as Omit<AlertDoc, "id">) })));
+    });
+
+    const unsubSubscriptions = onSnapshot(collection(db, "userSubscriptions"), (snapshot) => {
+      setSubscriptionLogs(
+        snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...(docSnap.data() as Omit<SubscriptionLog, "id">) })),
+      );
+    });
+
+    const liveRef = ref(getRtdb(), "sensorLive");
+    const unsubLive = onValue(liveRef, (snapshot) => {
+      setLiveSensors((snapshot.val() as Record<string, LiveSensorStatus>) || {});
+    });
+
+    return () => {
+      unsubUsers();
+      unsubSensors();
+      unsubAlerts();
+      unsubSubscriptions();
+      unsubLive();
+    };
+  }, []);
+
+  const restaurantUsers = useMemo(
+    () => users.filter((user) => user.role === "user" || Boolean(user.restaurantName)),
+    [users],
+  );
+
+  const restaurantNameByUserId = useMemo(() => {
+    return restaurantUsers.reduce<Record<string, string>>((mapping, user) => {
+      mapping[user.id] = user.restaurantName || user.name || "Restoran Mitra";
+      return mapping;
+    }, {});
+  }, [restaurantUsers]);
+
+  const dashboardStats: DashboardStat[] = useMemo(() => {
+    const activeSensorCount = sensors.filter((sensor) => {
+      const live = liveSensors[sensor.id];
+      const effectiveOnline = typeof live?.isOnline === "boolean" ? live.isOnline : sensor.isOnline !== false;
+      return sensor.isActive !== false && effectiveOnline;
+    }).length;
+
+    const offlineSensorCount = sensors.filter((sensor) => {
+      const live = liveSensors[sensor.id];
+      const effectiveOnline = typeof live?.isOnline === "boolean" ? live.isOnline : sensor.isOnline !== false;
+      return !effectiveOnline;
+    }).length;
+
+    const today = getStartOfDay(new Date());
+    const todayAlertCount = alerts.filter((alert) => {
+      const alertDate = toDate(alert.createdAt);
+      return Boolean(alertDate && alertDate >= today);
+    }).length;
+
+    return [
+      {
+        label: "Total restoran terdaftar",
+        value: String(restaurantUsers.length),
+        detail: `${restaurantUsers.filter((user) => user.role === "user").length} akun mitra aktif`,
+        icon: Building2,
+        tone: "blue",
+      },
+      {
+        label: "Total sensor aktif",
+        value: String(activeSensorCount),
+        detail: `${sensors.length} sensor terhubung di platform`,
+        icon: Radio,
+        tone: "emerald",
+      },
+      {
+        label: "Total alert hari ini",
+        value: String(todayAlertCount),
+        detail: `${alerts.filter((alert) => alert.level === "danger").length} berstatus bahaya`,
+        icon: Bell,
+        tone: "amber",
+      },
+      {
+        label: "Total sensor offline",
+        value: String(offlineSensorCount),
+        detail: `${Math.max(0, sensors.length - offlineSensorCount)} sensor online`,
+        icon: WifiOff,
+        tone: "rose",
+      },
+    ];
+  }, [alerts, liveSensors, restaurantUsers.length, sensors]);
+
+  const realtimeRestaurants = useMemo(() => {
+    const activeAlerts = alerts
+      .filter((alert) => (alert.level === "warning" || alert.level === "danger") && alert.isResolved !== true)
+      .sort((left, right) => {
+        const rightDate = toDate(right.createdAt)?.getTime() || 0;
+        const leftDate = toDate(left.createdAt)?.getTime() || 0;
+        return rightDate - leftDate;
+      });
+
+    const unique = new Map<string, AlertDoc & { restaurant: string }>();
+    activeAlerts.forEach((alert) => {
+      const restaurant = alert.restaurantName || getRestaurantName(alert.userId, restaurantNameByUserId);
+      if (!unique.has(restaurant)) {
+        unique.set(restaurant, { ...alert, restaurant });
+      }
+    });
+
+    return Array.from(unique.values()).slice(0, 4).map((item) => ({
+      restaurant: item.restaurant,
+      location: item.location || item.sensorName || "Lokasi tidak tersedia",
+      status: item.level === "danger" ? "BAHAYA" : "WASPADA",
+      tone: item.level === "danger" ? "rose" : "amber",
+      message: item.message || "Butuh peninjauan operator",
+    }));
+  }, [alerts, restaurantNameByUserId]);
+
+  const alertTrend = useMemo<AlertTrendPoint[]>(() => {
+    const days = getLastNDays(7);
+    return days.map((day) => {
+      const count = alerts.filter((alert) => {
+        const alertDate = toDate(alert.createdAt);
+        if (!alertDate) return false;
+        return getMonthKey(alertDate) === getMonthKey(day.date) && alertDate.getDate() === day.date.getDate();
+      }).length;
+
+      return {
+        day: day.label,
+        value: count,
+      };
+    });
+  }, [alerts]);
+
+  const userGrowthTrend = useMemo<UserTrendPoint[]>(() => {
+    const buckets = new Map<string, UserTrendPoint>();
+    const today = new Date();
+
+    for (let offset = 5; offset >= 0; offset -= 1) {
+      const date = new Date(today.getFullYear(), today.getMonth() - offset, 1);
+      const key = getMonthKey(date);
+      buckets.set(key, { month: getMonthLabel(date), value: 0 });
+    }
+
+    restaurantUsers.forEach((user) => {
+      const createdAt = toDate(user.createdAt);
+      if (!createdAt) return;
+      const key = getMonthKey(createdAt);
+      if (buckets.has(key)) {
+        buckets.get(key)!.value += 1;
+      }
+    });
+
+    return Array.from(buckets.values());
+  }, [restaurantUsers]);
+
+  const offlineSensorRows = useMemo(() => {
+    return sensors
+      .map((sensor) => {
+        const live = liveSensors[sensor.id];
+        const effectiveOnline = typeof live?.isOnline === "boolean" ? live.isOnline : sensor.isOnline !== false;
+        const restaurant = getRestaurantName(sensor.userId, restaurantNameByUserId);
+        const lastSeen = sensor.lastOnline ?? live?.lastUpdate ?? null;
+
+        return {
+          sensor: sensor.name || sensor.id,
+          restaurant,
+          lastOnline: formatRelativeTime(lastSeen),
+          isOffline: !effectiveOnline,
+        };
+      })
+      .filter((row) => row.isOffline)
+      .slice(0, 5);
+  }, [liveSensors, restaurantNameByUserId, sensors]);
+
+  const monthlyRevenue = useMemo(() => {
+    const monthKey = getMonthKey(new Date());
+    const paidLogs = subscriptionLogs.filter((log) => {
+      if (log.paymentStatus !== "paid") return false;
+      const paymentDate = toDate(log.startDate) || toDate(log.endDate);
+      return paymentDate ? getMonthKey(paymentDate) === monthKey : true;
+    });
+
+    const total = paidLogs.reduce((sum, log) => sum + Number(log.amount || 0), 0);
+
+    const byPackage = paidLogs.reduce<Record<string, number>>((accumulator, log) => {
+      const key = log.packageName || "unknown";
+      accumulator[key] = (accumulator[key] || 0) + Number(log.amount || 0);
+      return accumulator;
+    }, {});
+
+    return {
+      total,
+      paidCount: paidLogs.length,
+      pendingCount: subscriptionLogs.filter((log) => log.paymentStatus === "pending").length,
+      byPackage,
+    };
+  }, [subscriptionLogs]);
+
+  const alertValues = alertTrend.map((entry) => entry.value);
+  const userValues = userGrowthTrend.map((entry) => entry.value);
+  const alertPath = buildPath(alertValues.length ? alertValues : [0], 340, 120);
+  const userPath = buildPath(userValues.length ? userValues : [0], 340, 120);
+  const maxAlertValue = Math.max(...alertValues, 1);
+  const maxUserValue = Math.max(...userValues, 1);
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#f4f6ff] text-slate-900">
@@ -76,6 +461,7 @@ export default function AdminDashboard() {
               <div>
                 <p className="text-[13px] font-semibold tracking-tight text-slate-500">Admin Dashboard</p>
                 <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900">Beranda</h1>
+                <p className="mt-1 text-sm text-slate-500">Semua angka di bawah ini diambil langsung dari Firestore dan Realtime Database.</p>
               </div>
 
               <div className="flex w-full flex-col gap-3 lg:w-auto lg:flex-row lg:items-center">
@@ -93,7 +479,7 @@ export default function AdminDashboard() {
                 </button>
 
                 <button className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-slate-900 text-white shadow-sm">
-                  OM
+                  AD
                 </button>
               </div>
             </div>
@@ -103,8 +489,8 @@ export default function AdminDashboard() {
             <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
               <div>
                 <SectionHeading
-                  title="Beranda"
-                  description="Ringkasan operasional platform monitoring industri hari ini."
+                  title="Ringkasan platform"
+                  description="Kondisi operasional platform monitoring industri hari ini."
                 />
               </div>
 
@@ -115,9 +501,8 @@ export default function AdminDashboard() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {stats.map((stat) => {
+              {dashboardStats.map((stat) => {
                 const Icon = stat.icon;
-
                 const accentClass =
                   stat.tone === "blue"
                     ? "border-t-blue-500"
@@ -137,13 +522,16 @@ export default function AdminDashboard() {
                         : "border-rose-500 text-rose-700 bg-rose-50";
 
                 return (
-                  <div key={stat.label} className={`rounded-xl border border-slate-200 bg-white p-5 shadow-[0_1px_0_rgba(15,23,42,0.03)] border-t-4 ${accentClass}`}>
+                  <div
+                    key={stat.label}
+                    className={`rounded-xl border border-slate-200 bg-white p-5 shadow-[0_1px_0_rgba(15,23,42,0.03)] border-t-4 ${accentClass}`}
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">{stat.label}</p>
                         <div className="mt-4 flex items-end gap-3">
                           <p className="text-4xl font-extrabold tracking-tight text-slate-900">{stat.value}</p>
-                          <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${pillClass}`}>{stat.delta}</span>
+                          <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${pillClass}`}>{stat.detail}</span>
                         </div>
                       </div>
 
@@ -168,7 +556,7 @@ export default function AdminDashboard() {
                       </div>
                       <SectionHeading
                         title="Restoran dalam Bahaya/Waspada"
-                        description="Ringkasan lokasi yang membutuhkan tindakan cepat."
+                        description="Lokasi yang membutuhkan tindakan cepat, diurutkan dari kejadian terbaru."
                         compact
                       />
                     </div>
@@ -180,79 +568,104 @@ export default function AdminDashboard() {
                   </div>
 
                   <div className="mt-5 space-y-3">
-                    {warnings.map((item) => {
-                      const Icon = item.icon;
-                      const badgeClass = item.badgeTone === "rose" ? "bg-rose-50 text-rose-600" : "bg-amber-50 text-amber-600";
+                    {realtimeRestaurants.length > 0 ? (
+                      realtimeRestaurants.map((item) => {
+                        const badgeClass =
+                          item.tone === "rose" ? "bg-rose-50 text-rose-600" : "bg-amber-50 text-amber-600";
 
-                      return (
-                        <div key={item.name} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                          <div className="flex items-start gap-3">
-                            <div className="mt-1 flex h-9 w-9 items-center justify-center rounded-lg bg-slate-50 text-slate-500">
-                              <Icon size={16} />
-                            </div>
+                        return (
+                          <div key={`${item.restaurant}-${item.location}`} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                            <div className="flex items-start gap-3">
+                              <div className="mt-1 flex h-9 w-9 items-center justify-center rounded-lg bg-slate-50 text-slate-500">
+                                <AlertTriangle size={16} />
+                              </div>
 
-                            <div className="min-w-0 flex-1">
-                              <div className="flex flex-wrap items-center justify-between gap-2">
-                                <div>
-                                  <h4 className="font-semibold text-slate-900">{item.name}</h4>
-                                  <p className="mt-1 text-sm text-slate-600">{item.message}</p>
-                                </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <div>
+                                    <h4 className="font-semibold text-slate-900">{item.restaurant}</h4>
+                                    <p className="mt-1 text-sm text-slate-600">{item.message}</p>
+                                    <p className="mt-1 text-xs text-slate-500">{item.location}</p>
+                                  </div>
 
-                                <div className="flex items-center gap-2">
-                                  <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${badgeClass}`}>{item.badge}</span>
-                                  <button className="text-sm font-semibold text-blue-600">{item.action}</button>
+                                  <div className="flex items-center gap-2">
+                                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${badgeClass}`}>{item.status}</span>
+                                    <button className="text-sm font-semibold text-blue-600">Investigasi</button>
+                                  </div>
                                 </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })
+                    ) : (
+                      <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">
+                        Belum ada restoran dalam kondisi bahaya atau waspada.
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 <div className="rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm">
                   <div className="flex items-start justify-between gap-3">
-                    <SectionHeading title="Ringkasan Pendapatan Bulan Ini" compact />
+                    <SectionHeading title="Ringkasan Pendapatan Bulan Ini" description="Dihitung dari log pembayaran Firestore." compact />
                     <button className="text-slate-400 transition-colors hover:text-slate-600">
                       <MoreVertical size={18} />
                     </button>
                   </div>
 
                   <div className="mt-10">
-                    <p className="text-4xl font-extrabold tracking-tight text-blue-600">Rp 452M</p>
-                    <p className="mt-2 text-sm text-slate-600">Total Tagihan Berjalan</p>
+                    <p className="text-4xl font-extrabold tracking-tight text-blue-600">
+                      {formatCurrency(monthlyRevenue.total)}
+                    </p>
+                    <p className="mt-2 text-sm text-slate-600">{monthlyRevenue.paidCount} pembayaran paid bulan ini</p>
                   </div>
 
                   <div className="mt-8 border-t border-slate-200 pt-5">
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <p className="text-sm font-semibold text-slate-600">Bulan Lalu</p>
-                        <p className="mt-1 text-sm font-semibold text-slate-600">Pertumbuhan</p>
+                        <p className="text-sm font-semibold text-slate-600">Payment pending</p>
+                        <p className="mt-1 text-sm font-semibold text-slate-600">Subscription logs</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-bold text-slate-900">Rp 410M</p>
-                        <p className="mt-1 text-sm font-semibold text-emerald-600">↗ 10.2%</p>
+                        <p className="text-sm font-bold text-slate-900">{monthlyRevenue.pendingCount} pending</p>
+                        <p className="mt-1 text-sm font-semibold text-emerald-600">Live Firestore data</p>
                       </div>
                     </div>
 
                     <div className="mt-5 grid grid-cols-6 gap-3">
-                      {revenueBars.map((bar) => (
-                        <div key={bar.label} className="flex flex-col items-center gap-2">
-                          <div className="flex h-32 w-full items-end justify-center rounded-xl bg-slate-50 px-2 py-2">
-                            <div className="w-full rounded-t-lg bg-blue-200" style={{ height: `${bar.value}%` }} />
+                      {Object.entries(monthlyRevenue.byPackage).length > 0 ? (
+                        Object.entries(monthlyRevenue.byPackage).slice(0, 6).map(([packageName, amount]) => (
+                          <div key={packageName} className="flex flex-col items-center gap-2">
+                            <div className="flex h-32 w-full items-end justify-center rounded-xl bg-slate-50 px-2 py-2">
+                              <div className="w-full rounded-t-lg bg-blue-200" style={{ height: `${Math.min(100, Math.max(18, (amount / Math.max(monthlyRevenue.total, 1)) * 100))}%` }} />
+                            </div>
+                            <span className="text-[11px] font-semibold text-slate-500">{packageName}</span>
                           </div>
-                          <span className="text-[11px] font-semibold text-slate-500">{bar.label}</span>
+                        ))
+                      ) : (
+                        <div className="col-span-6 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
+                          Belum ada log pembayaran untuk bulan ini.
                         </div>
-                      ))}
+                      )}
                     </div>
                   </div>
                 </div>
               </div>
 
               <div className="grid gap-5 md:grid-cols-2">
-                <ChartPanel title="Grafik Alert (7 Hari Terakhir)" accent="rose" bars={alertBars} labels={chartLabels} />
-                <ChartPanel title="Pertumbuhan User Baru" accent="blue" bars={userBars} labels={chartLabels} />
+                <ChartPanel
+                  title="Grafik Alert 7 Hari Terakhir"
+                  accent="rose"
+                  data={alertTrend.map((entry) => Math.max(10, Math.round((entry.value / maxAlertValue) * 100)))}
+                  labels={alertTrend.map((entry) => entry.day)}
+                />
+                <ChartPanel
+                  title="Pertumbuhan User Baru per Bulan"
+                  accent="blue"
+                  data={userGrowthTrend.map((entry) => Math.max(10, Math.round((entry.value / maxUserValue) * 100)))}
+                  labels={userGrowthTrend.map((entry) => entry.month)}
+                />
               </div>
 
               <div className="rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm">
@@ -260,169 +673,104 @@ export default function AdminDashboard() {
                   <div>
                     <SectionHeading
                       title="Sensor Offline"
-                      description="Perangkat yang belum mengirim data dalam dua jam terakhir."
-                      compact
+                      description="Sensor yang tidak terhubung beserta restoran terakhir yang terdeteksi."
                     />
                   </div>
-                  <span className="rounded-full bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500">5 items</span>
+                  <span className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-600">
+                    {offlineSensorRows.length} item
+                  </span>
                 </div>
 
                 <div className="mt-5 overflow-hidden rounded-xl border border-slate-200">
-                  <div className="grid grid-cols-[1.2fr_1.6fr_1fr_0.8fr] bg-slate-50 px-4 py-3 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
-                    <span>Sensor ID</span>
-                    <span>Restaurant</span>
-                    <span>Last Seen</span>
-                    <span className="text-right">Action</span>
-                  </div>
-                  <div className="divide-y divide-slate-200 bg-white">
-                    {[
-                      { id: "SN-491", name: "Restoran Padang Restu", lastSeen: "2 hours ago" },
-                      { id: "SN-492", name: "Bakso Solo Baru", lastSeen: "2 hours ago" },
-                      { id: "SN-493", name: "Ayam Kita Tlogomas", lastSeen: "2 hours ago" },
-                      { id: "SN-494", name: "Lalapan Purnama", lastSeen: "2 hours ago" },
-                    ].map((row) => (
-                      <div key={row.id} className="grid grid-cols-[1.2fr_1.6fr_1fr_0.8fr] items-center px-4 py-4 text-sm transition-colors hover:bg-slate-50">
-                        <span className="font-mono font-bold text-slate-900">{row.id}</span>
-                        <span className="text-slate-700">{row.name}</span>
-                        <span className="text-slate-500">{row.lastSeen}</span>
-                        <div className="text-right">
-                          <button className="font-semibold text-blue-600">Diagnose</button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
+                    <thead className="bg-slate-50 text-slate-500">
+                      <tr>
+                        <th className="px-4 py-3 font-semibold">Nama sensor</th>
+                        <th className="px-4 py-3 font-semibold">Restoran</th>
+                        <th className="px-4 py-3 font-semibold">Terakhir online</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 bg-white text-slate-700">
+                      {offlineSensorRows.length > 0 ? (
+                        offlineSensorRows.map((sensor) => (
+                          <tr key={sensor.sensor}>
+                            <td className="px-4 py-4 font-medium text-slate-900">{sensor.sensor}</td>
+                            <td className="px-4 py-4">{sensor.restaurant}</td>
+                            <td className="px-4 py-4 text-slate-500">{sensor.lastOnline}</td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={3} className="px-4 py-8 text-center text-sm text-slate-500">
+                            Semua sensor sedang online.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
 
-            <aside className="space-y-5 lg:sticky lg:top-6 lg:self-start">
+            <div className="space-y-5 lg:col-span-1">
               <div className="rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm">
-                <div className="flex items-center justify-between gap-3">
-                  <SectionHeading title="Real-time Alerts" compact />
-                  <button className="text-slate-400 transition-colors hover:text-slate-600">
-                    <MoreVertical size={18} />
-                  </button>
-                </div>
-
-                <div className="mt-5 space-y-3">
-                  {[
-                    {
-                      title: "Kitchen Pusat - McD",
-                      status: "DANGER",
-                      statusTone: "rose",
-                      message: "Exhaust hood temperature exceeded 85°C.",
-                      time: "10 mins ago",
-                    },
-                    {
-                      title: "Cabang Sudirman",
-                      status: "WARNING",
-                      statusTone: "amber",
-                      message: "Freezer ambient temp rising slowly (+2°C).",
-                      time: "45 mins ago",
-                    },
-                    {
-                      title: "Wendy&apos;s - Blok M",
-                      status: "RESOLVED",
-                      statusTone: "emerald",
-                      message: "Gas valve pressure normalized.",
-                      time: "2 hrs ago",
-                    },
-                  ].map((item) => {
-                    const statusClass =
-                      item.statusTone === "rose"
-                        ? "bg-rose-50 text-rose-600"
-                        : item.statusTone === "amber"
-                          ? "bg-amber-50 text-amber-600"
-                          : "bg-emerald-50 text-emerald-600";
-
-                    const edgeClass =
-                      item.statusTone === "rose"
-                        ? "bg-rose-500"
-                        : item.statusTone === "amber"
-                          ? "bg-amber-500"
-                          : "bg-emerald-500";
-
-                    return (
-                      <div key={item.title} className="relative overflow-hidden rounded-xl border border-slate-200 bg-white p-3.5">
-                        <div className={`absolute left-0 top-3 h-10 w-1.5 rounded-r-md ${edgeClass}`} />
-                        <div className="flex items-start gap-3 pl-2">
-                          <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${statusClass}`}>
-                            {item.statusTone === "emerald" ? "✓" : "!"}
+                <SectionHeading
+                  title="Restoran dalam kondisi realtime"
+                  description="Data diambil dari alert Firestore terbaru yang belum terselesaikan."
+                />
+                <div className="mt-4 space-y-3">
+                  {realtimeRestaurants.length > 0 ? (
+                    realtimeRestaurants.slice(0, 3).map((item) => (
+                      <div key={item.restaurant} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="font-semibold text-slate-900">{item.restaurant}</p>
+                            <p className="mt-1 text-sm text-slate-600">{item.message}</p>
                           </div>
-
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center justify-between gap-3">
-                              <p className="font-semibold text-slate-900">{item.title}</p>
-                              <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${statusClass}`}>{item.status}</span>
-                            </div>
-                            <p className="mt-1 text-sm text-slate-500">{item.message}</p>
-                            <p className="mt-2 text-xs text-slate-400">{item.time}</p>
-                          </div>
+                          <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${item.tone === "rose" ? "bg-rose-50 text-rose-600" : "bg-amber-50 text-amber-600"}`}>
+                            {item.status}
+                          </span>
                         </div>
                       </div>
-                    );
-                  })}
+                    ))
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm text-slate-500">
+                      Tidak ada kondisi darurat aktif saat ini.
+                    </div>
+                  )}
                 </div>
-
-                <button className="mt-4 w-full rounded-xl bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-100">
-                  View All Activity Logs
-                </button>
               </div>
-            </aside>
+
+              <div className="rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm">
+                <SectionHeading
+                  title="Status platform"
+                  description="Cuplikan singkat data terkini dari live database."
+                />
+                <div className="mt-4 space-y-3 text-sm">
+                  <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+                    <span className="text-slate-600">Total alert aktif</span>
+                    <span className="font-semibold text-slate-900">{alerts.filter((alert) => alert.isResolved !== true).length}</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+                    <span className="text-slate-600">Total user mitra</span>
+                    <span className="font-semibold text-slate-900">{restaurantUsers.length}</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+                    <span className="text-slate-600">Sensor live online</span>
+                    <span className="font-semibold text-slate-900">
+                      {sensors.filter((sensor) => {
+                        const live = liveSensors[sensor.id];
+                        const effectiveOnline = typeof live?.isOnline === "boolean" ? live.isOnline : sensor.isOnline !== false;
+                        return sensor.isActive !== false && effectiveOnline;
+                      }).length}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </section>
         </div>
       </main>
-    </div>
-  );
-}
-
-function ChartPanel({
-  title,
-  accent,
-  bars,
-  labels,
-}: {
-  title: string;
-  accent: "rose" | "blue";
-  bars: number[];
-  labels: string[];
-}) {
-  return (
-    <div className="rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm">
-      <SectionHeading title={title} compact />
-
-      <div className="mt-5 flex h-56 items-end gap-4 rounded-xl bg-slate-50 px-5 py-5">
-        {bars.map((bar, index) => (
-          <div key={labels[index]} className="flex flex-1 flex-col items-center justify-end gap-2">
-            <div className="flex h-full w-full items-end justify-center">
-              <div
-                className={`w-full max-w-12 rounded-t-lg ${accent === "rose" ? "bg-rose-200" : "bg-blue-200"}`}
-                style={{ height: `${bar}%` }}
-              />
-            </div>
-            <span className="text-[11px] font-semibold text-slate-500">{labels[index]}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function SectionHeading({
-  title,
-  description,
-  compact = false,
-}: {
-  title: string;
-  description?: string;
-  compact?: boolean;
-}) {
-  return (
-    <div className={compact ? "min-w-0" : ""}>
-      <h3 className={compact ? "text-sm font-bold tracking-tight text-slate-900" : "text-2xl font-extrabold tracking-tight text-slate-900"}>
-        {title}
-      </h3>
-      {description ? <p className={compact ? "mt-1 text-sm text-slate-500" : "mt-1 text-sm text-slate-600"}>{description}</p> : null}
     </div>
   );
 }
