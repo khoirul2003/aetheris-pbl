@@ -6,23 +6,52 @@ import { db } from "@/lib/firebase";
 import { collection, query, orderBy, onSnapshot, where, getDocs, doc, updateDoc } from "firebase/firestore";
 import { MoreHorizontal } from "lucide-react";
 
+// Struktur Tipe Data untuk Keamanan TypeScript
+interface SensorData {
+  id: string;
+  name?: string;
+  location?: string;
+  userId?: string;
+  isOnline?: boolean;
+  condition?: string;
+  gas?: number;
+  firmwareVersion?: string;
+  disabled?: boolean;
+  lastSeen?: { seconds: number };
+}
+
+interface AlertData {
+  id: string;
+  message?: string;
+  level?: string;
+  createdAt?: { seconds: number };
+}
+
+interface UserData {
+  name?: string;
+  displayName?: string;
+}
+
 export default function AdminSensorsPage() {
-  const [sensors, setSensors] = useState<any[]>([]);
+  const [sensors, setSensors] = useState<SensorData[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [connFilter, setConnFilter] = useState<string | "">("");
-  const [condFilter, setCondFilter] = useState<string | "">("");
-  const [ownerFilter, setOwnerFilter] = useState<string | "">("");
-  const [owners, setOwners] = useState<Record<string,string>>({});
-  const [selected, setSelected] = useState<any | null>(null);
+  const [connFilter, setConnFilter] = useState<string>("");
+  const [condFilter, setCondFilter] = useState<string>("");
+  const [ownerFilter, setOwnerFilter] = useState<string>("");
+  const [owners, setOwners] = useState<Record<string, string>>({});
+  const [selected, setSelected] = useState<SensorData | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [detailAlerts, setDetailAlerts] = useState<any[]>([]);
+  const [detailAlerts, setDetailAlerts] = useState<AlertData[]>([]);
 
   useEffect(() => {
     const q = query(collection(db, "sensors"), orderBy("name", "asc"));
     const unsub = onSnapshot(q, (snap) => {
-      const rows: any[] = [];
-      snap.forEach(d => rows.push({ id: d.id, ...d.data() }));
+      const rows: SensorData[] = [];
+      snap.forEach(d => {
+        const data = d.data() as Omit<SensorData, 'id'>;
+        rows.push({ id: d.id, ...data });
+      });
       setSensors(rows);
       setLoading(false);
     }, (err) => { console.error(err); setLoading(false); });
@@ -31,8 +60,11 @@ export default function AdminSensorsPage() {
     (async () => {
       try {
         const uSnap = await getDocs(collection(db, "users"));
-        const map: Record<string,string> = {};
-        uSnap.forEach(d => { const data = d.data() as any; map[d.id] = data.name || data.displayName || d.id; });
+        const map: Record<string, string> = {};
+        uSnap.forEach(d => { 
+          const data = d.data() as UserData; 
+          map[d.id] = data.name || data.displayName || d.id; 
+        });
         setOwners(map);
       } catch (err) {
         console.error(err);
@@ -50,33 +82,35 @@ export default function AdminSensorsPage() {
     return matchesSearch && matchesConn && matchesCond && matchesOwner;
   });
 
-  async function openDetail(sensor: any) {
+  async function openDetail(sensor: SensorData) {
     setSelected(sensor);
     setDetailLoading(true);
     try {
       const aQ = query(collection(db, "alerts"), where("sensorId", "==", sensor.id), orderBy("createdAt", "desc"));
       const aSnap = await getDocs(aQ);
-      const alerts: any[] = [];
-      aSnap.forEach(d => alerts.push({ id: d.id, ...d.data() }));
-      setDetailAlerts(alerts.slice(0,10));
+      const alerts: AlertData[] = [];
+      aSnap.forEach(d => {
+        const data = d.data() as Omit<AlertData, 'id'>;
+        alerts.push({ id: d.id, ...data });
+      });
+      setDetailAlerts(alerts.slice(0, 10));
     } catch (err) { console.error(err); }
     setDetailLoading(false);
   }
 
-  async function toggleSensor(sensor: any) {
+  async function toggleSensor(sensor: SensorData) {
     try {
       const ref = doc(db, "sensors", sensor.id);
       await updateDoc(ref, { disabled: !sensor.disabled });
     } catch (err) { console.error(err); }
   }
 
-  async function updateFirmware(sensor: any) {
+  async function updateFirmware(sensor: SensorData) {
     try {
       const ref = doc(db, "sensors", sensor.id);
-      // placeholder: bump firmware version string
       const curr = sensor.firmwareVersion || "v1";
       const match = curr.match(/v(\d+)/);
-      const next = match ? `v${parseInt(match[1],10)+1}` : curr + "-b";
+      const next = match ? `v${parseInt(match[1], 10) + 1}` : curr + "-b";
       await updateDoc(ref, { firmwareVersion: next });
     } catch (err) { console.error(err); }
   }
@@ -158,7 +192,7 @@ export default function AdminSensorsPage() {
                   <tr key={s.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4 font-semibold text-slate-800">{s.name || s.id}</td>
                     <td className="px-6 py-4 text-sm text-slate-500">{s.location || '-'}</td>
-                    <td className="px-6 py-4 text-sm">{owners[s.userId] || s.userId}</td>
+                    <td className="px-6 py-4 text-sm">{s.userId ? (owners[s.userId] || s.userId) : '-'}</td>
                     <td className="px-6 py-4 text-sm">{s.isOnline ? 'Online' : 'Offline'}</td>
                     <td className="px-6 py-4 text-sm">{s.gas ?? '-'} PPM</td>
                     <td className="px-6 py-4 text-sm">{s.firmwareVersion || '-'}</td>
@@ -216,7 +250,7 @@ export default function AdminSensorsPage() {
                           {detailAlerts.map(a => (
                             <li key={a.id} className="p-2 rounded bg-slate-50">
                               <div className="flex items-center justify-between">
-                                <div className="font-semibold">{a.message?.slice?.(0,60) || 'Alert'}</div>
+                                <div className="font-semibold">{a.message?.slice?.(0, 60) || 'Alert'}</div>
                                 <div className="text-xs text-slate-400">{a.createdAt ? new Date(a.createdAt.seconds * 1000).toLocaleString('id-ID') : '-'}</div>
                               </div>
                               <div className="text-xs text-slate-500 mt-1">Level: {a.level || 'warning'}</div>
@@ -233,7 +267,7 @@ export default function AdminSensorsPage() {
                       <div className="text-sm text-slate-700">
                         <div><strong>Firmware:</strong> {selected.firmwareVersion || '-'}</div>
                         <div><strong>Last Seen:</strong> {selected.lastSeen ? new Date(selected.lastSeen.seconds * 1000).toLocaleString('id-ID') : '-'}</div>
-                        <div><strong>Owner:</strong> {owners[selected.userId] || selected.userId}</div>
+                        <div><strong>Owner:</strong> {selected.userId ? (owners[selected.userId] || selected.userId) : '-'}</div>
                       </div>
                     </div>
                   </aside>

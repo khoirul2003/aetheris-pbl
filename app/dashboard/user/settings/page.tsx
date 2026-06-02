@@ -235,7 +235,7 @@ export default function SettingsPage() {
                 <ol className="list-decimal list-inside space-y-1.5 font-medium">
                   <li>Perangkat sensor otomatis akan mendeteksi putusnya koneksi.</li>
                   <li>Layar LCD pada alat akan menampilkan tulisan <span className="font-mono bg-slate-200 px-1 py-0.5 rounded text-[11px] font-bold text-slate-800">Wi-Fi Lost!</span></li>
-                  <li>Ambil HP Anda, buka pengaturan Wi-Fi, lalu sambungkan ke hotspot sementara bernama <span className="font-bold text-slate-900">"Aetheris-Setup"</span>.</li>
+                  <li>Ambil HP Anda, buka pengaturan Wi-Fi, lalu sambungkan ke hotspot sementara bernama <span className="font-bold text-slate-900">&quot;Aetheris-Setup&quot;</span>.</li>
                   <li>Halaman konfigurasi otomatis akan muncul di layar HP Anda.</li>
                   <li>Pilih nama Wi-Fi baru Anda, masukkan kata sandi, lalu klik <span className="font-bold text-[#4A6741]">Save</span>.</li>
                 </ol>
