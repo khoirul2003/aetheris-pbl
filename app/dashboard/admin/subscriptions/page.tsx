@@ -112,7 +112,7 @@ export default function AdminSubscriptionsManagementPage() {
       });
 
       alert(
-        `Tier paket baru "${newPackage.name.toUpperCase()}" berhasil didaftarkan ke Firestore!`,
+        `Tier paket baru "${newPackage.name.toUpperCase()}" berhasil didaftarkan!`,
       );
       setShowAddForm(false);
       setNewPackage({

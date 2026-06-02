@@ -14,6 +14,7 @@ import {
   History,
   Radio,
   CreditCard,
+  Receipt,
 } from "lucide-react";
 import { auth } from "@/lib/firebase";
 import { useRouter, usePathname } from "next/navigation";
@@ -142,7 +143,24 @@ export default function Sidebar({ role, userEmail }: SidebarProps) {
                   isActive("/dashboard/admin/subscriptions") ? 2.5 : 2
                 }
               />
-              <span>Paket & Billing</span>
+              <span>Paket Langganan</span>
+            </button>
+
+            <button
+              onClick={() => router.push("/dashboard/admin/billing")}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all text-sm cursor-pointer
+                ${
+                  isActive("/dashboard/admin/billing")
+                    ? "bg-slate-100 text-slate-900 font-semibold shadow-sm"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium"
+                }`}
+            >
+              <Receipt
+                size={18}
+                strokeWidth={
+                  isActive("dashboard/admin/billing") ? 2.5 : 2}
+              />
+              <span>Billing User</span>
             </button>
 
             <button
