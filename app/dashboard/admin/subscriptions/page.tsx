@@ -21,6 +21,7 @@ import {
   DollarSign,
   Zap,
 } from "lucide-react";
+import { Timestamp } from "firebase/firestore";
 
 export default function AdminSubscriptionsManagementPage() {
   const [packages, setPackages] = useState<SubscriptionPackage[]>([]);
@@ -144,7 +145,7 @@ export default function AdminSubscriptionsManagementPage() {
       currentEnd.setDate(currentEnd.getDate() + 30);
 
       await ClientSubscriptionModel.updateUserSubscription(log.id, {
-        endDate: currentEnd,
+        endDate: Timestamp.fromDate(currentEnd),
         paymentStatus: "paid",
       });
       alert("Masa berlaku paket user berhasil diperpanjang!");
@@ -345,110 +346,124 @@ export default function AdminSubscriptionsManagementPage() {
             )}
 
             {/* CARD LIST PAKET */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {packages.map((pkg) => (
-                <div
-                  key={pkg.id}
-                  className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between space-y-5 hover:shadow-md transition-shadow relative overflow-hidden"
-                >
-                  {pkg.isActive && (
-                    <div className="absolute top-0 right-0 w-16 h-16 pointer-events-none overflow-hidden">
-                      <div className="absolute transform rotate-45 bg-blue-500 text-white text-[8px] font-bold text-center py-0.5 w-24 top-2 -right-6 shadow-sm">
-                        ACTIVE
-                      </div>
-                    </div>
-                  )}
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-bold text-slate-900 text-base">
-                          {pkg.name}
-                        </h4>
-                        <p className="text-[11px] text-slate-400 font-medium mt-0.5">
-                          ID:{" "}
-                          <span className="font-mono text-slate-500">
-                            {pkg.id}
-                          </span>
-                        </p>
-                      </div>
-                      <span
-                        className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${pkg.isActive ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-slate-50 text-slate-400 border-slate-100"}`}
-                      >
-                        {pkg.isActive ? "OPERASIONAL" : "NONAKTIF"}
-                      </span>
-                    </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {packages.map((pkg) => {
+                const isPro =
+                  pkg.id?.toLowerCase() === "pro" ||
+                  pkg.name?.toLowerCase() === "pro";
 
-                    <div className="bg-slate-50 p-3.5 rounded-xl grid grid-cols-2 gap-4 text-xs font-medium text-slate-600">
-                      <div>
-                        <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">
-                          Kuota Maks
+                return (
+                  <div
+                    key={pkg.id}
+                    className={`relative bg-white rounded-3xl p-8 border transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${
+                      isPro
+                        ? "border-blue-500 shadow-lg"
+                        : "border-slate-200 shadow-sm"
+                    }`}
+                  >
+                    {isPro && (
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                        <span className="bg-blue-600 text-white text-xs font-bold px-4 py-1.5 rounded-full">
+                          PALING POPULER
                         </span>
-                        <p className="text-slate-900 font-bold mt-0.5">
-                          {pkg.maxSensors} Perangkat
-                        </p>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">
-                          Masa Log Histori
-                        </span>
-                        <p className="text-slate-900 font-bold mt-0.5">
-                          {pkg.historyDurationDays} Hari Log
-                        </p>
-                      </div>
-                    </div>
-
-                    <p className="text-2xl font-mono font-black text-slate-900 flex items-baseline gap-1">
-                      Rp {pkg.price.toLocaleString("id-ID")}
-                      <span className="text-xs font-normal text-slate-400 font-sans font-medium">
-                        / bulan
-                      </span>
-                    </p>
-
-                    {pkg.features && pkg.features.length > 0 && (
-                      <div className="space-y-1.5 pt-1">
-                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
-                          Fitur Utama Tier:
-                        </span>
-                        <div className="flex flex-wrap gap-1.5">
-                          {pkg.features.map((feat, idx) => (
-                            <span
-                              key={idx}
-                              className="bg-blue-50/50 text-blue-700 border border-blue-100/50 px-2 py-0.5 rounded-lg text-[10px] font-semibold flex items-center gap-1"
-                            >
-                              <Check
-                                size={10}
-                                strokeWidth={3}
-                                className="text-blue-500"
-                              />{" "}
-                              {feat}
-                            </span>
-                          ))}
-                        </div>
                       </div>
                     )}
+
+                    <div className="mb-6">
+                      <h3 className="text-2xl font-bold text-slate-900">
+                        {pkg.name}
+                      </h3>
+
+                      <p className="text-slate-500 text-sm mt-1">
+                        Paket Langganan
+                      </p>
+                    </div>
+
+                    <div className="mb-8">
+                      <div className="flex items-end gap-2">
+                        <span className="text-4xl font-black text-slate-900">
+                          Rp {pkg.price.toLocaleString("id-ID")}
+                        </span>
+                      </div>
+
+                      <p className="text-slate-500 mt-1">
+                        per bulan
+                      </p>
+                    </div>
+
+                    <div className="space-y-4 mb-8">
+                      <div className="flex items-center gap-3">
+                        <Check size={18} className="text-green-500" />
+                        <span>
+                          Maksimal {pkg.maxSensors} Sensor
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <Check size={18} className="text-green-500" />
+                        <span>
+                          Riwayat Data {pkg.historyDurationDays} Hari
+                        </span>
+                      </div>
+
+                      {pkg.features?.map((feature, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center gap-3"
+                        >
+                          <Check
+                            size={18}
+                            className="text-green-500"
+                          />
+                          <span>{feature}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingPack(pkg);
+                          setPackPrice(pkg.price);
+                          setPackMaxSensors(pkg.maxSensors);
+                        }}
+                        className="flex-1 py-3 rounded-xl border border-slate-300 hover:bg-slate-50 font-semibold flex items-center justify-center gap-2"
+                      >
+                        <Edit size={16} />
+                        Edit
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleTogglePackActive(pkg)}
+                        className={`flex-1 py-3 rounded-xl font-semibold ${
+                          pkg.isActive
+                            ? "bg-red-50 text-red-600 border border-red-200"
+                            : "bg-green-50 text-green-600 border border-green-200"
+                        }`}
+                      >
+                        {pkg.isActive ? "Nonaktifkan" : "Aktifkan"}
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex gap-3 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingPack(pkg);
-                        setPackPrice(pkg.price);
-                        setPackMaxSensors(pkg.maxSensors);
-                      }}
-                      className="flex-1 bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                    >
-                      <Edit size={13} /> Edit Spek
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleTogglePackActive(pkg)}
-                      className={`flex-1 text-xs font-bold py-2.5 rounded-xl border transition-colors cursor-pointer ${pkg.isActive ? "bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100/60" : "bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100/60"}`}
-                    >
-                      {pkg.isActive ? "Nonaktifkan" : "Aktifkan Tier"}
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
+
+              <button
+                onClick={() => setShowAddForm(true)}
+                className="bg-white rounded-3xl border-2 border-dashed border-slate-300 min-h-[420px] flex flex-col justify-center items-center gap-4 hover:border-blue-500 hover:bg-blue-50 transition-all"
+              >
+                <Plus size={48} className="text-slate-500" />
+
+                <span className="font-semibold text-slate-600 text-lg">
+                  Tambah Paket
+                </span>
+
+                <span className="text-sm text-slate-400">
+                  Buat paket langganan baru
+                </span>
+              </button>
             </div>
           </section>
 
