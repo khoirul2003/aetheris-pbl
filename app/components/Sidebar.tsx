@@ -141,7 +141,7 @@ export default function Sidebar({ role, userEmail }: SidebarProps) {
                 <div className="absolute top-0 w-8 h-0.5 bg-blue-900 rounded-full animate-fade-in" />
               )}
               <Icon size={19} strokeWidth={active ? 2.5 : 2} />
-              <span className="text-[9px] tracking-tight truncate max-w-[60px]">{item.name.split(" ")[0]}</span>
+              <span className="text-[9px] tracking-tight truncate max-w-15">{item.name.split(" ")[0]}</span>
             </button>
           );
         })}
