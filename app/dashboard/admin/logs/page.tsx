@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import Sidebar from "@/app/components/Sidebar";
-import Navbar from "@/app/components/Navbar";
+import AdminLayout from "@/src/components/layout/AdminLayout";
 import { ClientAlertModel, AlertData } from "@/models/clientAlertModel"; 
 import { ClientProfileModel } from "@/models/clientProfileModel"; 
 import { Search, Calendar, ChevronLeft, ChevronRight, Info } from "lucide-react";
@@ -125,19 +124,11 @@ export default function AdminActivityLogPage() {
   );
 
   return (
-    <div className="flex bg-slate-50 min-h-screen font-sans text-slate-800 overflow-y-scroll" style={{ scrollbarGutter: "stable" }}>
-      <div className="print:hidden">
-        <Sidebar role="admin" />
-      </div>
-      
-      <div className="flex flex-col flex-grow min-w-0">
-        <Navbar title="Log Aktivitas Sistem" />
-
-        <main className="ml-0 md:ml-64 pt-24 px-8 pb-8 w-auto print:ml-0 print:p-0 transition-all flex-grow">
-          <header className="mb-8 border-b border-slate-200 pb-5">
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Activity Log</h1>
-            <p className="text-slate-500 text-sm mt-1">Daftar rekaman seluruh aktivitas krusial sistem otomatis serta tindakan penyesuaian administrator.</p>
-          </header>
+    <AdminLayout
+      title="Log Aktivitas Sistem"
+      description="Daftar rekaman seluruh aktivitas krusial sistem otomatis serta tindakan penyesuaian administrator."
+    >
+      <div className="space-y-6">
 
           <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-6">
             <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
@@ -238,8 +229,7 @@ export default function AdminActivityLogPage() {
 
             {renderPaginationControls()}
           </div>
-        </main>
       </div>
-    </div>
+    </AdminLayout>
   );
 }

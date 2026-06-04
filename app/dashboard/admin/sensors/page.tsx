@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Sidebar from "@/app/components/Sidebar";
+import AdminLayout from "@/src/components/layout/AdminLayout";
 import { db } from "@/lib/firebase";
 import { collection, query, orderBy, onSnapshot, where, getDocs, doc, updateDoc } from "firebase/firestore";
 import { MoreHorizontal } from "lucide-react";
@@ -82,22 +82,11 @@ export default function AdminSensorsPage() {
   }
 
   return (
-    <div className="flex bg-gray-50 min-h-screen">
-      <Sidebar role="admin" />
-
-      <main className="ml-64 p-6 w-full">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-extrabold">Manajemen Sensor — Semua Sensor</h2>
-            <p className="text-sm text-slate-500">Kelola sensor terdaftar di platform.</p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="relative hidden md:block">
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari nama sensor atau device ID..." className="pl-4 pr-4 py-2 w-72 rounded-full border border-slate-200 bg-white text-sm" />
-            </div>
-          </div>
-        </div>
+    <AdminLayout
+      title="Manajemen Sensor"
+      description="Pantau dan kelola seluruh sensor yang terhubung."
+    >
+      <div className="space-y-6">
 
         <div className="bg-white rounded-2xl border border-slate-200 p-4 mb-4">
           <div className="flex flex-wrap gap-3 items-end">
@@ -243,7 +232,7 @@ export default function AdminSensorsPage() {
           </div>
         )}
 
-      </main>
-    </div>
+      </div>
+    </AdminLayout>
   );
 }

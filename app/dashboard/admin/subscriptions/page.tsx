@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Sidebar from "@/app/components/Sidebar";
-import Navbar from "@/app/components/Navbar";
+import AdminLayout from "@/src/components/layout/AdminLayout";
 import {
   ClientSubscriptionModel,
   SubscriptionPackage,
@@ -164,14 +163,11 @@ export default function AdminSubscriptionsManagementPage() {
   });
 
   return (
-    <div
-      className="flex bg-slate-50 min-h-screen font-sans text-slate-800 overflow-y-scroll"
-      style={{ scrollbarGutter: "stable" }}
+    <AdminLayout
+      title="Manajemen Paket & Billing"
+      description="Kelola paket langganan, billing, dan histori pembayaran."
     >
-      <Sidebar role="admin" />
-      <div className="flex flex-col flex-grow min-w-0">
-        <Navbar title="Manajemen Paket & Billing" />
-        <main className="ml-0 md:ml-64 pt-24 px-8 pb-8 w-auto transition-all flex-grow space-y-8">
+      <div className="space-y-8">
           {/* BANNER NOTIFIKASI JATUH TEMPO */}
           {expiringLogs.length > 0 && (
             <div className="bg-amber-50 border border-amber-200 text-amber-900 p-4 rounded-2xl flex items-start gap-3.5 text-xs font-semibold shadow-sm">
@@ -671,8 +667,7 @@ export default function AdminSubscriptionsManagementPage() {
               </div>
             </div>
           </section>
-        </main>
       </div>
-    </div>
+    </AdminLayout>
   );
 }

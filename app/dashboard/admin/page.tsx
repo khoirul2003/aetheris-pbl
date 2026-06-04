@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Sidebar from "@/app/components/Sidebar";
+import AdminLayout from "@/src/components/layout/AdminLayout";
 import {
   collection,
   onSnapshot,
@@ -16,7 +16,6 @@ import {
   Download,
   MoreVertical,
   Radio,
-  Search,
   WifiOff,
 } from "lucide-react";
 import { db, getRtdb } from "@/lib/firebase";
@@ -448,42 +447,11 @@ export default function AdminDashboard() {
   const maxUserValue = Math.max(...userValues, 1);
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#f4f6ff] text-slate-900">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(15,23,42,0.08)_1px,transparent_0)] bg-size-[18px_18px] opacity-35" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-linear-to-b from-white/80 to-transparent" />
-
-      <Sidebar role="admin" />
-
-      <main className="relative ml-64 min-h-screen px-4 py-4 md:px-6 md:py-5">
-        <div className="flex w-full flex-col gap-5">
-          <header className="rounded-2xl border border-slate-200/70 bg-white/90 px-5 py-4 shadow-[0_1px_0_rgba(15,23,42,0.03)] backdrop-blur">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <p className="text-[13px] font-semibold tracking-tight text-slate-500">Admin Dashboard</p>
-                <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900">Beranda</h1>
-                <p className="mt-1 text-sm text-slate-500">Semua angka di bawah ini diambil langsung dari Firestore dan Realtime Database.</p>
-              </div>
-
-              <div className="flex w-full flex-col gap-3 lg:w-auto lg:flex-row lg:items-center">
-                <div className="relative w-full lg:w-90">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                  <input
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50/80 py-3 pl-11 pr-4 text-sm text-slate-700 placeholder:text-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                    placeholder="Cari restoran, sensor, atau alert..."
-                  />
-                </div>
-
-                <button className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50">
-                  <Bell size={16} />
-                  Support
-                </button>
-
-                <button className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-slate-900 text-white shadow-sm">
-                  AD
-                </button>
-              </div>
-            </div>
-          </header>
+    <AdminLayout
+      title="Beranda"
+      description="Semua angka di bawah ini diambil langsung dari Firestore dan Realtime Database."
+    >
+      <div className="flex w-full flex-col gap-5">
 
           <section className="flex flex-col gap-4 rounded-2xl border border-slate-200/70 bg-white/70 p-5 shadow-sm backdrop-blur">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
@@ -770,7 +738,6 @@ export default function AdminDashboard() {
             </div>
           </section>
         </div>
-      </main>
-    </div>
+    </AdminLayout>
   );
 }

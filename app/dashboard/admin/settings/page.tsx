@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Sidebar from "@/app/components/Sidebar";
-import Navbar from "@/app/components/Navbar";
+import AdminLayout from "@/src/components/layout/AdminLayout";
 import { ClientProfileModel, AdminUser, SystemConfig } from "@/models/clientProfileModel"; 
 import { auth, db } from "@/lib/firebase"; 
 import { onAuthStateChanged } from "firebase/auth"; 
@@ -180,9 +179,10 @@ export default function AdminSettingsPage() {
   };
 
   return (
-    <div className="flex bg-slate-50 min-h-screen font-sans text-slate-800 overflow-y-scroll relative select-none" style={{ scrollbarGutter: "stable" }}>
-      <Sidebar role="admin" />
-      
+    <AdminLayout
+      title="Pengaturan Admin"
+      description="Kelola informasi kredensial profil, preferensi threshold platform, dan hak akses rekan admin."
+    >
       <div className="fixed top-6 right-6 z-[200] flex flex-col gap-3 max-w-sm w-full pointer-events-none print:hidden">
         {toasts.map((toast) => (
           <div key={toast.id} className={`p-4 rounded-xl shadow-lg border flex items-center gap-3 bg-white pointer-events-auto animate-in fade-in slide-in-from-top-4 duration-300 ${toast.type === "error" ? "border-rose-200 text-rose-800" : "border-emerald-200 text-emerald-800"}`}>
@@ -192,14 +192,7 @@ export default function AdminSettingsPage() {
         ))}
       </div>
       
-      <div className="flex flex-col flex-grow min-w-0">
-        <Navbar title="Pengaturan Sistem" />
-
-        <main className="ml-0 md:ml-64 pt-24 px-8 pb-8 w-auto transition-all flex-grow">
-          <header className="mb-8 border-b border-slate-100 pb-5">
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Pengaturan Admin</h1>
-            <p className="text-slate-500 text-sm mt-1">Kelola informasi kredensial profil, preferensi threshold platform, dan hak akses rekan admin.</p>
-          </header>
+      <div className="space-y-6">
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <form onSubmit={handleSubmitSystemConfig} className="space-y-6 lg:col-span-2">
@@ -280,9 +273,8 @@ export default function AdminSettingsPage() {
               </div>
               
               <button type="button" onClick={() => { setEditingAdminId(null); setNewAdmin({ name: "", email: "", password: "" }); setModalPasswordError(""); setShowModalPassword(false); setIsModalOpen(true); }} className="w-full border-2 border-dashed border-slate-300 text-slate-700 hover:text-blue-600 hover:border-blue-400 font-medium text-xs py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 bg-white hover:bg-blue-50/30 cursor-pointer"><UserPlus size={14} /> + Tambah Admin Baru</button>
-            </div>
           </div>
-        </main>
+        </div>
       </div>
 
       {isModalOpen && (
@@ -332,6 +324,6 @@ export default function AdminSettingsPage() {
           </div>
         </div>
       )}
-    </div>
+    </AdminLayout>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Sidebar from "@/app/components/Sidebar";
+import AdminLayout from "@/src/components/layout/AdminLayout";
 import { ClientProfileModel, type UserProfile } from "@/models/clientProfileModel";
 import {
   ClientSensorModel,
@@ -37,13 +37,13 @@ import {
   Edit3,
   Eye,
   Plus,
-  Search,
   Shield,
   ToggleLeft,
   ToggleRight,
   UserRound,
   X,
 } from "lucide-react";
+
 
 type AdminUserRow = {
   id: string;
@@ -514,40 +514,11 @@ export default function AdminUsersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <Sidebar role="admin" />
-
-      <main className="ml-0 min-h-screen px-4 py-4 md:ml-64 md:px-6 md:py-6">
-        <div className="flex w-full flex-col gap-6">
-          <header className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Manajemen User</p>
-                <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900">Daftar Restoran Terdaftar</h1>
-                <p className="mt-1 text-sm text-slate-500">Kelola data restoran, paket aktif, sensor, dan status akun dari Firestore.</p>
-              </div>
-
-              <div className="flex flex-col gap-3 sm:flex-row xl:items-center">
-                <div className="relative w-full sm:w-96">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                  <input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Cari nama restoran atau email"
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                  />
-                </div>
-
-                <button
-                  onClick={() => setNewUserOpen(true)}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-slate-800"
-                >
-                  <Plus size={16} />
-                  Tambah User Baru
-                </button>
-              </div>
-            </div>
-          </header>
+    <AdminLayout
+      title="Manajemen User"
+      description="Kelola seluruh akun pengguna yang terdaftar pada sistem."
+    >
+      <div className="flex w-full flex-col gap-6">
 
           <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <StatCard title="Total Restoran" value={summary.total.toString()} icon={UserRound} tone="blue" note="Semua akun user" />
@@ -663,7 +634,6 @@ export default function AdminUsersPage() {
             </div>
           </section>
         </div>
-      </main>
 
       {selectedUser && (
         <Modal onClose={() => setSelectedUser(null)} widthClass="max-w-6xl">
@@ -921,7 +891,7 @@ export default function AdminUsersPage() {
           </div>
         </Modal>
       )}
-    </div>
+    </AdminLayout>
   );
 }
 
