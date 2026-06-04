@@ -80,7 +80,7 @@ export default function Sidebar({
       ];
 
   const sidebarContent = (
-    <div className="flex h-full flex-col bg-white text-slate-800 border-r border-slate-200 relative select-none">
+    <div className="flex h-full w-full flex-col bg-white text-slate-800 border-r border-slate-200 relative select-none">
       
       {/* 1. Header / Logo Section */}
       <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 min-h-[65px]">
@@ -200,7 +200,7 @@ export default function Sidebar({
     <>
       {/* A. Desktop/Tablet Sidebar (screen >= md) */}
       <aside 
-        className={`hidden md:block h-screen sticky top-0 z-40 transition-all duration-300 ease-in-out shrink-0
+        className={`hidden md:flex flex-col h-screen sticky top-0 z-40 transition-all duration-300 ease-in-out shrink-0
           ${isCollapsed ? "w-[80px]" : "w-[260px]"}`}
       >
         {sidebarContent}
@@ -208,7 +208,7 @@ export default function Sidebar({
 
       {/* B. Mobile Drawer Sidebar (screen < md) */}
       <aside
-        className={`md:hidden fixed inset-y-0 left-0 z-50 w-[260px] bg-white h-screen transition-transform duration-300 ease-in-out shadow-2xl
+        className={`md:hidden fixed flex-col inset-y-0 left-0 z-50 w-[260px] bg-white h-screen transition-transform duration-300 ease-in-out shadow-2xl
           ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
         {sidebarContent}
@@ -218,7 +218,7 @@ export default function Sidebar({
       {isMobileOpen && (
         <div 
           onClick={() => setIsMobileOpen(false)}
-          className="md:hidden fixed inset-0 z-45 bg-slate-900/40 backdrop-blur-xs transition-opacity duration-300"
+          className="md:hidden fixed inset-0 z-45 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300"
         />
       )}
     </>
