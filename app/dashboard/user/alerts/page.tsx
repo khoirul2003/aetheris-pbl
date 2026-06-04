@@ -82,7 +82,7 @@ export default function AlertsPage() {
   return (
     <div className="flex bg-[#FDFBF7] min-h-screen text-slate-800 antialiased overflow-x-hidden">
       <Sidebar role="user" userEmail="khoirul@email.com" />
-      <Navbar title="Alert" />
+      
 
       {/* PERBAIKAN: Padding bawah pb-24 agar baris akhir tidak tertutup bottom nav mobile */}
       <main className="md:ml-64 pt-24 px-4 md:px-8 pb-24 md:pb-8 w-full max-w-6xl mx-auto box-border">

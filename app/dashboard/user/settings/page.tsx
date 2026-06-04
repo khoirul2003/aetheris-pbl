@@ -107,7 +107,7 @@ export default function SettingsPage() {
   return (
     <div className="flex bg-[#FDFBF7] min-h-screen text-slate-800 antialiased overflow-x-hidden">
       <Sidebar role="user" userEmail="khoirul@email.com" />
-      <Navbar title="Pengaturan" />
+      
 
       <main className="md:ml-64 pt-24 px-4 md:px-8 pb-24 md:pb-8 w-full max-w-6xl mx-auto box-border">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
