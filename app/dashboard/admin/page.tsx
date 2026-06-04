@@ -719,6 +719,7 @@ export default function AdminDashboard() {
                     <span className="text-slate-600">Total alert aktif</span>
                     <span className="font-semibold text-slate-900">{alerts.filter((alert) => alert.isResolved !== true).length}</span>
                   </div>
+
                   <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
                     <span className="text-slate-600">Total user mitra</span>
                     <span className="font-semibold text-slate-900">{restaurantUsers.length}</span>
@@ -732,6 +733,7 @@ export default function AdminDashboard() {
                         return sensor.isActive !== false && effectiveOnline;
                       }).length}
                     </span>
+
                   </div>
                 </div>
               </div>

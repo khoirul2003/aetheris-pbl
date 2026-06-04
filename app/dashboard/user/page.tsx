@@ -200,7 +200,7 @@ export default function UserDashboard() {
         <div className="flex items-center justify-between gap-4 mb-6">
           <div>
             <h2 className="text-2xl font-extrabold text-slate-900">Overview</h2>
-            <p className="text-sm text-slate-500">Overview of your restaurant's telemetry</p>
+            <p className="text-sm text-slate-500">Overview of your restaurant&apos;s telemetry</p>
           </div>
 
           <div className="flex items-center gap-3">
