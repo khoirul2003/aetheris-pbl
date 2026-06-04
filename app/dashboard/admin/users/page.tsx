@@ -77,19 +77,19 @@ type DetailSensorRow = FirestoreSensor & {
   live?: LiveSensorData;
 };
 
-const DEFAULT_PACKAGE = "basic";
+const DEFAULT_PACKAGE = "Basic";
 
 function formatDate(value?: Timestamp | Date | string | null) {
   if (!value) return "-";
   if (typeof value === "string") return value;
   if (value instanceof Date) {
-    return value.toLocaleDateString("id-ID", {
+    return value.toLocaleDateString("en-US", {
       day: "2-digit",
       month: "short",
       year: "numeric",
     });
   }
-  return value.toDate().toLocaleDateString("id-ID", {
+  return value.toDate().toLocaleDateString("en-US", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -100,7 +100,7 @@ function formatDateTime(value?: Timestamp | Date | string | null) {
   if (!value) return "-";
   if (typeof value === "string") return value;
   if (value instanceof Date) {
-    return value.toLocaleString("id-ID", {
+    return value.toLocaleString("en-US", {
       day: "2-digit",
       month: "short",
       year: "numeric",
@@ -108,7 +108,7 @@ function formatDateTime(value?: Timestamp | Date | string | null) {
       minute: "2-digit",
     });
   }
-  return value.toDate().toLocaleString("id-ID", {
+  return value.toDate().toLocaleString("en-US", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -126,7 +126,7 @@ function addDays(base: Date, days: number) {
 function packageLabel(plan: string | undefined, packages: SubscriptionPackage[]) {
   const matched = packages.find((pkg) => pkg.id === plan);
   if (matched) return matched.name;
-  if (!plan) return "Belum Aktif";
+  if (!plan) return "Not Active";
   return plan.charAt(0).toUpperCase() + plan.slice(1);
 }
 
@@ -154,9 +154,9 @@ function paymentBadgeClass(status: UserSubscriptionLog["paymentStatus"]) {
 }
 
 function conditionLabel(status?: string) {
-  if (status === "danger") return "Bahaya";
-  if (status === "warning") return "Waspada";
-  return "Aman";
+  if (status === "danger") return "Danger";
+  if (status === "warning") return "Warning";
+  return "Safe";
 }
 
 function conditionBadgeClass(status?: string) {
@@ -320,7 +320,7 @@ export default function AdminUsersPage() {
 
         rows.push({
           id: docSnap.id,
-          message: data.message || "Anomali terdeteksi",
+          message: data.message || "Anomaly detected",
           level: data.level || "warning",
           createdAt: data.createdAt || null,
           isResolved: !!data.isResolved,
@@ -515,23 +515,23 @@ export default function AdminUsersPage() {
 
   return (
     <AdminLayout
-      title="Manajemen User"
-      description="Kelola seluruh akun pengguna yang terdaftar pada sistem."
+      title="User Management"
+      description="Manage all registered user accounts in the system."
     >
       <div className="flex w-full flex-col gap-6">
 
           <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <StatCard title="Total Restoran" value={summary.total.toString()} icon={UserRound} tone="blue" note="Semua akun user" />
-            <StatCard title="Akun Aktif" value={summary.active.toString()} icon={CircleCheck} tone="emerald" note="Sedang operasional" />
-            <StatCard title="Akun Nonaktif" value={summary.inactive.toString()} icon={CircleOff} tone="rose" note="Perlu tindakan" />
-            <StatCard title="Total Sensor" value={summary.totalSensors.toString()} icon={Database} tone="amber" note="Sensor terdaftar" />
+            <StatCard title="Total Restaurants" value={summary.total.toString()} icon={UserRound} tone="blue" note="All user accounts" />
+            <StatCard title="Active Accounts" value={summary.active.toString()} icon={CircleCheck} tone="emerald" note="Currently operational" />
+            <StatCard title="Inactive Accounts" value={summary.inactive.toString()} icon={CircleOff} tone="rose" note="Needs action" />
+            <StatCard title="Total Sensors" value={summary.totalSensors.toString()} icon={Database} tone="amber" note="Registered sensors" />
           </section>
 
           <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>
-                <h2 className="text-lg font-bold text-slate-900">Filter & Pencarian</h2>
-                <p className="mt-1 text-sm text-slate-500">Saring berdasarkan paket aktif dan status akun.</p>
+                <h2 className="text-lg font-bold text-slate-900">Filter & Search</h2>
+                <p className="mt-1 text-sm text-slate-500">Filter by active package and account status.</p>
               </div>
 
               <div className="flex flex-col gap-3 sm:flex-row">
@@ -540,7 +540,7 @@ export default function AdminUsersPage() {
                   onChange={(e) => setPackageFilter(e.target.value)}
                   className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                 >
-                  <option value="">Semua Paket</option>
+                  <option value="">All Packages</option>
                   {packages.map((pkg) => (
                     <option key={pkg.id} value={pkg.id}>{pkg.name}</option>
                   ))}
@@ -552,15 +552,15 @@ export default function AdminUsersPage() {
                   onChange={(e) => setStatusFilter(e.target.value as "" | "active" | "inactive")}
                   className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                 >
-                  <option value="">Semua Status</option>
-                  <option value="active">Aktif</option>
-                  <option value="inactive">Nonaktif</option>
+                  <option value="">All Statuses</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
                 </select>
               </div>
             </div>
 
             <div className="mt-4 flex flex-wrap gap-2">
-              <FilterChip label="Semua" active={packageFilter === "" && statusFilter === ""} onClick={() => { setPackageFilter(""); setStatusFilter(""); }} />
+              <FilterChip label="All" active={packageFilter === "" && statusFilter === ""} onClick={() => { setPackageFilter(""); setStatusFilter(""); }} />
               {packages.map((pkg) => (
                 <FilterChip key={pkg.id} label={pkg.name} active={packageFilter === pkg.id} onClick={() => setPackageFilter((prev) => (prev === pkg.id ? "" : pkg.id))} />
               ))}
@@ -572,23 +572,23 @@ export default function AdminUsersPage() {
               <table className="min-w-full text-left">
                 <thead className="bg-slate-50 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
                   <tr>
-                    <th className="px-6 py-4">Nama Restoran</th>
+                    <th className="px-6 py-4">Restaurant Name</th>
                     <th className="px-6 py-4">Email</th>
-                    <th className="px-6 py-4">Paket Aktif</th>
-                    <th className="px-6 py-4">Jumlah Sensor</th>
-                    <th className="px-6 py-4">Status Akun</th>
-                    <th className="px-6 py-4">Tanggal Daftar</th>
-                    <th className="px-6 py-4 text-right">Aksi</th>
+                    <th className="px-6 py-4">Active Package</th>
+                    <th className="px-6 py-4">Sensor Count</th>
+                    <th className="px-6 py-4">Account Status</th>
+                    <th className="px-6 py-4">Registration Date</th>
+                    <th className="px-6 py-4 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {loadingUsers ? (
                     <tr>
-                      <td colSpan={7} className="px-6 py-10 text-center text-sm text-slate-500">Memuat data user...</td>
+                      <td colSpan={7} className="px-6 py-10 text-center text-sm text-slate-500">Loading user data...</td>
                     </tr>
                   ) : filteredUsers.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-6 py-10 text-center text-sm text-slate-500">Tidak ada user yang cocok dengan filter.</td>
+                      <td colSpan={7} className="px-6 py-10 text-center text-sm text-slate-500">No users match the filters.</td>
                     </tr>
                   ) : (
                     filteredUsers.map((user) => {
@@ -609,19 +609,21 @@ export default function AdminUsersPage() {
                           <td className="px-6 py-4 text-sm font-semibold text-slate-700">{sensorCount}</td>
                           <td className="px-6 py-4">
                             <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${active ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
-                              {active ? "Aktif" : "Nonaktif"}
+                              {active ? "Active" : "Inactive"}
                             </span>
                           </td>
                           <td className="px-6 py-4 text-sm text-slate-600">{formatDate(user.createdAt)}</td>
                           <td className="px-6 py-4">
                             <div className="flex justify-end gap-2">
-                              <button onClick={() => openDetail(user)} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+                              {/* DITAMBAHKAN whitespace-nowrap AGAR TEKS TIDAK MENUMPUK */}
+                              <button onClick={() => openDetail(user)} className="inline-flex items-center gap-2 bg-[#EAF2EB] text-[#4D6344] font-bold px-3 py-1.5 rounded-lg text-xs hover:bg-[#C2D1C0] transition-colors cursor-pointer whitespace-nowrap">
                                 <Eye size={14} />
-                                Lihat Detail
+                                View Details
                               </button>
-                              <button onClick={() => toggleUserActive(user)} className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold text-white ${active ? "bg-rose-600 hover:bg-rose-700" : "bg-emerald-600 hover:bg-emerald-700"}`}>
+                              
+                              <button onClick={() => toggleUserActive(user)} className={`inline-flex items-center gap-2 font-bold px-3 py-1.5 rounded-lg text-xs transition-colors border cursor-pointer whitespace-nowrap ${active ? "bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100" : "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"}`}>
                                 {active ? <ToggleLeft size={14} /> : <ToggleRight size={14} />}
-                                {active ? "Nonaktifkan" : "Aktifkan"}
+                                {active ? "Deactivate" : "Activate"}
                               </button>
                             </div>
                           </td>
@@ -640,7 +642,7 @@ export default function AdminUsersPage() {
           <div className="flex flex-col gap-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Detail User</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">User Details</p>
                 <h3 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900">{selectedUser.restaurantName}</h3>
                 <p className="mt-1 text-sm text-slate-500">{selectedUser.email}</p>
               </div>
@@ -648,55 +650,55 @@ export default function AdminUsersPage() {
               <div className="flex flex-wrap gap-2">
                 <button onClick={() => setEditProfileOpen(true)} className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">
                   <Edit3 size={15} />
-                  Edit Profil
+                  Edit Profile
                 </button>
                 <button onClick={() => setChangePackageOpen(true)} className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-100">
                   <CreditCard size={15} />
-                  Ganti Paket
+                  Change Package
                 </button>
                 <button onClick={deactivateSelectedUser} className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-semibold text-rose-700 hover:bg-rose-100">
                   <Shield size={15} />
-                  Nonaktifkan Akun
+                  Deactivate Account
                 </button>
               </div>
             </div>
 
             {loadingDetail ? (
-              <div className="py-16 text-center text-sm text-slate-500">Memuat detail user...</div>
+              <div className="py-16 text-center text-sm text-slate-500">Loading user details...</div>
             ) : (
               <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
                 <div className="space-y-5">
-                  <Panel title="Informasi Profil Restoran" icon={UserRound}>
+                  <Panel title="Restaurant Profile Information" icon={UserRound}>
                     <DetailGrid items={[
-                      ["Nama Restoran", selectedUser.restaurantName],
+                      ["Restaurant Name", selectedUser.restaurantName],
                       ["Email", selectedUser.email],
-                      ["Nomor HP", selectedUser.phone],
-                      ["Alamat", selectedUser.address],
-                      ["Jam Operasional", `${selectedUser.operationalHours?.open || "08:00"} - ${selectedUser.operationalHours?.close || "22:00"}`],
+                      ["Phone Number", selectedUser.phone],
+                      ["Address", selectedUser.address],
+                      ["Operational Hours", `${selectedUser.operationalHours?.open || "08:00"} - ${selectedUser.operationalHours?.close || "22:00"}`],
                     ]} />
                   </Panel>
 
-                  <Panel title="Status Langganan" icon={CreditCard}>
+                  <Panel title="Subscription Status" icon={CreditCard}>
                     <DetailGrid items={[
-                      ["Paket Aktif", activePackageLabel],
-                      ["Tanggal Mulai", formatDate(subscriptionHistory[0]?.startDate || selectedUser.createdAt || null)],
-                      ["Tanggal Berakhir", formatDate(selectedUser.planExpiry || subscriptionHistory[0]?.endDate || null)],
-                      ["Status Pembayaran", subscriptionHistory[0]?.paymentStatus ? paymentLabel(subscriptionHistory[0].paymentStatus) : "-"],
+                      ["Active Package", activePackageLabel],
+                      ["Start Date", formatDate(subscriptionHistory[0]?.startDate || selectedUser.createdAt || null)],
+                      ["End Date", formatDate(selectedUser.planExpiry || subscriptionHistory[0]?.endDate || null)],
+                      ["Payment Status", subscriptionHistory[0]?.paymentStatus ? paymentLabel(subscriptionHistory[0].paymentStatus) : "-"],
                     ]} />
                   </Panel>
 
-                  <Panel title="Daftar Sensor Restoran" icon={Database}>
+                  <Panel title="Restaurant Sensor List" icon={Database}>
                     {detailSensors.length === 0 ? (
-                      <EmptyState text="Belum ada sensor terdaftar." />
+                      <EmptyState text="No registered sensors yet." />
                     ) : (
                       <div className="overflow-hidden rounded-xl border border-slate-200">
                         <table className="min-w-full text-left">
                           <thead className="bg-slate-50 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
                             <tr>
                               <th className="px-4 py-3">Sensor</th>
-                              <th className="px-4 py-3">Lokasi</th>
+                              <th className="px-4 py-3">Location</th>
                               <th className="px-4 py-3">Status</th>
-                              <th className="px-4 py-3">Kondisi</th>
+                              <th className="px-4 py-3">Condition</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100 bg-white">
@@ -731,9 +733,9 @@ export default function AdminUsersPage() {
                     )}
                   </Panel>
 
-                  <Panel title="Riwayat Alert 10 Terbaru" icon={AlertTriangle}>
+                  <Panel title="Recent 10 Alerts History" icon={AlertTriangle}>
                     {detailAlerts.length === 0 ? (
-                      <EmptyState text="Belum ada alert untuk restoran ini." />
+                      <EmptyState text="No alerts for this restaurant yet." />
                     ) : (
                       <div className="space-y-3">
                         {detailAlerts.map((alert) => (
@@ -744,12 +746,12 @@ export default function AdminUsersPage() {
                                 <p className="mt-1 text-sm text-slate-500">{alert.sensorName || alert.location || "Sensor"}</p>
                               </div>
                               <span className={`rounded-full px-3 py-1 text-xs font-semibold ${alert.level === "danger" ? "bg-rose-50 text-rose-700" : "bg-amber-50 text-amber-700"}`}>
-                                {alert.level === "danger" ? "Bahaya" : "Waspada"}
+                                {alert.level === "danger" ? "Danger" : "Warning"}
                               </span>
                             </div>
                             <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
                               <span>{formatDateTime(alert.createdAt)}</span>
-                              <span>{alert.isResolved ? "Tertangani" : "Proses"}</span>
+                              <span>{alert.isResolved ? "Resolved" : "Pending"}</span>
                             </div>
                           </div>
                         ))}
@@ -759,9 +761,9 @@ export default function AdminUsersPage() {
                 </div>
 
                 <div className="space-y-5">
-                  <Panel title="Riwayat Langganan Sebelumnya" icon={Clock3}>
+                  <Panel title="Previous Subscription History" icon={Clock3}>
                     {subscriptionHistory.length === 0 ? (
-                      <EmptyState text="Belum ada riwayat langganan." />
+                      <EmptyState text="No subscription history yet." />
                     ) : (
                       <div className="space-y-3">
                         {subscriptionHistory.map((log) => (
@@ -775,28 +777,28 @@ export default function AdminUsersPage() {
                                 {paymentLabel(log.paymentStatus)}
                               </span>
                             </div>
-                            <p className="mt-3 text-sm text-slate-600">Rp {log.amount.toLocaleString("id-ID")}</p>
+                            <p className="mt-3 text-sm text-slate-600">Rp {log.amount.toLocaleString("en-US")}</p>
                           </div>
                         ))}
                       </div>
                     )}
                   </Panel>
 
-                  <Panel title="Status Ringkas" icon={BadgeCheck}>
+                  <Panel title="Quick Status" icon={BadgeCheck}>
                     <div className="space-y-3 text-sm">
                       <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3">
-                        <span className="text-slate-500">Status Akun</span>
+                        <span className="text-slate-500">Account Status</span>
                         <span className={`rounded-full px-3 py-1 text-xs font-semibold ${selectedUser.isActive !== false ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
-                          {selectedUser.isActive !== false ? "Aktif" : "Nonaktif"}
+                          {selectedUser.isActive !== false ? "Active" : "Inactive"}
                         </span>
                       </div>
                       <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3">
-                        <span className="text-slate-500">Paket Aktif</span>
+                        <span className="text-slate-500">Active Package</span>
                         <span className="font-semibold text-slate-900">{activePackageLabel}</span>
                       </div>
                       <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3">
-                        <span className="text-slate-500">Nilai Paket</span>
-                        <span className="font-semibold text-slate-900">Rp {activePackagePrice.toLocaleString("id-ID")}</span>
+                        <span className="text-slate-500">Package Value</span>
+                        <span className="font-semibold text-slate-900">Rp {activePackagePrice.toLocaleString("en-US")}</span>
                       </div>
                     </div>
                   </Panel>
@@ -809,73 +811,73 @@ export default function AdminUsersPage() {
 
       {newUserOpen && (
         <Modal onClose={() => setNewUserOpen(false)} widthClass="max-w-3xl">
-          <ModalFormTitle title="Tambah User Baru" description="Buat profil restoran baru dan inisialisasi paket aktifnya." />
+          <ModalFormTitle title="Add New User" description="Create a new restaurant profile and initialize its active package." />
           <div className="grid gap-4 md:grid-cols-2">
-            <InputField label="Nama Restoran" value={newUserForm.restaurantName} onChange={(value) => setNewUserForm((prev) => ({ ...prev, restaurantName: value }))} />
+            <InputField label="Restaurant Name" value={newUserForm.restaurantName} onChange={(value) => setNewUserForm((prev) => ({ ...prev, restaurantName: value }))} />
             <InputField label="Email" value={newUserForm.email} onChange={(value) => setNewUserForm((prev) => ({ ...prev, email: value }))} />
-            <InputField label="Nomor HP" value={newUserForm.phone} onChange={(value) => setNewUserForm((prev) => ({ ...prev, phone: value }))} />
-            <InputField label="Alamat" value={newUserForm.address} onChange={(value) => setNewUserForm((prev) => ({ ...prev, address: value }))} />
-            <InputField label="Jam Buka" value={newUserForm.openHour} onChange={(value) => setNewUserForm((prev) => ({ ...prev, openHour: value }))} />
-            <InputField label="Jam Tutup" value={newUserForm.closeHour} onChange={(value) => setNewUserForm((prev) => ({ ...prev, closeHour: value }))} />
+            <InputField label="Phone Number" value={newUserForm.phone} onChange={(value) => setNewUserForm((prev) => ({ ...prev, phone: value }))} />
+            <InputField label="Address" value={newUserForm.address} onChange={(value) => setNewUserForm((prev) => ({ ...prev, address: value }))} />
+            <InputField label="Opening Time" value={newUserForm.openHour} onChange={(value) => setNewUserForm((prev) => ({ ...prev, openHour: value }))} />
+            <InputField label="Closing Time" value={newUserForm.closeHour} onChange={(value) => setNewUserForm((prev) => ({ ...prev, closeHour: value }))} />
           </div>
 
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <SelectField
-              label="Paket Awal"
+              label="Initial Package"
               value={newUserForm.plan}
               onChange={(value) => setNewUserForm((prev) => ({ ...prev, plan: value }))}
               options={packages.map((pkg) => ({ label: pkg.name, value: pkg.id }))}
               fallbackOption={{ label: "Basic", value: DEFAULT_PACKAGE }}
             />
             <SelectField
-              label="Status Akun"
+              label="Account Status"
               value={newUserForm.isActive ? "active" : "inactive"}
               onChange={(value) => setNewUserForm((prev) => ({ ...prev, isActive: value === "active" }))}
               options={[
-                { label: "Aktif", value: "active" },
-                { label: "Nonaktif", value: "inactive" },
+                { label: "Active", value: "active" },
+                { label: "Inactive", value: "inactive" },
               ]}
             />
           </div>
 
           <div className="mt-6 flex justify-end gap-3">
-            <button onClick={() => setNewUserOpen(false)} className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Batal</button>
-            <button disabled={savingAction} onClick={createUser} className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">Simpan User</button>
+            <button onClick={() => setNewUserOpen(false)} className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
+            <button disabled={savingAction} onClick={createUser} className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">Save User</button>
           </div>
         </Modal>
       )}
 
       {selectedUser && editProfileOpen && (
         <Modal onClose={() => setEditProfileOpen(false)} widthClass="max-w-3xl">
-          <ModalFormTitle title="Edit Profil Restoran" description="Perbarui nama, kontak, alamat, dan jam operasional." />
+          <ModalFormTitle title="Edit Restaurant Profile" description="Update name, contact, address, and operational hours." />
           <div className="grid gap-4 md:grid-cols-2">
-            <InputField label="Nama Restoran" value={editForm.restaurantName} onChange={(value) => setEditForm((prev) => ({ ...prev, restaurantName: value }))} />
+            <InputField label="Restaurant Name" value={editForm.restaurantName} onChange={(value) => setEditForm((prev) => ({ ...prev, restaurantName: value }))} />
             <InputField label="Email" value={editForm.email} onChange={(value) => setEditForm((prev) => ({ ...prev, email: value }))} />
-            <InputField label="Nomor HP" value={editForm.phone} onChange={(value) => setEditForm((prev) => ({ ...prev, phone: value }))} />
-            <InputField label="Alamat" value={editForm.address} onChange={(value) => setEditForm((prev) => ({ ...prev, address: value }))} />
-            <InputField label="Jam Buka" value={editForm.openHour} onChange={(value) => setEditForm((prev) => ({ ...prev, openHour: value }))} />
-            <InputField label="Jam Tutup" value={editForm.closeHour} onChange={(value) => setEditForm((prev) => ({ ...prev, closeHour: value }))} />
+            <InputField label="Phone Number" value={editForm.phone} onChange={(value) => setEditForm((prev) => ({ ...prev, phone: value }))} />
+            <InputField label="Address" value={editForm.address} onChange={(value) => setEditForm((prev) => ({ ...prev, address: value }))} />
+            <InputField label="Opening Time" value={editForm.openHour} onChange={(value) => setEditForm((prev) => ({ ...prev, openHour: value }))} />
+            <InputField label="Closing Time" value={editForm.closeHour} onChange={(value) => setEditForm((prev) => ({ ...prev, closeHour: value }))} />
           </div>
           <div className="mt-6 flex justify-end gap-3">
-            <button onClick={() => setEditProfileOpen(false)} className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Batal</button>
-            <button disabled={savingAction} onClick={saveProfile} className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">Simpan Perubahan</button>
+            <button onClick={() => setEditProfileOpen(false)} className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
+            <button disabled={savingAction} onClick={saveProfile} className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">Save Changes</button>
           </div>
         </Modal>
       )}
 
       {selectedUser && changePackageOpen && (
         <Modal onClose={() => setChangePackageOpen(false)} widthClass="max-w-xl">
-          <ModalFormTitle title="Ganti Paket" description="Perbarui paket aktif dan catat histori langganan baru." />
+          <ModalFormTitle title="Change Package" description="Update the active package and record a new subscription history." />
           <div className="grid gap-4 md:grid-cols-2">
             <SelectField
-              label="Paket Baru"
+              label="New Package"
               value={packageForm.plan}
               onChange={(value) => setPackageForm((prev) => ({ ...prev, plan: value }))}
               options={packages.map((pkg) => ({ label: pkg.name, value: pkg.id }))}
               fallbackOption={{ label: "Basic", value: DEFAULT_PACKAGE }}
             />
             <SelectField
-              label="Status Pembayaran"
+              label="Payment Status"
               value={packageForm.paymentStatus}
               onChange={(value) => setPackageForm((prev) => ({ ...prev, paymentStatus: value as UserSubscriptionLog["paymentStatus"] }))}
               options={[
@@ -886,8 +888,8 @@ export default function AdminUsersPage() {
             />
           </div>
           <div className="mt-6 flex justify-end gap-3">
-            <button onClick={() => setChangePackageOpen(false)} className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Batal</button>
-            <button disabled={savingAction} onClick={savePackage} className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">Simpan Paket</button>
+            <button onClick={() => setChangePackageOpen(false)} className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
+            <button disabled={savingAction} onClick={savePackage} className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60">Save Package</button>
           </div>
         </Modal>
       )}
@@ -1018,7 +1020,13 @@ function SelectField({
   options: Array<{ label: string; value: string }>;
   fallbackOption?: { label: string; value: string };
 }) {
-  const list = [...(fallbackOption ? [fallbackOption] : []), ...options];
+  const hasDuplicate = fallbackOption 
+    ? options.some((opt) => opt.value === fallbackOption.value) 
+    : false;
+
+  const list = fallbackOption && !hasDuplicate 
+    ? [fallbackOption, ...options] 
+    : options;
 
   return (
     <label className="block">

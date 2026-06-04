@@ -100,7 +100,7 @@ export default function LandingPage() {
 
         {/* Visual Mockup */}
         <div className="relative flex justify-center lg:justify-end">
-          <div className="w-full max-w-[480px] bg-white border border-slate-200 rounded-3xl p-6 shadow-xl relative overflow-hidden">
+          <div className="w-full max-w-120 bg-white border border-slate-200 rounded-3xl p-6 shadow-xl relative overflow-hidden">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4">
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 bg-red-500 rounded-full animate-ping"></span>

@@ -38,7 +38,7 @@ export default function AdminLayout({
     <div className="relative flex min-h-screen bg-[#FCFBF8] text-[#1A1F24] font-sans antialiased">
       
       {/* Sidebar Container */}
-      <div className="z-40 relative flex-shrink-0">
+      <div className="z-40 relative shrink-0">
         <Sidebar 
           role="admin"
           userEmail={userEmail}
