@@ -17,6 +17,7 @@ import {
   TrendingUp 
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import Navbar from "@/app/components/Navbar";
 
 interface AlertLog {
   id: string;
@@ -192,16 +193,14 @@ export default function UserDashboard() {
   return (
     <div className="flex bg-[#FDFBF7] min-h-screen font-sans text-slate-900 antialiased overflow-x-hidden">
       <Sidebar role="user" userEmail={user.email} />
+      
 
       {/* TAMPILAN RESPONSIVE UTAMA */}
       <main className="md:ml-64 pt-6 px-4 md:px-8 pb-24 md:pb-8 w-full max-w-6xl mx-auto box-border">
         
         {/* HEADER BAR */}
         <div className="flex items-center justify-between gap-4 mb-6">
-          <div>
-            <h2 className="text-2xl font-extrabold text-slate-900">Overview</h2>
-            <p className="text-sm text-slate-500">Overview of your restaurant&apos;s telemetry</p>
-          </div>
+          
 
           <div className="flex items-center gap-3">
             <button className="rounded-full bg-rose-50 text-rose-700 px-4 py-2 text-xs md:text-sm font-semibold border border-rose-100 shadow-sm transition-all hover:bg-rose-100">
