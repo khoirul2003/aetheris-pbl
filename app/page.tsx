@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import { useState, useEffect } from "react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { 
-
   Wifi, 
   Smartphone, 
   BarChart3, 
@@ -13,23 +13,66 @@ import {
   ArrowRight, 
   Flame, 
   Zap,
-  Layers
+  Layers,
+  Loader2
 } from "lucide-react";
 
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  // State untuk mengontrol animasi Cinematic (Masuk & Keluar)
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const router = useRouter();
+
+  // Memicu animasi fade-in segera setelah Landing Page dimuat
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsMounted(true);
+    }, 50); // Delay kecil agar browser sempat me-render frame transisi awal
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Mengaktifkan fitur Smooth Scrolling bawaan browser
+  useEffect(() => {
+    document.documentElement.classList.add("scroll-smooth");
+    return () => {
+      document.documentElement.classList.remove("scroll-smooth");
+    };
+  }, []);
+
+  // Fungsi untuk handle klik tombol login dengan transisi Cinematic
+  const handleNavigateToLogin = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isNavigating) return; // Cegah double click
+    
+    setMobileMenuOpen(false); 
+    setIsNavigating(true); // Memicu efek blur dan fade out
+    
+    // Tunggu animasi fade (500ms), lalu pindah halaman
+    setTimeout(() => {
+      router.push("/login");
+    }, 500);
+  };
 
   return (
-    <div className="bg-[#FDFBF7] text-slate-800 antialiased min-h-screen font-sans overflow-x-hidden">
+    // Efek transisi diterapkan di kontainer utama (Entrance & Exit)
+    <div className={`bg-[#FDFBF7] text-slate-800 antialiased min-h-screen font-sans overflow-x-hidden transition-all duration-500 ease-in-out ${
+      isMounted && !isNavigating ? "opacity-100 blur-0 scale-100" : "opacity-0 blur-md scale-[0.99]"
+    }`}>
       
       {/* 1. NAVBAR */}
       <nav className="fixed top-0 left-0 right-0 bg-[#FDFBF7]/80 backdrop-blur-md z-50 border-b border-slate-200/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            
-            <span className="text-xl font-black tracking-tight text-slate-900">
-              Aetheris<span className="text-[#4A6741]">.</span>
-            </span>
+            <Image 
+              src="/logo.png" 
+              alt="Aetheris Logo" 
+              width={60} 
+              height={38} 
+              className="object-contain"
+              priority
+            />
           </div>
 
           {/* Desktop Nav */}
@@ -37,12 +80,19 @@ export default function LandingPage() {
             <a href="#fitur" className="hover:text-[#4A6741] transition-colors">Fitur Utama</a>
             <a href="#arsitektur" className="hover:text-[#4A6741] transition-colors">Arsitektur</a>
             <a href="#harga" className="hover:text-[#4A6741] transition-colors">Paket Layanan</a>
-            <Link 
-              href="/login" 
-              className="px-5 py-2.5 bg-[#4A6741] hover:bg-[#3d5535] text-white rounded-xl shadow-sm transition-all flex items-center gap-1"
+            
+            {/* Tombol Login Desktop */}
+            <button 
+              onClick={handleNavigateToLogin}
+              disabled={isNavigating}
+              className="px-5 py-2.5 bg-[#4A6741] hover:bg-[#3d5535] text-white rounded-xl shadow-sm transition-all flex items-center gap-2 active:scale-95 cursor-pointer border-none min-w-[170px] justify-center"
             >
-              Masuk Dashboard <ArrowRight size={16} />
-            </Link>
+              {isNavigating ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <>Masuk Dashboard <ArrowRight size={16} /></>
+              )}
+            </button>
           </div>
 
           {/* Mobile Toggle */}
@@ -56,16 +106,23 @@ export default function LandingPage() {
 
         {/* Mobile Nav Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden bg-[#FDFBF7] border-b border-slate-200 px-4 pt-2 pb-6 space-y-3 flex flex-col text-sm font-bold">
+          <div className="md:hidden bg-[#FDFBF7] border-b border-slate-200 px-4 pt-2 pb-6 space-y-3 flex flex-col text-sm font-bold shadow-lg">
             <a href="#fitur" onClick={() => setMobileMenuOpen(false)} className="py-2 text-slate-600">Fitur Utama</a>
             <a href="#arsitektur" onClick={() => setMobileMenuOpen(false)} className="py-2 text-slate-600">Arsitektur</a>
             <a href="#harga" onClick={() => setMobileMenuOpen(false)} className="py-2 text-slate-600">Paket Layanan</a>
-            <Link 
-              href="/login" 
-              className="w-full py-3 bg-[#4A6741] text-white rounded-xl text-center flex items-center justify-center gap-2"
+            
+            {/* Tombol Login Mobile */}
+            <button 
+              onClick={handleNavigateToLogin}
+              disabled={isNavigating}
+              className="w-full py-3 bg-[#4A6741] hover:bg-[#3d5535] text-white rounded-xl text-center flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer border-none"
             >
-              Masuk Dashboard <ArrowRight size={16} />
-            </Link>
+              {isNavigating ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <>Masuk Dashboard <ArrowRight size={16} /></>
+              )}
+            </button>
           </div>
         )}
       </nav>
@@ -145,7 +202,6 @@ export default function LandingPage() {
             </div>
           </div>
           
-          {/* Decorative Blob */}
           <div className="absolute -z-10 w-72 h-72 bg-[#4A6741]/5 rounded-full blur-3xl -top-10 -right-10"></div>
         </div>
       </section>
@@ -153,7 +209,7 @@ export default function LandingPage() {
       <hr className="border-slate-200/60 max-w-7xl mx-auto" />
 
       {/* 3. FITUR UTAMA */}
-      <section id="fitur" className="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <section id="fitur" className="scroll-mt-24 py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
           <h2 className="text-[11px] font-black uppercase tracking-widest text-[#4A6741]">Keunggulan Perangkat</h2>
           <p className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
@@ -165,7 +221,6 @@ export default function LandingPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          
           <div className="bg-white border border-slate-200/80 p-6 rounded-2xl shadow-sm hover:shadow-md transition-all space-y-4">
             <div className="w-12 h-12 bg-[#E9F2E4] text-[#4A6741] rounded-xl flex items-center justify-center">
               <Flame size={22} />
@@ -205,12 +260,11 @@ export default function LandingPage() {
               Sinkronisasi data instan di bawah 1 detik memanfaatkan Firebase Realtime Database terintegrasi Next.js 14 App Router.
             </p>
           </div>
-
         </div>
       </section>
 
       {/* 4. ARSITEKTUR TEKNOLOGI */}
-      <section id="arsitektur" className="py-20 bg-slate-900 text-white px-4 sm:px-6 lg:px-8">
+      <section id="arsitektur" className="scroll-mt-20 py-20 bg-slate-900 text-white px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-xs font-bold text-[#A3E635]">
@@ -277,7 +331,7 @@ export default function LandingPage() {
       </section>
 
       {/* 5. HARGA & PAKET */}
-      <section id="harga" className="py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <section id="harga" className="scroll-mt-24 py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
           <h2 className="text-[11px] font-black uppercase tracking-widest text-[#4A6741]">Rencana Investasi</h2>
           <p className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
@@ -289,8 +343,7 @@ export default function LandingPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 max-w-4xl mx-auto gap-8">
-          
-          {/* Paket Standar */}
+          {/* Paket Basic */}
           <div className="bg-white border border-slate-200 p-8 rounded-3xl shadow-sm space-y-6 flex flex-col justify-between">
             <div className="space-y-4">
               <div>
@@ -308,12 +361,13 @@ export default function LandingPage() {
                 <li className="flex items-center gap-2 text-slate-300"><CheckCircle2 size={14} /> Integrasi Sistem WhatsApp Gateway</li>
               </ul>
             </div>
-            <Link 
-              href="/login" 
-              className="block w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-center text-xs transition-all"
+            <button 
+              onClick={handleNavigateToLogin}
+              disabled={isNavigating}
+              className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-center text-xs transition-all active:scale-95 cursor-pointer border-none flex items-center justify-center gap-2"
             >
-              Mulai Langganan
-            </Link>
+              {isNavigating ? <Loader2 size={14} className="animate-spin text-slate-400" /> : "Mulai Langganan"}
+            </button>
           </div>
 
           {/* Paket Pro */}
@@ -337,14 +391,14 @@ export default function LandingPage() {
                 <li className="flex items-center gap-2"><CheckCircle2 size={14} className="text-[#4A6741]" /> Integrasi Otomatis Alert WhatsApp Gateway</li>
               </ul>
             </div>
-            <Link 
-              href="/login" 
-              className="block w-full py-3 bg-[#4A6741] hover:bg-[#3d5535] text-white font-bold rounded-xl text-center text-xs shadow-md shadow-[#4A6741]/10 transition-all"
+            <button 
+              onClick={handleNavigateToLogin}
+              disabled={isNavigating}
+              className="w-full py-3 bg-[#4A6741] hover:bg-[#3d5535] text-white font-bold rounded-xl text-center text-xs shadow-md shadow-[#4A6741]/10 transition-all active:scale-95 cursor-pointer border-none flex items-center justify-center gap-2"
             >
-              Pilih Paket Pro
-            </Link>
+               {isNavigating ? <Loader2 size={14} className="animate-spin" /> : "Pilih Paket Pro"}
+            </button>
           </div>
-
         </div>
       </section>
 

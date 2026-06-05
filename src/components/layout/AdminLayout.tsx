@@ -1,6 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { auth, db } from "@/lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+
 import Sidebar from "./Sidebar";
 import AdminHeader from "./AdminHeader";
 
@@ -9,16 +14,27 @@ interface AdminLayoutProps {
   description?: string;
   children: React.ReactNode;
   userEmail?: string | null;
+  role?: "admin" | "user"; 
 }
 
 export default function AdminLayout({ 
   title, 
   description, 
   children,
-  userEmail
+  userEmail,
+  role = "admin" 
 }: AdminLayoutProps) {
-  // 1. Trik Sinkronisasi Instan: Langsung baca localStorage di nilai awal state
-  // Ini mencegah sidebar berkedip terbuka saat pindah page (client-side routing)
+  
+  const router = useRouter();
+
+  // Optimistic Auth Caching: Mencegah layar berkedip saat pindah menu
+  const [isAuthorized, setIsAuthorized] = useState(() => {
+    if (typeof window !== "undefined" && sessionStorage.getItem("aetheris_admin_auth") === "true") {
+      return true;
+    }
+    return false;
+  });
+
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("aetheris_sidebar_collapsed");
@@ -34,13 +50,51 @@ export default function AdminLayout({
     setMounted(true);
   }, []);
 
+  // FITUR SATPAM (AUTH GUARD) UNTUK ADMIN
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        // Jika belum login, hapus memori dan tendang ke login
+        sessionStorage.removeItem("aetheris_admin_auth");
+        router.replace("/login");
+      } else {
+        try {
+          // Cek role ke Firestore untuk memastikan ini benar-benar Admin
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          
+          if (userDoc.exists() && userDoc.data().role === "admin") {
+            // Simpan status verifikasi di memori browser agar pindah page jadi instan
+            sessionStorage.setItem("aetheris_admin_auth", "true");
+            if (!isAuthorized) setIsAuthorized(true); 
+          } else {
+            // Jika dia user biasa, tendang ke dashboard user
+            sessionStorage.removeItem("aetheris_admin_auth");
+            router.replace("/dashboard/user"); 
+          }
+        } catch (error) {
+          console.error("Gagal memeriksa role:", error);
+          router.replace("/login");
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [router, isAuthorized]);
+
   return (
-    <div className="relative flex min-h-screen bg-[#FCFBF8] text-[#1A1F24] font-sans antialiased">
+    <div className="relative flex min-h-screen text-[#1A1F24] font-sans antialiased overflow-hidden">
       
+      {/* MESH GRADIENT BACKGROUND: Minimalistic Luxury Aesthetic */}
+      <div className="fixed inset-0 z-[-1] bg-gradient-to-br from-[#F6F8F4] via-[#F0F4EC] to-[#E6ECE0]">
+        <div className="absolute top-[-15%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-gradient-to-br from-[#C4D0B7]/50 to-[#9EAF8C]/20 blur-[120px] mix-blend-multiply opacity-80 pointer-events-none" />
+        <div className="absolute bottom-[-15%] right-[-5%] w-[60vw] h-[60vw] rounded-full bg-gradient-to-tl from-[#B3C2A4]/50 to-[#D5DFCB]/20 blur-[120px] mix-blend-multiply opacity-80 pointer-events-none" />
+        <div className="absolute top-[20%] left-[20%] w-[40vw] h-[40vw] rounded-full bg-[#FFFFFF]/70 blur-[100px] pointer-events-none" />
+      </div>
+
       {/* Sidebar Container */}
       <div className="z-40 relative shrink-0">
         <Sidebar 
-          role="admin"
+          role={role} 
           userEmail={userEmail}
           isCollapsed={isCollapsed}
           setIsCollapsed={setIsCollapsed}
@@ -62,8 +116,13 @@ export default function AdminLayout({
         </div>
 
         <main className="flex-1 px-4 md:px-6 py-6">
-          <div className="w-full">
-            {children}
+          {/* Efek Fade-in Smooth untuk Konten */}
+          <div 
+            className={`w-full transition-opacity duration-500 ease-out ${
+              isAuthorized ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            {isAuthorized && children}
           </div>
         </main>
       </div>

@@ -1,23 +1,92 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { auth, db } from "@/lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+
 import Sidebar from "./Sidebar";
-import { Menu } from "lucide-react";
+import UserHeader from "./UserHeader";
 
 interface UserLayoutProps {
-  children: React.ReactNode;
   title: string;
+  description?: string;
+  children: React.ReactNode;
+  userEmail?: string | null;
 }
 
-export default function UserLayout({ children, title }: UserLayoutProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
+export default function UserLayout({ 
+  title, 
+  description, 
+  children,
+  userEmail
+}: UserLayoutProps) {
+  
+  const router = useRouter();
+  
+  const [isAuthorized, setIsAuthorized] = useState(() => {
+    if (typeof window !== "undefined" && sessionStorage.getItem("aetheris_user_auth") === "true") {
+      return true;
+    }
+    return false;
+  });
+
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("aetheris_sidebar_collapsed");
+      return saved !== null ? JSON.parse(saved) : false;
+    }
+    return false;
+  });
+
+  const [isMobileOpen, setIsMobileOpen] = useState<boolean>(false);
+  const [mounted, setMounted] = useState<boolean>(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        sessionStorage.removeItem("aetheris_user_auth");
+        router.replace("/login");
+      } else {
+        try {
+          const userDoc = await getDoc(doc(db, "users", user.uid));
+          
+          if (userDoc.exists() && userDoc.data().role === "admin") {
+            sessionStorage.removeItem("aetheris_user_auth");
+            router.replace("/dashboard/admin"); 
+          } else {
+            sessionStorage.setItem("aetheris_user_auth", "true");
+            if (!isAuthorized) setIsAuthorized(true); 
+          }
+        } catch (error) {
+          console.error("Gagal memeriksa role:", error);
+          router.replace("/login");
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [router, isAuthorized]);
 
   return (
-    <div className="relative flex h-screen w-full bg-[#F6F5F0] overflow-hidden text-slate-900 font-sans">
-      <div className="z-40 relative h-full">
-        <Sidebar
-          role="user" // Mengatur menu sidebar agar yang muncul adalah menu User
+    <div className="relative flex min-h-screen text-[#1A1F24] font-sans antialiased overflow-hidden">
+      
+      {/* MESH GRADIENT BACKGROUND */}
+      <div className="fixed inset-0 z-[-1] bg-gradient-to-br from-[#F6F8F4] via-[#F0F4EC] to-[#E6ECE0]">
+        <div className="absolute top-[-15%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-gradient-to-br from-[#C4D0B7]/50 to-[#9EAF8C]/20 blur-[120px] mix-blend-multiply opacity-80 pointer-events-none" />
+        <div className="absolute bottom-[-15%] right-[-5%] w-[60vw] h-[60vw] rounded-full bg-gradient-to-tl from-[#B3C2A4]/50 to-[#D5DFCB]/20 blur-[120px] mix-blend-multiply opacity-80 pointer-events-none" />
+        <div className="absolute top-[20%] left-[20%] w-[40vw] h-[40vw] rounded-full bg-[#FFFFFF]/70 blur-[100px] pointer-events-none" />
+      </div>
+
+      <div className="z-40 relative shrink-0">
+        <Sidebar 
+          role="user"
+          userEmail={userEmail}
           isCollapsed={isCollapsed}
           setIsCollapsed={setIsCollapsed}
           isMobileOpen={isMobileOpen}
@@ -25,21 +94,25 @@ export default function UserLayout({ children, title }: UserLayoutProps) {
         />
       </div>
 
-      <div className="flex flex-col flex-1 min-w-0 h-full relative">
-        {/* Header Sederhana Khusus User (Hanya untuk tombol menu mobile & Judul) */}
-        <header className="flex md:hidden items-center gap-3 bg-white px-4 py-3 border-b border-slate-200">
-          <button 
-            onClick={() => setIsMobileOpen(true)}
-            className="p-1.5 -ml-1.5 rounded-lg text-slate-500 hover:bg-slate-100"
-          >
-            <Menu size={20} />
-          </button>
-          <h1 className="font-bold text-slate-800 text-lg">{title}</h1>
-        </header>
+      <div className="flex flex-1 flex-col min-w-0 transition-all duration-300 z-10">
+        <div className="px-4 md:px-6 pt-4 md:pt-6">
+          <div className="w-full">
+            <UserHeader 
+              title={title} 
+              description={description} 
+              onToggleMobileMenu={() => setIsMobileOpen(prev => !prev)}
+            />
+          </div>
+        </div>
 
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 lg:p-8 scroll-smooth custom-scrollbar">
-          <div className="max-w-7xl mx-auto w-full">
-            {children}
+        <main className="flex-1 px-4 md:px-6 py-6">
+          {/* Konten akan muncul secara mulus (fade-in) setelah otorisasi selesai */}
+          <div 
+            className={`w-full transition-opacity duration-500 ease-out ${
+              isAuthorized ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            {isAuthorized && children}
           </div>
         </main>
       </div>

@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Sidebar from "@/app/components/Sidebar";
-import Navbar from "@/app/components/Navbar";
+import UserLayout from "@/src/components/layout/UserLayout";
 import { ClientProfileModel, UserProfile } from "@/models/clientProfileModel";
-import { RefreshCw, ChevronRight, X, Save, Loader2, Wifi, HelpCircle } from "lucide-react";
+import { RefreshCw, X, Save, Loader2, Wifi, HelpCircle } from "lucide-react";
 
 type ModalType = "name" | "address" | "hours" | "phone" | null;
 
@@ -93,260 +92,261 @@ export default function SettingsPage() {
     return date.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
   };
 
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-[#FDFBF7]">
-        <div className="text-center space-y-2">
-          <RefreshCw className="animate-spin text-emerald-600 mx-auto" size={28} />
-          <p className="text-slate-600 font-medium text-xs">Menyelaraskan profil...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex bg-[#FDFBF7] min-h-screen text-slate-800 antialiased overflow-x-hidden">
-      <Sidebar role="user" userEmail="khoirul@email.com" />
-      <Navbar title="Pengaturan" />
-
-      <main className="md:ml-64 pt-24 px-4 md:px-8 pb-24 md:pb-8 w-full max-w-6xl mx-auto box-border">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          
-          {/* KOLOM KIRI */}
-          <div className="space-y-6">
-            
-            {/* KARTU 1: PROFIL RESTORAN */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 md:p-6 shadow-sm">
-              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Profil Restoran</h3>
-              <div className="divide-y divide-slate-100 text-xs">
-                
-                <div className="flex justify-between items-center py-3.5 gap-4">
-                  <div className="min-w-0">
-                    <p className="text-slate-400 font-medium">Nama restoran</p>
-                    <p className="font-bold text-slate-900 mt-0.5 truncate">{profile?.restaurantName || "Warung Pak Budi"}</p>
-                  </div>
-                  <button 
-                    onClick={() => setActiveModal("name")}
-                    className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl font-bold hover:bg-slate-50 shrink-0 shadow-sm transition-all cursor-pointer border-none"
-                  >
-                    Edit
-                  </button>
-                </div>
-
-                <div className="flex justify-between items-center py-3.5 gap-4">
-                  <div className="min-w-0">
-                    <p className="text-slate-400 font-medium">Alamat</p>
-                    <p className="font-bold text-slate-900 mt-0.5 break-words line-clamp-2 leading-relaxed">{profile?.address || "Jl. Raya Sidoarjo No. 12"}</p>
-                  </div>
-                  <button 
-                    onClick={() => setActiveModal("address")}
-                    className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl font-bold hover:bg-slate-50 shrink-0 shadow-sm transition-all cursor-pointer border-none"
-                  >
-                    Edit
-                  </button>
-                </div>
-
-                <div className="flex justify-between items-center py-3.5 gap-4">
-                  <div className="min-w-0">
-                    <p className="text-slate-400 font-medium">Jam operasional</p>
-                    <p className="font-bold text-slate-900 mt-0.5 font-mono">
-                      {profile?.operationalHours?.open || "08:00"} — {profile?.operationalHours?.close || "22:00"}
-                    </p>
-                  </div>
-                  <button 
-                    onClick={() => setActiveModal("hours")}
-                    className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl font-bold hover:bg-slate-50 shrink-0 shadow-sm transition-all cursor-pointer border-none"
-                  >
-                    Edit
-                  </button>
-                </div>
-
-              </div>
-            </div>
-
-            {/* KARTU 2: NOTIFIKASI */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 md:p-6 shadow-sm">
-              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Notifikasi & Kontak</h3>
-              <div className="space-y-4 text-xs">
-                
-                <div className="flex justify-between items-center gap-4">
-                  <div className="min-w-0">
-                    <p className="font-bold text-slate-900">Notifikasi WhatsApp</p>
-                    <p className="text-slate-400 mt-0.5 font-mono truncate">{profile?.phone || "+62 812-3456-7890"}</p>
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <button 
-                      onClick={() => setActiveModal("phone")}
-                      className="px-2.5 py-1 bg-white border border-slate-200 rounded-lg font-bold hover:bg-slate-50 text-[11px] shadow-sm transition-all cursor-pointer border-none"
-                    >
-                      Edit HP
-                    </button>
-                    <button 
-                      onClick={() => handleToggle("notifWhatsapp", !!profile?.notifWhatsapp)}
-                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-all duration-300 cursor-pointer border-none ${profile?.notifWhatsapp ? "bg-[#4A6741]" : "bg-slate-200"}`}
-                    >
-                      <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-all duration-300 ${profile?.notifWhatsapp ? "translate-x-5" : ""}`} />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center gap-4">
-                  <div>
-                    <p className="font-bold text-slate-900">Notifikasi push</p>
-                    <p className="text-slate-400 mt-0.5">Browser / aplikasi dashboard</p>
-                  </div>
-                  <button 
-                    onClick={() => handleToggle("notifPush", !!profile?.notifPush)}
-                    className={`w-11 h-6 flex items-center rounded-full p-1 transition-all duration-300 shrink-0 cursor-pointer border-none ${profile?.notifPush ? "bg-[#4A6741]" : "bg-slate-200"}`}
-                  >
-                    <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-all duration-300 ${profile?.notifPush ? "translate-x-5" : ""}`} />
-                  </button>
-                </div>
-
-                <div className="flex justify-between items-center gap-4">
-                  <div>
-                    <p className="font-bold text-slate-900">Hanya jam operasional</p>
-                    <p className="text-slate-400 mt-0.5">Matikan alert WA di luar jam buka</p>
-                  </div>
-                  <button 
-                    onClick={() => handleToggle("notifOnlyOperational", !!profile?.notifOnlyOperational)}
-                    className={`w-11 h-6 flex items-center rounded-full p-1 transition-all duration-300 shrink-0 cursor-pointer border-none ${profile?.notifOnlyOperational ? "bg-[#4A6741]" : "bg-slate-200"}`}
-                  >
-                    <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-all duration-300 ${profile?.notifOnlyOperational ? "translate-x-5" : ""}`} />
-                  </button>
-                </div>
-
-              </div>
-            </div>
-
+    <UserLayout 
+      title="Pengaturan" 
+      description="Kelola profil restoran, konfigurasi notifikasi peringatan, dan panduan perangkat Anda."
+      userEmail="khoirul@email.com"
+    >
+      {loading ? (
+        <div className="flex h-[60vh] w-full items-center justify-center">
+          <div className="text-center space-y-3">
+            <RefreshCw className="animate-spin text-[#4D6344] mx-auto" size={28} />
+            <p className="text-[#5B636B] font-semibold text-xs tracking-wide">Menyelaraskan profil...</p>
           </div>
-
-          {/* KOLOM KANAN */}
-          <div className="space-y-6">
-
-            {/* ➔ TAMBAHAN UTAMA: KARTU INSTRUKSI PANDUAN PENGATURAN WI-FI UNTUK USER */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 md:p-6 shadow-sm">
-              <div className="flex items-center gap-2 mb-4">
-                <Wifi size={18} className="text-[#4A6741]" />
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">Panduan Ganti Wi-Fi Perangkat</h3>
-              </div>
-              <div className="bg-[#F8FAFC] border border-slate-100 p-4 rounded-xl text-xs space-y-3 leading-relaxed text-slate-600">
-                <p className="font-bold text-slate-800">Jika Wi-Fi restoran Anda diganti atau berubah password:</p>
-                <ol className="list-decimal list-inside space-y-1.5 font-medium">
-                  <li>Perangkat sensor otomatis akan mendeteksi putusnya koneksi.</li>
-                  <li>Layar LCD pada alat akan menampilkan tulisan <span className="font-mono bg-slate-200 px-1 py-0.5 rounded text-[11px] font-bold text-slate-800">Wi-Fi Lost!</span></li>
-                  <li>Ambil HP Anda, buka pengaturan Wi-Fi, lalu sambungkan ke hotspot sementara bernama <span className="font-bold text-slate-900">&quot;Aetheris-Setup&quot;</span>.</li>
-                  <li>Halaman konfigurasi otomatis akan muncul di layar HP Anda.</li>
-                  <li>Pilih nama Wi-Fi baru Anda, masukkan kata sandi, lalu klik <span className="font-bold text-[#4A6741]">Save</span>.</li>
-                </ol>
-                <div className="flex items-start gap-2 pt-2 border-t border-slate-200/60 text-[11px] font-medium text-amber-700">
-                  <HelpCircle size={14} className="shrink-0 mt-0.5" />
-                  <span>Alat akan otomatis merestart dan terhubung kembali ke Dashboard tanpa perlu bongkar kode program!</span>
-                </div>
-              </div>
-            </div>
-
-            {/* KARTU PAKET LANGGANAN */}
-            <div className="bg-white border border-slate-200 rounded-2xl p-5 md:p-6 shadow-sm">
-              <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Paket Langganan</h3>
-              <div className="bg-[#E9F2E4] border border-[#D1E2C7] p-4 rounded-xl mb-4">
-                <p className="text-sm font-black text-[#4A6741] uppercase tracking-wide">
-                  Paket {profile?.plan || "Pro"}
-                </p>
-                <p className="text-[11px] text-[#4A6741]/80 font-semibold mt-1">
-                  Aktif hingga: {formatExpiryDate(profile?.planExpiry)}
-                </p>
-                <p className="text-[11px] text-[#4A6741]/80 font-medium mt-0.5">Maks. 8 kuota sensor • Cloud Laporan 3 bulan</p>
-              </div>
-              <div className="text-xs space-y-2">
-                <div className="flex justify-between text-slate-500 font-medium">
-                  <span>Menggunakan 4 dari 8 alokasi sensor aktif</span>
-                </div>
-                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                  <div className="bg-[#4A6741] h-full rounded-full transition-all duration-500" style={{ width: "50%" }}></div>
-                </div>
-              </div>
-            </div>
-
-          </div>
-
         </div>
-      </main>
-
-      {/* POP-UP MODAL EDITING */}
-      {activeModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-[999]">
-          <div className="bg-white w-full max-w-md rounded-2xl p-6 shadow-xl border border-slate-100">
+      ) : (
+        <div className="w-full space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
-            <div className="flex justify-between items-center mb-5">
-              <h4 className="text-sm font-black uppercase tracking-wider text-slate-900">
+            {/* KOLOM KIRI */}
+            <div className="space-y-6">
+              
+              {/* KARTU 1: PROFIL RESTORAN */}
+              <div className="bg-white/80 backdrop-blur border border-slate-200/70 rounded-3xl p-6 md:p-8 shadow-xs">
+                <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-6">Profil Restoran</h3>
+                <div className="divide-y divide-slate-100/60 text-xs">
+                  
+                  <div className="flex justify-between items-center pb-4 gap-4">
+                    <div className="min-w-0">
+                      <p className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Nama Restoran</p>
+                      <p className="font-bold text-slate-900 mt-1.5 text-sm truncate">{profile?.restaurantName || "Warung Pak Budi"}</p>
+                    </div>
+                    <button 
+                      onClick={() => setActiveModal("name")}
+                      className="px-4 py-2 bg-white/60 border border-slate-200/70 rounded-xl font-bold hover:bg-white shrink-0 shadow-sm transition-all cursor-pointer border-none"
+                    >
+                      Edit
+                    </button>
+                  </div>
+
+                  <div className="flex justify-between items-center py-4 gap-4">
+                    <div className="min-w-0">
+                      <p className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Alamat Operasional</p>
+                      <p className="font-bold text-slate-900 mt-1.5 text-sm break-words line-clamp-2 leading-relaxed">{profile?.address || "Jl. Raya Sidoarjo No. 12"}</p>
+                    </div>
+                    <button 
+                      onClick={() => setActiveModal("address")}
+                      className="px-4 py-2 bg-white/60 border border-slate-200/70 rounded-xl font-bold hover:bg-white shrink-0 shadow-sm transition-all cursor-pointer border-none"
+                    >
+                      Edit
+                    </button>
+                  </div>
+
+                  <div className="flex justify-between items-center pt-4 gap-4">
+                    <div className="min-w-0">
+                      <p className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Jam Operasional</p>
+                      <p className="font-bold text-slate-900 mt-1.5 text-sm font-mono">
+                        {profile?.operationalHours?.open || "08:00"} — {profile?.operationalHours?.close || "22:00"}
+                      </p>
+                    </div>
+                    <button 
+                      onClick={() => setActiveModal("hours")}
+                      className="px-4 py-2 bg-white/60 border border-slate-200/70 rounded-xl font-bold hover:bg-white shrink-0 shadow-sm transition-all cursor-pointer border-none"
+                    >
+                      Edit
+                    </button>
+                  </div>
+
+                </div>
+              </div>
+
+              {/* KARTU 2: NOTIFIKASI */}
+              <div className="bg-white/80 backdrop-blur border border-slate-200/70 rounded-3xl p-6 md:p-8 shadow-xs">
+                <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-6">Notifikasi & Kontak</h3>
+                <div className="space-y-6 text-xs">
+                  
+                  <div className="flex justify-between items-center gap-4">
+                    <div className="min-w-0">
+                      <p className="font-bold text-slate-900 text-sm">Notifikasi WhatsApp</p>
+                      <p className="text-slate-500 mt-1 font-mono font-medium truncate">{profile?.phone || "+62 812-3456-7890"}</p>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <button 
+                        onClick={() => setActiveModal("phone")}
+                        className="px-3 py-1.5 bg-white/60 border border-slate-200/70 rounded-xl font-bold hover:bg-white text-[11px] shadow-sm transition-all cursor-pointer border-none"
+                      >
+                        Edit HP
+                      </button>
+                      <button 
+                        onClick={() => handleToggle("notifWhatsapp", !!profile?.notifWhatsapp)}
+                        className={`w-11 h-6 flex items-center rounded-full p-1 transition-all duration-300 cursor-pointer border-none shadow-inner ${profile?.notifWhatsapp ? "bg-[#4D6344]" : "bg-slate-300"}`}
+                      >
+                        <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${profile?.notifWhatsapp ? "translate-x-5" : ""}`} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center gap-4">
+                    <div>
+                      <p className="font-bold text-slate-900 text-sm">Notifikasi Push</p>
+                      <p className="text-slate-500 mt-1 font-medium">Browser / aplikasi dashboard</p>
+                    </div>
+                    <button 
+                      onClick={() => handleToggle("notifPush", !!profile?.notifPush)}
+                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-all duration-300 shrink-0 cursor-pointer border-none shadow-inner ${profile?.notifPush ? "bg-[#4D6344]" : "bg-slate-300"}`}
+                    >
+                      <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${profile?.notifPush ? "translate-x-5" : ""}`} />
+                    </button>
+                  </div>
+
+                  <div className="flex justify-between items-center gap-4">
+                    <div>
+                      <p className="font-bold text-slate-900 text-sm">Hanya Jam Operasional</p>
+                      <p className="text-slate-500 mt-1 font-medium">Matikan alert di luar jam buka</p>
+                    </div>
+                    <button 
+                      onClick={() => handleToggle("notifOnlyOperational", !!profile?.notifOnlyOperational)}
+                      className={`w-11 h-6 flex items-center rounded-full p-1 transition-all duration-300 shrink-0 cursor-pointer border-none shadow-inner ${profile?.notifOnlyOperational ? "bg-[#4D6344]" : "bg-slate-300"}`}
+                    >
+                      <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${profile?.notifOnlyOperational ? "translate-x-5" : ""}`} />
+                    </button>
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+
+            {/* KOLOM KANAN */}
+            <div className="space-y-6">
+
+              {/* KARTU INSTRUKSI PANDUAN PENGATURAN WI-FI UNTUK USER */}
+              <div className="bg-white/80 backdrop-blur border border-slate-200/70 rounded-3xl p-6 md:p-8 shadow-xs">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-8 h-8 rounded-full bg-[#EAF2EB] flex items-center justify-center shrink-0">
+                    <Wifi size={16} className="text-[#4D6344]" />
+                  </div>
+                  <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400">Panduan Ganti Wi-Fi Perangkat</h3>
+                </div>
+                <div className="bg-white/50 backdrop-blur-sm border border-slate-100 p-5 rounded-2xl text-xs space-y-4 leading-relaxed text-slate-600 shadow-inner">
+                  <p className="font-bold text-slate-800 text-sm">Jika Wi-Fi restoran Anda diganti atau berubah password:</p>
+                  <ol className="list-decimal list-inside space-y-2.5 font-medium">
+                    <li>Perangkat sensor otomatis akan mendeteksi putusnya koneksi.</li>
+                    <li>Layar LCD pada alat akan menampilkan tulisan <span className="font-mono bg-slate-200/70 px-1.5 py-0.5 rounded-md text-[11px] font-bold text-slate-800 border border-slate-300/50">Wi-Fi Lost!</span></li>
+                    <li>Ambil HP Anda, buka pengaturan Wi-Fi, lalu sambungkan ke hotspot sementara bernama <span className="font-bold text-slate-900 border-b border-dashed border-slate-400">&quot;Aetheris-Setup&quot;</span>.</li>
+                    <li>Halaman konfigurasi otomatis akan muncul di layar HP Anda.</li>
+                    <li>Pilih nama Wi-Fi baru Anda, masukkan kata sandi, lalu klik <span className="font-bold text-[#4D6344]">Save</span>.</li>
+                  </ol>
+                  <div className="flex items-start gap-2.5 pt-3 border-t border-slate-200/60 text-[11px] font-semibold text-amber-700">
+                    <HelpCircle size={16} className="shrink-0 mt-0.5" />
+                    <span>Alat akan otomatis merestart dan terhubung kembali ke Dashboard tanpa perlu bongkar kode program!</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* KARTU PAKET LANGGANAN */}
+              <div className="bg-white/80 backdrop-blur border border-slate-200/70 rounded-3xl p-6 md:p-8 shadow-xs">
+                <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-6">Paket Langganan</h3>
+                <div className="bg-[#EAF2EB]/80 border border-[#C4D0B7]/50 p-5 rounded-2xl mb-5 shadow-inner">
+                  <p className="text-base font-black text-[#4D6344] uppercase tracking-wide">
+                    Paket {profile?.plan || "Pro"}
+                  </p>
+                  <p className="text-[11px] text-[#4D6344]/80 font-bold mt-1.5">
+                    Aktif hingga: {formatExpiryDate(profile?.planExpiry)}
+                  </p>
+                  <p className="text-[11px] text-[#4D6344]/70 font-semibold mt-1">Maks. 8 kuota sensor • Cloud Laporan 3 bulan</p>
+                </div>
+                <div className="text-xs space-y-3">
+                  <div className="flex justify-between text-slate-500 font-bold">
+                    <span>Menggunakan 4 dari 8 alokasi sensor aktif</span>
+                  </div>
+                  <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden shadow-inner">
+                    <div className="bg-[#4D6344] h-full rounded-full transition-all duration-500" style={{ width: "50%" }}></div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* POP-UP MODAL EDITING DENGAN GLASSMORPHISM */}
+      {activeModal && (
+        <div className="fixed inset-0 bg-slate-900/30 backdrop-blur-md flex items-center justify-center p-4 z-[999] transition-opacity">
+          <div className="bg-white/95 backdrop-blur-xl w-full max-w-md rounded-3xl p-6 md:p-8 shadow-2xl border border-slate-200/50">
+            
+            <div className="flex justify-between items-center mb-6">
+              <h4 className="text-sm font-black uppercase tracking-widest text-slate-900">
                 {activeModal === "name" && "Edit Nama Restoran"}
                 {activeModal === "address" && "Edit Alamat Operasional"}
                 {activeModal === "phone" && "Edit Nomor WhatsApp"}
                 {activeModal === "hours" && "Edit Jam Operasional"}
               </h4>
-              <button onClick={() => setActiveModal(null)} className="text-slate-400 hover:text-slate-600 cursor-pointer border-none bg-transparent">
+              <button onClick={() => setActiveModal(null)} className="text-slate-400 hover:text-slate-900 hover:bg-slate-100 p-1.5 rounded-full transition-all cursor-pointer border-none bg-transparent">
                 <X size={18} />
               </button>
             </div>
 
-            <div className="space-y-4 mb-6">
+            <div className="space-y-5 mb-8">
               {activeModal === "name" && (
                 <div>
-                  <label className="block text-[11px] font-bold uppercase text-slate-400 mb-1.5">Nama Restoran Baru</label>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Nama Restoran Baru</label>
                   <input 
                     type="text" 
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
-                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-slate-400 font-medium"
+                    className="w-full px-4 py-3 text-xs border border-slate-200/70 bg-slate-50/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4D6344]/20 focus:border-[#4D6344] font-medium transition-all"
                   />
                 </div>
               )}
 
               {activeModal === "address" && (
                 <div>
-                  <label className="block text-[11px] font-bold uppercase text-slate-400 mb-1.5">Alamat Lengkap</label>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Alamat Lengkap</label>
                   <textarea 
                     rows={3}
                     value={editAddress}
                     onChange={(e) => setEditAddress(e.target.value)}
-                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-slate-400 font-medium resize-none leading-relaxed"
+                    className="w-full px-4 py-3 text-xs border border-slate-200/70 bg-slate-50/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4D6344]/20 focus:border-[#4D6344] font-medium resize-none leading-relaxed transition-all"
                   />
                 </div>
               )}
 
               {activeModal === "phone" && (
                 <div>
-                  <label className="block text-[11px] font-bold uppercase text-slate-400 mb-1.5">Nomor WhatsApp Gateway</label>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Nomor WhatsApp Gateway</label>
                   <input 
                     type="text" 
                     placeholder="Contoh: 08999020805"
                     value={editPhone}
                     onChange={(e) => setEditPhone(e.target.value)}
-                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-slate-400 font-mono font-bold"
+                    className="w-full px-4 py-3 text-xs border border-slate-200/70 bg-slate-50/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4D6344]/20 focus:border-[#4D6344] font-mono font-bold transition-all"
                   />
-                  <p className="text-[10px] text-slate-400 mt-1">Pastikan nomor aktif agar bot WhatsApp script dapat mengirim pesan dengan lancar.</p>
+                  <p className="text-[10px] text-slate-500 font-medium mt-2 leading-relaxed">Pastikan nomor aktif agar bot WhatsApp script dapat mengirim pesan dengan lancar.</p>
                 </div>
               )}
 
               {activeModal === "hours" && (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[11px] font-bold uppercase text-slate-400 mb-1.5">Jam Buka</label>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Jam Buka</label>
                     <input 
                       type="time" 
                       value={editOpenHour}
                       onChange={(e) => setEditOpenHour(e.target.value)}
-                      className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-slate-400 font-mono font-bold"
+                      className="w-full px-4 py-3 text-xs border border-slate-200/70 bg-slate-50/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4D6344]/20 focus:border-[#4D6344] font-mono font-bold transition-all"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold uppercase text-slate-400 mb-1.5">Jam Tutup</label>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">Jam Tutup</label>
                     <input 
                       type="time" 
                       value={editCloseHour}
                       onChange={(e) => setEditCloseHour(e.target.value)}
-                      className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-slate-400 font-mono font-bold"
+                      className="w-full px-4 py-3 text-xs border border-slate-200/70 bg-slate-50/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4D6344]/20 focus:border-[#4D6344] font-mono font-bold transition-all"
                     />
                   </div>
                 </div>
@@ -356,20 +356,22 @@ export default function SettingsPage() {
             <div className="flex justify-end gap-3 text-xs">
               <button
                 onClick={() => setActiveModal(null)}
-                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl transition-all cursor-pointer border-none"
+                className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl transition-all cursor-pointer border-none"
               >
                 Batal
               </button>
               <button
                 onClick={handleSaveChanges}
                 disabled={isSaving}
-                className="px-4 py-2 bg-[#4A6741] hover:bg-[#3d5535] disabled:bg-slate-300 text-white font-bold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer border-none"
+                className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-bold rounded-xl flex items-center gap-2 transition-all shadow-md active:scale-95 cursor-pointer border-none"
               >
                 {isSaving ? (
-                  <Loader2 size={14} className="animate-spin" />
+                  <>
+                    <Loader2 size={14} className="animate-spin" /> Menyimpan...
+                  </>
                 ) : (
                   <>
-                    <Save size={14} /> Simpan
+                    <Save size={14} /> Simpan Perubahan
                   </>
                 )}
               </button>
@@ -378,6 +380,6 @@ export default function SettingsPage() {
           </div>
         </div>
       )}
-    </div>
+    </UserLayout>
   );
 }

@@ -2,19 +2,19 @@
 
 import { Search, Bell, Menu } from "lucide-react";
 
-interface AdminHeaderProps {
+interface UserHeaderProps {
   title: string;
   description?: string;
   onToggleMobileMenu: () => void;
   searchPlaceholder?: string;
 }
 
-export default function AdminHeader({ 
+export default function UserHeader({ 
   title, 
   description, 
   onToggleMobileMenu,
-  searchPlaceholder = "Search restaurants, sensors, or alerts..."
-}: AdminHeaderProps) {
+  searchPlaceholder = "Search sensors, areas, or alerts..."
+}: UserHeaderProps) {
   return (
     <header className="rounded-2xl border border-slate-200/70 bg-white/90 px-5 py-4 shadow-xs backdrop-blur transition-all duration-300">
       <div className="flex flex-col gap-3.5 xl:flex-row xl:items-center xl:justify-between">
@@ -30,15 +30,16 @@ export default function AdminHeader({
             <Menu size={18} strokeWidth={2.5} />
           </button>
           
-          <div className="min-w-0">
+          <div className="min-w-0 flex flex-col justify-center">
             <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-slate-400 leading-none mb-1">
-              Admin Dashboard
+              User Dashboard
             </p>
-            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 truncate leading-none">
+            {/* PERBAIKAN: Mengganti leading-none menjadi leading-tight dan menambah pb-1 agar huruf 'g' tidak terpotong */}
+            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 truncate leading-tight pb-1">
               {title}
             </h1>
             {description && (
-              <p className="mt-1.5 text-xs text-slate-500 font-medium leading-relaxed truncate">
+              <p className="text-xs text-slate-500 font-medium leading-relaxed truncate">
                 {description}
               </p>
             )}
@@ -63,12 +64,12 @@ export default function AdminHeader({
               <span>Support</span>
             </button>
 
-            {/* Admin Profile Avatar */}
+            {/* User Profile Avatar */}
             <button 
               className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-[#1A1F24] text-white text-[11px] font-bold shadow-xs hover:bg-[#333C45] hover:scale-105 active:scale-95 transition-all cursor-pointer"
-              title="Admin Profile"
+              title="Partner Profile"
             >
-              AD
+              PR
             </button>
           </div>
         </div>
