@@ -136,8 +136,10 @@ function packagePrice(plan: string | undefined, packages: SubscriptionPackage[])
 }
 
 function packageBadgeClass(plan?: string) {
-  if (!plan || plan === DEFAULT_PACKAGE) return "bg-slate-100 text-slate-700";
-  if (plan === "pro") return "bg-blue-50 text-blue-700";
+  // Case insensitive check
+  const normalizedPlan = plan?.toLowerCase();
+  if (!normalizedPlan || normalizedPlan === "basic") return "bg-slate-100 text-slate-700";
+  if (normalizedPlan === "pro") return "bg-blue-50 text-blue-700";
   return "bg-emerald-50 text-emerald-700";
 }
 
@@ -357,7 +359,12 @@ export default function AdminUsersPage() {
         normalizedSearch === "" ||
         user.restaurantName.toLowerCase().includes(normalizedSearch) ||
         user.email.toLowerCase().includes(normalizedSearch);
-      const matchesPackage = packageFilter === "" || user.plan === packageFilter;
+      
+      // PERBAIKAN: Gunakan toLowerCase() agar filter kebal terhadap perbedaan Case (huruf besar/kecil)
+      const matchesPackage = 
+        packageFilter === "" || 
+        user.plan?.toLowerCase() === packageFilter.toLowerCase();
+        
       const matchesStatus =
         statusFilter === "" ||
         (statusFilter === "active" ? user.isActive !== false : user.isActive === false);
