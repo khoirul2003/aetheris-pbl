@@ -5,26 +5,18 @@ import AdminLayout from "@/src/components/layout/AdminLayout";
 import {
   ClientSubscriptionModel,
   SubscriptionPackage,
-  UserSubscriptionLog,
 } from "@/models/clientSubscriptionModel";
 import {
   Layers,
-  CreditCard,
-  Filter,
-  AlertCircle,
   Edit,
   Plus,
   Check,
   X,
-  Calendar,
   DollarSign,
   Zap,
   Percent,
   Trash2,
 } from "lucide-react";
-<<<<<<< HEAD
-import { Timestamp } from "firebase/firestore";
-=======
 import { doc, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -34,12 +26,9 @@ function getPackageFinalPrice(pkg: SubscriptionPackage | undefined) {
   const discountPercent = (pkg as any).discount || 0;
   return pkg.price - (pkg.price * discountPercent / 100);
 }
->>>>>>> main
 
 export default function AdminSubscriptionsManagementPage() {
   const [packages, setPackages] = useState<SubscriptionPackage[]>([]);
-  const [subLogs, setSubLogs] = useState<UserSubscriptionLog[]>([]);
-  const [logFilter, setLogFilter] = useState("ALL");
 
   const [editingPack, setEditingPack] = useState<SubscriptionPackage | null>(null);
   const [packPrice, setPackPrice] = useState<number | string>("");
@@ -67,8 +56,7 @@ export default function AdminSubscriptionsManagementPage() {
 
   useEffect(() => {
     const unsubPacks = ClientSubscriptionModel.subscribeToPackages((data) => setPackages(data));
-    const unsubLogs = ClientSubscriptionModel.subscribeToAllUserSubscriptions((data) => setSubLogs(data));
-    return () => { unsubPacks(); unsubLogs(); };
+    return () => { unsubPacks(); };
   }, []);
 
   const handleUpdatePackage = async () => {
@@ -88,7 +76,6 @@ export default function AdminSubscriptionsManagementPage() {
   const handleDeletePackage = async (pkg: SubscriptionPackage) => {
     if (confirm(`WARNING: Are you sure you want to PERMANENTLY DELETE the "${pkg.name}" tier package?\n\nThis action cannot be undone!`)) {
       try {
-        // Coba memanggil dari model jika ada, jika tidak ada fallback hapus via Firestore
         if ('deletePackage' in ClientSubscriptionModel) {
           await (ClientSubscriptionModel as any).deletePackage(pkg.id);
         } else {
@@ -119,15 +106,8 @@ export default function AdminSubscriptionsManagementPage() {
         features: featuresArray, 
         isActive: true,
       });
-<<<<<<< HEAD
-
-      alert(
-        `Tier paket baru "${newPackage.name.toUpperCase()}" berhasil didaftarkan!`,
-      );
-=======
       
       alert(`New tier package "${newPackage.name.toUpperCase()}" successfully registered!`);
->>>>>>> main
       setShowAddForm(false);
       setNewPackage({ name: "", price: "", discount: "", maxSensors: "", historyDurationDays: "", features: "" });
     } catch (err) {
@@ -139,72 +119,9 @@ export default function AdminSubscriptionsManagementPage() {
     await ClientSubscriptionModel.savePackage(pkg.id, { isActive: !pkg.isActive });
   };
 
-  const handleManualExtend = async (log: UserSubscriptionLog) => {
-    if (confirm(`Are you sure you want to manually extend the active period of the package for ${log.restaurantName} by 30 days?`)) {
-      const currentEnd = log.endDate ? log.endDate.toDate() : new Date();
-      currentEnd.setDate(currentEnd.getDate() + 30);
-      await ClientSubscriptionModel.updateUserSubscription(log.id, { endDate: currentEnd, paymentStatus: "paid" });
-      alert("User package validity period successfully extended!");
-    }
-  };
-
-<<<<<<< HEAD
-      await ClientSubscriptionModel.updateUserSubscription(log.id, {
-        endDate: Timestamp.fromDate(currentEnd),
-        paymentStatus: "paid",
-      });
-      alert("Masa berlaku paket user berhasil diperpanjang!");
-=======
-  const handleGiveDiscount = async (log: UserSubscriptionLog) => {
-    const discountInput = prompt(`Enter discount percentage (0-100) for ${log.restaurantName}:\nCurrent Bill: Rp ${log.amount.toLocaleString("en-US")}`, "0");
-    if (!discountInput) return;
-
-    const discountPercent = Number(discountInput);
-    if (isNaN(discountPercent) || discountPercent < 0 || discountPercent > 100) {
-      alert("Invalid discount. Please enter a valid percentage between 0 and 100.");
-      return;
-    }
-
-    const discountAmount = log.amount * (discountPercent / 100);
-    const newAmount = log.amount - discountAmount;
-
-    if (confirm(`Apply ${discountPercent}% discount?\nThe new billing amount will be Rp ${newAmount.toLocaleString("en-US")}.`)) {
-      try {
-        await ClientSubscriptionModel.updateUserSubscription(log.id, { amount: newAmount });
-        alert(`Discount successfully applied! New bill is Rp ${newAmount.toLocaleString("en-US")}.`);
-      } catch (err) {
-        console.error(err);
-        alert("Failed to apply discount. Please try again.");
-      }
->>>>>>> main
-    }
-  };
-
-  const expiringLogs = subLogs.filter((log) => {
-    if (log.paymentStatus !== "paid" || !log.endDate) return false;
-    const diffTime = log.endDate.toDate().getTime() - new Date().getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays > 0 && diffDays <= 7;
-  });
-
-  const filteredLogs = subLogs.filter((log) => {
-    if (logFilter === "ALL") return true;
-    return log.paymentStatus === logFilter;
-  });
-
   return (
-    <AdminLayout title="Package & Billing Management" description="Manage subscription packages, billing, and payment history.">
+    <AdminLayout title="Package & Billing Management" description="Manage subscription packages, limits, and pricing structures.">
       <div className="space-y-8">
-          {expiringLogs.length > 0 && (
-            <div className="bg-amber-50 border border-amber-200 text-amber-900 p-4 rounded-2xl flex items-start gap-3.5 text-xs font-semibold shadow-sm">
-              <div className="bg-amber-500 text-white p-2 rounded-xl shrink-0"><AlertCircle size={18} /></div>
-              <div className="space-y-1">
-                <p className="font-bold text-sm text-amber-900">User Subscription Expiry Warning</p>
-                <p className="text-slate-600">There are <span className="text-amber-700 font-bold">{expiringLogs.length} restaurant partners</span> whose feature license will expire in less than 7 days.</p>
-              </div>
-            </div>
-          )}
-
           <section className="space-y-5">
             <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
               <div>
@@ -294,108 +211,6 @@ export default function AdminSubscriptionsManagementPage() {
               </div>
             )}
 
-<<<<<<< HEAD
-            {/* CARD LIST PAKET */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {packages.map((pkg) => {
-                const isPro =
-                  pkg.id?.toLowerCase() === "pro" ||
-                  pkg.name?.toLowerCase() === "pro";
-
-                return (
-                  <div
-                    key={pkg.id}
-                    className={`relative bg-white rounded-3xl p-8 border transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${
-                      isPro
-                        ? "border-blue-500 shadow-lg"
-                        : "border-slate-200 shadow-sm"
-                    }`}
-                  >
-                    {isPro && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                        <span className="bg-blue-600 text-white text-xs font-bold px-4 py-1.5 rounded-full">
-                          PALING POPULER
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="mb-6">
-                      <h3 className="text-2xl font-bold text-slate-900">
-                        {pkg.name}
-                      </h3>
-
-                      <p className="text-slate-500 text-sm mt-1">
-                        Paket Langganan
-                      </p>
-                    </div>
-
-                    <div className="mb-8">
-                      <div className="flex items-end gap-2">
-                        <span className="text-4xl font-black text-slate-900">
-                          Rp {pkg.price.toLocaleString("id-ID")}
-                        </span>
-                      </div>
-
-                      <p className="text-slate-500 mt-1">
-                        per bulan
-                      </p>
-                    </div>
-
-                    <div className="space-y-4 mb-8">
-                      <div className="flex items-center gap-3">
-                        <Check size={18} className="text-green-500" />
-                        <span>
-                          Maksimal {pkg.maxSensors} Sensor
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        <Check size={18} className="text-green-500" />
-                        <span>
-                          Riwayat Data {pkg.historyDurationDays} Hari
-                        </span>
-                      </div>
-
-                      {pkg.features?.map((feature, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center gap-3"
-                        >
-                          <Check
-                            size={18}
-                            className="text-green-500"
-                          />
-                          <span>{feature}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="flex gap-3">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingPack(pkg);
-                          setPackPrice(pkg.price);
-                          setPackMaxSensors(pkg.maxSensors);
-                        }}
-                        className="flex-1 py-3 rounded-xl border border-slate-300 hover:bg-slate-50 font-semibold flex items-center justify-center gap-2"
-                      >
-                        <Edit size={16} />
-                        Edit
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleTogglePackActive(pkg)}
-                        className={`flex-1 py-3 rounded-xl font-semibold ${
-                          pkg.isActive
-                            ? "bg-red-50 text-red-600 border border-red-200"
-                            : "bg-green-50 text-green-600 border border-green-200"
-                        }`}
-                      >
-                        {pkg.isActive ? "Nonaktifkan" : "Aktifkan"}
-                      </button>
-=======
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {packages.map((pkg) => {
                 const isEditing = editingPack?.id === pkg.id;
@@ -444,7 +259,6 @@ export default function AdminSubscriptionsManagementPage() {
                         </div>
                         <div>
                           <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">History Log Period</span>
-                          {/* EDIT MODE: Input untuk History Log Period */}
                           {isEditing ? (
                             <div className="flex items-center gap-1.5 mt-1">
                               <input 
@@ -535,113 +349,22 @@ export default function AdminSubscriptionsManagementPage() {
                             setPackPrice(pkg.price); 
                             setPackDiscount((pkg as any).discount || 0); 
                             setPackMaxSensors(pkg.maxSensors); 
-                            setPackHistoryDurationDays(pkg.historyDurationDays); // Bind nilai awal
+                            setPackHistoryDurationDays(pkg.historyDurationDays);
                           }} className="flex-1 bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer mt-2">
                             <Edit size={13} /> Edit Specs
                           </button>
                           <button type="button" onClick={() => handleTogglePackActive(pkg)} className={`flex-1 text-xs font-bold py-2.5 rounded-xl border transition-colors cursor-pointer mt-2 ${pkg.isActive ? "bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100/60" : "bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100/60"}`}>
                             {pkg.isActive ? "Deactivate" : "Activate"}
                           </button>
-                          {/* TOMBOL DELETE PACKAGE */}
                           <button type="button" onClick={() => handleDeletePackage(pkg)} title="Hapus Paket" className="px-3 bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-bold py-2.5 rounded-xl flex items-center justify-center transition-colors cursor-pointer mt-2 shadow-sm">
                             <Trash2 size={16} />
                           </button>
                         </>
                       )}
->>>>>>> main
                     </div>
                   </div>
                 );
               })}
-<<<<<<< HEAD
-
-              <button
-                onClick={() => setShowAddForm(true)}
-                className="bg-white rounded-3xl border-2 border-dashed border-slate-300 min-h-[420px] flex flex-col justify-center items-center gap-4 hover:border-blue-500 hover:bg-blue-50 transition-all"
-              >
-                <Plus size={48} className="text-slate-500" />
-
-                <span className="font-semibold text-slate-600 text-lg">
-                  Tambah Paket
-                </span>
-
-                <span className="text-sm text-slate-400">
-                  Buat paket langganan baru
-                </span>
-              </button>
-=======
->>>>>>> main
-            </div>
-          </section>
-
-          <section className="space-y-4">
-            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-slate-200 pb-3">
-              <div>
-                <h3 className="text-base font-bold text-slate-900 flex items-center gap-1.5">
-                  <CreditCard size={18} className="text-[#4D6344]" /> Transaction Log & Subscription Billing Status
-                </h3>
-                <p className="text-slate-500 text-xs mt-0.5">Record list of all active packages and commercial billing history of all users.</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Filter size={14} className="text-[#4D6344]" />
-                <select
-                  value={logFilter} onChange={(e) => setLogFilter(e.target.value)}
-                  className="bg-white border border-slate-200 p-2 rounded-xl text-xs font-semibold shadow-sm outline-none focus:ring-2 focus:ring-[#4D6344]/20 cursor-pointer"
-                >
-                  <option value="ALL">All Partner Payments</option>
-                  <option value="paid">✅ Active / Paid</option>
-                  <option value="pending">⏳ Pending Payment</option>
-                  <option value="expired">❌ Expired</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left table-auto">
-                  <thead className="bg-slate-50 text-slate-400 text-xs font-bold uppercase tracking-wider border-b border-slate-200">
-                    <tr>
-                      <th className="px-6 py-4">Restaurant Name</th>
-                      <th className="px-6 py-4">Tier Package</th>
-                      <th className="px-6 py-4">Validity Period</th>
-                      <th className="px-6 py-4">Billing Amount</th>
-                      <th className="px-6 py-4">Transaction Status</th>
-                      <th className="px-6 py-4 text-center">Authority Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-slate-700 text-xs">
-                    {filteredLogs.map((log) => {
-                      const startStr = log.startDate ? log.startDate.toDate().toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" }) : "-";
-                      const endStr = log.endDate ? log.endDate.toDate().toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" }) : "-";
-                      return (
-                        <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="px-6 py-4 font-bold text-slate-900">{log.restaurantName}</td>
-                          <td className="px-6 py-4"><span className="bg-slate-100 text-slate-700 font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wide font-mono">{log.packageName}</span></td>
-                          <td className="px-6 py-4 text-slate-500 font-medium"><div className="flex items-center gap-1.5"><Calendar size={12} className="text-slate-400 shrink-0" /><span>{startStr} to <span className="font-bold text-slate-700">{endStr}</span></span></div></td>
-                          <td className="px-6 py-4 font-mono font-bold text-slate-900">Rp {log.amount.toLocaleString("en-US")}</td>
-                          <td className="px-6 py-4">
-                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${log.paymentStatus === "paid" ? "bg-emerald-50 text-emerald-700" : log.paymentStatus === "pending" ? "bg-amber-50 text-amber-700" : "bg-rose-50 text-rose-700"}`}>
-                              {log.paymentStatus === "paid" ? "PAID / ACTIVE" : log.paymentStatus === "pending" ? "PENDING" : "EXPIRED"}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 flex flex-wrap gap-2 justify-center items-center">
-                            <button type="button" onClick={() => handleManualExtend(log)} className="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold px-2.5 py-1 rounded-lg text-[10px] transition-all cursor-pointer shadow-sm">Manual Extend</button>
-                            <button type="button" onClick={() => { const pack = prompt("Enter new package name (basic / pro):", "pro"); if (pack) alert(`Tier transfer session for ${log.restaurantName} to ${pack} tier was successful.`); }} className="bg-[#EAF2EB] hover:bg-[#C2D1C0] text-[#4D6344] font-bold px-2.5 py-1 rounded-lg text-[10px] transition-all cursor-pointer">
-                              Change Tier
-                            </button>
-                            <button type="button" onClick={() => handleGiveDiscount(log)} className="bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-600 font-bold px-2.5 py-1 rounded-lg text-[10px] transition-all cursor-pointer shadow-sm">
-                              Give Discount
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                    {filteredLogs.length === 0 && (
-                      <tr><td colSpan={6} className="text-center text-slate-400 py-12 text-xs font-medium">No user subscription billing history found.</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
             </div>
           </section>
       </div>
