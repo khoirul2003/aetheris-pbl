@@ -80,7 +80,6 @@ export default function AlertsPage() {
           </div>
         </div>
       ) : (
-        // PERBAIKAN: max-w-6xl dan mx-auto dihapus agar memenuhi layar
         <div className="w-full space-y-6">
           
           {/* TAB FILTER KATEGORI */}
