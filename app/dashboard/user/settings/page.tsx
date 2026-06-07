@@ -87,7 +87,7 @@ export default function SettingsPage() {
   };
 
   const formatExpiryDate = (timestamp: { toDate: () => Date } | null | undefined) => {
-    if (!timestamp || typeof timestamp.toDate !== "function") return "31 Desember 2025";
+    if (!timestamp || typeof timestamp.toDate !== "function") return "31 Desember 2026";
     const date = timestamp.toDate();
     return date.toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
   };

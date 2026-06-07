@@ -5,7 +5,7 @@ import UserLayout from "@/src/components/layout/UserLayout";
 import { ClientReportModel, DailySummary } from "@/models/clientReportModel";
 import { ClientAlertModel, AlertData } from "@/models/clientAlertModel";
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend 
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend 
 } from "recharts";
 import { Download, FileText, RefreshCw, TrendingUp } from "lucide-react";
 
@@ -49,14 +49,10 @@ export default function ReportsPage() {
     };
   }, [userId]);
 
-  // ====================================================================
-  // FUNGSI DINAMIS UTAMA: UNDUH/CETAK JADI PDF VIA UTILITAS SISTEM BROWSER
-  // ====================================================================
   const handleDownloadPDF = () => {
     window.print();
   };
 
-  // Logika matematis agregasi data otomatis dari database
   const totalAlertsSum = summaries.reduce((acc, curr) => acc + (curr.totalAlerts || 0), 0);
   const totalDangerSum = summaries.reduce((acc, curr) => acc + (curr.dangerCount || 0), 0);
 
@@ -80,13 +76,19 @@ export default function ReportsPage() {
     return mostFrequent;
   };
 
+  // Konversi data multi-sensor menjadi representasi tunggal (Maksimum PPM) yang ramah orang awam
   const chartData = summaries.map(s => {
     const rawDate = s.date ? s.date.split('-') : [];
     const nameStr = rawDate.length === 3 ? `${rawDate[2]}/${rawDate[1]}` : s.date;
+    
+    let maxGasValue = 0;
+    if (s.avgGasPerSensor) {
+      maxGasValue = Math.max(...Object.values(s.avgGasPerSensor).map(v => Number(v) || 0));
+    }
+
     return {
       name: nameStr,
-      "Kompor utama": s.avgGasPerSensor?.["sensor_001"] || 0,
-      "Kompor kanan": s.avgGasPerSensor?.["sensor_002"] || 0,
+      "Tingkat Risiko Gas": maxGasValue,
     };
   });
 
@@ -125,15 +127,15 @@ export default function ReportsPage() {
       ) : (
         <div className="w-full space-y-6">
           
-          {/* HEADER CONTROLS (Otomatis disembunyikan di lembar PDF fisik lewat 'print:hidden') */}
+          {/* HEADER CONTROLS */}
           <div className="flex flex-row justify-between items-center gap-4 print:hidden">
-            <div className="flex bg-white/60 backdrop-blur border border-slate-200/70 p-1.5 rounded-2xl shadow-sm">
+            <div className="flex bg-white border border-slate-200 p-1.5 rounded-2xl shadow-sm">
               {["Minggu ini", "Bulan ini", "3 bulan"].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   className={`px-4 py-2 md:px-6 md:py-2.5 text-[11px] md:text-xs font-bold rounded-xl transition-all cursor-pointer border-none ${
-                    activeTab === tab ? "bg-white text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600 bg-transparent"
+                    activeTab === tab ? "bg-[#F6F5F2] text-slate-900 shadow-sm" : "text-slate-400 hover:text-slate-600 bg-transparent"
                   }`}
                 >
                   {tab}
@@ -151,9 +153,7 @@ export default function ReportsPage() {
             </button>
           </div>
 
-          {/* ==================================================================== */}
-          {/* KONTEN DOKUMEN YANG AKAN DI-EXPORT                                   */}
-          {/* ==================================================================== */}
+          {/* KONTEN DOKUMEN YANG AKAN DI-EXPORT */}
           <div className="space-y-6 print:m-0 print:p-0">
             
             {/* Header Tambahan Khusus: Hanya Muncul di Lembar Cetak PDF Fisik */}
@@ -164,35 +164,50 @@ export default function ReportsPage() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               
-              {/* GRAFIK BAR TREN DATA SENSOR KEBOCORAN */}
-              <div className="lg:col-span-2 bg-white/80 backdrop-blur border border-slate-200/70 rounded-3xl p-5 md:p-6 shadow-xs overflow-hidden">
+              {/* GRAFIK AREA TUNGGAL INTUITIF */}
+              <div className="lg:col-span-2 bg-white border border-slate-200 rounded-3xl p-5 md:p-6 shadow-xs overflow-hidden">
                 <div className="flex items-center gap-2 mb-6">
                   <div className="w-8 h-8 rounded-full bg-[#EAF2EB] text-[#4D6344] flex items-center justify-center shrink-0">
                     <TrendingUp size={16} />
                   </div>
-                  <h3 className="text-[11px] md:text-xs font-black uppercase tracking-widest text-slate-500">Tren Rata-rata Kadar Gas (PPM)</h3>
+                  <h3 className="text-[11px] md:text-xs font-black uppercase tracking-widest text-slate-500">Tren Tingkat Kebocoran Gas Dapur</h3>
                 </div>
                 <div className="h-[280px] md:h-[300px] w-full text-[10px] md:text-xs">
                   {chartData.length === 0 ? (
                     <div className="h-full flex items-center justify-center text-slate-400 font-medium">Tidak ada data tren mingguan.</div>
                   ) : (
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={chartData} margin={{ top: 0, right: 5, left: -25, bottom: 0 }}>
+                      <AreaChart data={chartData} margin={{ top: 10, right: 5, left: -25, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="colorGas" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#4A6741" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="#4A6741" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
                         <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94A3B8', fontWeight: 'bold'}} dy={8} />
                         <YAxis axisLine={false} tickLine={false} tick={{fill: '#94A3B8', fontWeight: 'bold'}} />
-                        <Tooltip cursor={{fill: '#F8FAFC'}} contentStyle={{borderRadius: '16px', border: '1px solid #E2E8F0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
-                        <Legend iconType="circle" wrapperStyle={{paddingTop: '15px', fontSize: '11px', fontWeight: 'bold'}} />
-                        <Bar dataKey="Kompor utama" fill="#9EAF8C" radius={[6, 6, 0, 0]} />
-                        <Bar dataKey="Kompor kanan" fill="#4D6344" radius={[6, 6, 0, 0]} />
-                      </BarChart>
+                        <Tooltip 
+                          cursor={{ stroke: '#4A6741', strokeWidth: 1, strokeDasharray: '4 4' }}
+                          contentStyle={{borderRadius: '16px', border: '1px solid #E2E8F0', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
+                          formatter={(value) => [`${value} PPM`, "Kadar Gas Tertinggi"]}
+                        />
+                        <Area 
+                          type="monotone" 
+                          dataKey="Tingkat Risiko Gas" 
+                          stroke="#4A6741" 
+                          strokeWidth={3}
+                          fillOpacity={1} 
+                          fill="url(#colorGas)" 
+                        />
+                      </AreaChart>
                     </ResponsiveContainer>
                   )}
                 </div>
               </div>
 
               {/* KARTU METRIK AGREGASI INTELLIGENT RINGKASAN */}
-              <div className="bg-white/80 backdrop-blur border border-slate-200/70 rounded-3xl p-6 shadow-xs flex flex-col justify-between">
+              <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs flex flex-col justify-between">
                 <div>
                   <h3 className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-6">Statistik {activeTab}</h3>
                   <div className="space-y-3">
@@ -209,8 +224,8 @@ export default function ReportsPage() {
               </div>
             </div>
 
-            {/* SECTION 2: LIVE DETAILED HISTORY TABLE */}
-            <div className="bg-white/80 backdrop-blur border border-slate-200/70 rounded-3xl shadow-xs overflow-hidden">
+            {/* RIWAYAT DETEKSI TERKINI */}
+            <div className="bg-white border border-slate-200 rounded-3xl shadow-xs overflow-hidden">
               <div className="px-6 py-5 border-b border-slate-200/60 flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
                   <FileText size={16} />
@@ -236,7 +251,7 @@ export default function ReportsPage() {
                         </td>
                       </tr>
                     ) : (
-                      alerts.slice(0, 15).map((alert) => { // Mengambil 15 data riwayat teratas untuk PDF
+                      alerts.slice(0, 15).map((alert) => {
                         const isDanger = alert.level === "danger";
                         return (
                           <tr key={alert.id} className="hover:bg-white transition-colors">
@@ -261,7 +276,7 @@ export default function ReportsPage() {
                                 alert.isResolved 
                                   ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
                                   : 'bg-orange-50 text-orange-700 border-orange-100'
-                            }`}>
+                              }`}>
                                 {alert.isResolved ? 'Selesai' : 'Perlu perhatian'}
                               </span>
                             </td>

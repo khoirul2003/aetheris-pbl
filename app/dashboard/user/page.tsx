@@ -262,11 +262,14 @@ export default function UserDashboard() {
       userEmail={user.email}
     >
       <div className="w-full box-border pb-8">
-        {/* ACTION BUTTONS (Moved to the right side since Title is handled by Layout) */}
+        {/* ACTION BUTTONS */}
         <div className="flex items-center justify-end gap-3 mb-6">
           <button className="rounded-xl flex items-center gap-2 bg-rose-50 text-rose-700 px-4 py-2.5 text-xs md:text-sm font-bold border border-rose-200 shadow-sm transition-all hover:bg-rose-100 cursor-pointer">
             <AlertTriangle size={16} />
             Emergency Shutdown
+          </button>
+          <button className="p-2.5 rounded-xl bg-white border border-slate-200 shadow-sm text-slate-700 hover:bg-slate-50 transition-all cursor-pointer">
+            <BellRing size={18} />
           </button>
         </div>
 
@@ -492,15 +495,13 @@ export default function UserDashboard() {
         </div>
 
         {/* CHARTS & REALTIME LOGS SECTION */}
-        {/* Tambahkan 'items-stretch' pada grid agar semua anak (card) memiliki tinggi yang sama */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-          {/* WEEKLY CHART TREND - Tambahkan h-full */}
+          {/* WEEKLY CHART TREND */}
           <div className="bg-white border border-slate-200 p-4 md:p-6 rounded-2xl shadow-sm flex flex-col w-full h-full overflow-hidden">
             <h3 className="text-xs font-black text-slate-600 tracking-wider uppercase mb-4 flex items-center gap-2">
               <TrendingUp size={14} className="text-slate-600" /> Weekly Average
               Gas Trend
             </h3>
-            {/* Set flex-grow agar grafik mengisi sisa ruang secara merata */}
             <div className="h-[260px] w-full text-[10px] md:text-[11px] flex-grow">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
@@ -538,7 +539,6 @@ export default function UserDashboard() {
                       paddingTop: "10px",
                     }}
                   />
-
                   {dynamicSensors.map((sensor, index) => (
                     <Line
                       key={sensor.id}
@@ -555,13 +555,12 @@ export default function UserDashboard() {
             </div>
           </div>
 
-          {/* ALERTS ACTIVITY LOG HISTORY - Tambahkan h-full */}
+          {/* ALERTS ACTIVITY LOG HISTORY */}
           <div className="bg-white border border-slate-200 p-4 md:p-6 rounded-2xl shadow-sm flex flex-col h-full">
             <h3 className="text-xs font-black text-slate-600 tracking-wider uppercase mb-4 flex items-center gap-2">
               <BellRing size={14} className="text-slate-600" /> Alert Activity
               Log History
             </h3>
-            {/* Gunakan overflow-y-auto dengan tinggi terbatas agar scroll tidak merusak tinggi card */}
             <div className="space-y-3 overflow-y-auto pr-1 flex-grow custom-scrollbar max-h-[260px]">
               {latestAlerts.length === 0 ? (
                 <div className="text-center py-20 text-xs text-slate-500 font-medium">
