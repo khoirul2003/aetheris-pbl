@@ -22,13 +22,17 @@ import {
   Percent,
   Trash2,
 } from "lucide-react";
-import { doc, deleteDoc } from "firebase/firestore";
+import { doc, deleteDoc, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+
+// Tipe ekstensi untuk paket yang memiliki properti discount
+type ExtendedPackage = SubscriptionPackage & { discount?: number };
 
 // Helper function to calculate final price with discount
 function getPackageFinalPrice(pkg: SubscriptionPackage | undefined) {
   if (!pkg) return 0;
-  const discountPercent = (pkg as any).discount || 0;
+  const extendedPkg = pkg as ExtendedPackage;
+  const discountPercent = extendedPkg.discount || 0;
   return pkg.price - (pkg.price * discountPercent / 100);
 }
 
@@ -70,12 +74,14 @@ export default function AdminSubscriptionsManagementPage() {
   const handleUpdatePackage = async () => {
     if (!editingPack) return;
     try {
-      await ClientSubscriptionModel.savePackage(editingPack.id, { 
+      const payload = { 
         price: Number(packPrice) || 0, 
         discount: Number(packDiscount) || 0, 
         maxSensors: Number(packMaxSensors) || 0,
         historyDurationDays: Number(packHistoryDurationDays) || 0 
-      });
+      } as Partial<SubscriptionPackage> & { discount?: number };
+
+      await ClientSubscriptionModel.savePackage(editingPack.id, payload);
       alert(`Commercial specs for ${editingPack.name} successfully updated!`);
       setEditingPack(null);
     } catch (err) { console.error(err); }
@@ -84,9 +90,15 @@ export default function AdminSubscriptionsManagementPage() {
   const handleDeletePackage = async (pkg: SubscriptionPackage) => {
     if (confirm(`WARNING: Are you sure you want to PERMANENTLY DELETE the "${pkg.name}" tier package?\n\nThis action cannot be undone!`)) {
       try {
-        // Coba memanggil dari model jika ada, jika tidak ada fallback hapus via Firestore
-        if ('deletePackage' in ClientSubscriptionModel) {
-          await (ClientSubscriptionModel as any).deletePackage(pkg.id);
+        // Mendefinisikan interface lokal untuk memastikan tipe method dengan aman
+        interface ModelWithDelete {
+          deletePackage?: (id: string) => Promise<void>;
+        }
+        
+        const model = ClientSubscriptionModel as ModelWithDelete;
+        
+        if (typeof model.deletePackage === 'function') {
+          await model.deletePackage(pkg.id);
         } else {
           await deleteDoc(doc(db, "packages", pkg.id));
         }
@@ -106,7 +118,7 @@ export default function AdminSubscriptionsManagementPage() {
       const generatedId = newPackage.name.trim().toLowerCase().replace(/\s+/g, '-');
       const featuresArray = newPackage.features.split(",").map((f) => f.trim()).filter((f) => f.length > 0);
       
-      await ClientSubscriptionModel.savePackage(generatedId, {
+      const payload = {
         name: newPackage.name.trim().toUpperCase(), 
         price: Number(newPackage.price) || 0, 
         discount: Number(newPackage.discount) || 0,
@@ -114,7 +126,9 @@ export default function AdminSubscriptionsManagementPage() {
         historyDurationDays: Number(newPackage.historyDurationDays) || 0, 
         features: featuresArray, 
         isActive: true,
-      });
+      } as Partial<SubscriptionPackage> & { discount?: number };
+
+      await ClientSubscriptionModel.savePackage(generatedId, payload);
       
       alert(`New tier package "${newPackage.name.toUpperCase()}" successfully registered!`);
       setShowAddForm(false);
@@ -132,7 +146,11 @@ export default function AdminSubscriptionsManagementPage() {
     if (confirm(`Are you sure you want to manually extend the active period of the package for ${log.restaurantName} by 30 days?`)) {
       const currentEnd = log.endDate ? log.endDate.toDate() : new Date();
       currentEnd.setDate(currentEnd.getDate() + 30);
-      await ClientSubscriptionModel.updateUserSubscription(log.id, { endDate: currentEnd, paymentStatus: "paid" });
+      
+      await ClientSubscriptionModel.updateUserSubscription(log.id, { 
+        endDate: Timestamp.fromDate(currentEnd), 
+        paymentStatus: "paid" 
+      });
       alert("User package validity period successfully extended!");
     }
   };
@@ -277,8 +295,9 @@ export default function AdminSubscriptionsManagementPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {packages.map((pkg) => {
+                const extendedPkg = pkg as ExtendedPackage;
                 const isEditing = editingPack?.id === pkg.id;
-                const pkgDiscount = (pkg as any).discount || 0; 
+                const pkgDiscount = extendedPkg.discount || 0; 
                 const hasDiscount = pkgDiscount > 0;
                 const finalPrice = getPackageFinalPrice(pkg);
 
@@ -323,7 +342,6 @@ export default function AdminSubscriptionsManagementPage() {
                         </div>
                         <div>
                           <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">History Log Period</span>
-                          {/* EDIT MODE: Input untuk History Log Period */}
                           {isEditing ? (
                             <div className="flex items-center gap-1.5 mt-1">
                               <input 
@@ -412,16 +430,15 @@ export default function AdminSubscriptionsManagementPage() {
                           <button type="button" onClick={() => { 
                             setEditingPack(pkg); 
                             setPackPrice(pkg.price); 
-                            setPackDiscount((pkg as any).discount || 0); 
+                            setPackDiscount(pkgDiscount); 
                             setPackMaxSensors(pkg.maxSensors); 
-                            setPackHistoryDurationDays(pkg.historyDurationDays); // Bind nilai awal
+                            setPackHistoryDurationDays(pkg.historyDurationDays);
                           }} className="flex-1 bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer mt-2">
                             <Edit size={13} /> Edit Specs
                           </button>
                           <button type="button" onClick={() => handleTogglePackActive(pkg)} className={`flex-1 text-xs font-bold py-2.5 rounded-xl border transition-colors cursor-pointer mt-2 ${pkg.isActive ? "bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100/60" : "bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100/60"}`}>
                             {pkg.isActive ? "Deactivate" : "Activate"}
                           </button>
-                          {/* TOMBOL DELETE PACKAGE */}
                           <button type="button" onClick={() => handleDeletePackage(pkg)} title="Hapus Paket" className="px-3 bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-bold py-2.5 rounded-xl flex items-center justify-center transition-colors cursor-pointer mt-2 shadow-sm">
                             <Trash2 size={16} />
                           </button>
