@@ -3,16 +3,16 @@
 import { useEffect, useMemo, useState } from "react";
 import AdminLayout from "@/src/components/layout/AdminLayout";
 import { ClientProfileModel } from "@/models/clientProfileModel";
-import { ClientSensorModel, type FirestoreSensor, type LiveSensorData } from "@/models/clientSensorModel";
+import { type FirestoreSensor, type LiveSensorData } from "@/models/clientSensorModel";
 import { ClientSubscriptionModel, type SubscriptionPackage, type UserSubscriptionLog } from "@/models/clientSubscriptionModel";
 import { db } from "@/lib/firebase";
 import { 
-  addDoc, collection, doc, onSnapshot, query, serverTimestamp, setDoc, updateDoc, where, type Timestamp,
+  addDoc, collection, doc, onSnapshot, query, serverTimestamp, setDoc, updateDoc, where, Timestamp,
   writeBatch, getDocs 
 } from "firebase/firestore";
 import {
-  AlertTriangle, BadgeCheck, CircleCheck, CircleOff, Clock3, CreditCard,
-  Database, Edit3, Eye, Plus, Shield, ToggleLeft, ToggleRight, UserRound, X, Copy, Search, Save, Loader2, Trash2
+  AlertTriangle, CircleCheck, CircleOff, Clock3, CreditCard,
+  Database, Edit3, Eye, Plus, ToggleLeft, ToggleRight, UserRound, X, Copy, Search, Save, Loader2, Trash2
 } from "lucide-react";
 
 // ============================================================================
@@ -23,9 +23,7 @@ type AdminUserRow = {
   operationalHours?: { open?: string; close?: string; };
   plan?: string; planExpiry?: Timestamp | null; isActive?: boolean; role?: string; createdAt?: Timestamp | Date | null;
 };
-type UserDetailAlert = {
-  id: string; message: string; level: "warning" | "danger"; createdAt: Timestamp | null; isResolved: boolean; sensorName?: string; location?: string;
-};
+
 type DetailSensorRow = FirestoreSensor & { live?: LiveSensorData; };
 
 const DEFAULT_PACKAGE = "Basic";
@@ -34,12 +32,6 @@ function formatDate(value?: Timestamp | Date | string | null) {
   if (!value) return "-";
   const date = typeof value === "string" ? new Date(value) : value instanceof Date ? value : value.toDate();
   return date.toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" });
-}
-
-function formatDateTime(value?: Timestamp | Date | string | null) {
-  if (!value) return "-";
-  const date = typeof value === "string" ? new Date(value) : value instanceof Date ? value : value.toDate();
-  return date.toLocaleString("en-US", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
 function addDays(base: Date, days: number) {
@@ -73,7 +65,8 @@ export default function AdminUsersPage() {
     const unsubscribeUsers = onSnapshot(collection(db, "users"), (snapshot) => {
       const rows: AdminUserRow[] = [];
       snapshot.forEach((docSnap) => {
-        const data = docSnap.data() as any;
+        // FIXED: Removed `any`, used proper partial typing
+        const data = docSnap.data() as Omit<AdminUserRow, "id">;
         if ((data.role ?? "user") === "user") {
           rows.push({ id: docSnap.id, ...data, isActive: data.isActive ?? true });
         }
@@ -147,7 +140,8 @@ export default function AdminUsersPage() {
               <option value="">All Packages</option>
               {packages.map((pkg) => <option key={pkg.id} value={pkg.id}>{pkg.name}</option>)}
             </select>
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)} className="rounded-xl h-11 border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-[#4D6344] focus:ring-2 focus:ring-[#4D6344]/20 cursor-pointer">
+            {/* FIXED: Removed 'as any' and used proper typing */}
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as "" | "active" | "inactive")} className="rounded-xl h-11 border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-[#4D6344] focus:ring-2 focus:ring-[#4D6344]/20 cursor-pointer">
               <option value="">All Statuses</option>
               <option value="active">Active</option>
               <option value="inactive">Inactive</option>
@@ -249,11 +243,6 @@ function AddUserModal({ packages, onClose }: { packages: SubscriptionPackage[], 
       const now = new Date();
       const endDate = addDays(now, form.planDurationDays);
 
-      // TODO: PENTING UNTUK SECURITY!
-      // Memanggil fungsi Firebase Auth (Admin SDK) untuk mendaftarkan kredensial email & password ke sistem Login.
-      // await fetch('/api/create-user-auth', { method: "POST", body: JSON.stringify({ email: form.email, password: form.password, uid: newRef.id }) });
-
-      // Simpan User (Password TIDAK DISIMPAN ke dalam Firestore text biasa demi keamanan)
       await setDoc(newRef, {
         name: form.restaurantName, restaurantName: form.restaurantName, email: form.email,
         phone: form.phone, address: form.address,
@@ -326,9 +315,13 @@ function UserDetailModal({ user, packages, onClose }: { user: AdminUserRow, pack
   const [editForm, setEditForm] = useState({ ...user, openHour: user.operationalHours?.open || "08:00", closeHour: user.operationalHours?.close || "22:00" });
 
   const [isChangingPackage, setIsChangingPackage] = useState(false);
-  const [packageForm, setPackageForm] = useState({ plan: user.plan || DEFAULT_PACKAGE, extendDays: 30, paymentStatus: "paid" });
+  // FIXED: Properly typed paymentStatus
+  const [packageForm, setPackageForm] = useState<{ plan: string; extendDays: number; paymentStatus: "paid" | "pending" }>({ 
+    plan: user.plan || DEFAULT_PACKAGE, 
+    extendDays: 30, 
+    paymentStatus: "paid" 
+  });
 
-  // States for Permanent Deletion
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
@@ -369,37 +362,32 @@ function UserDetailModal({ user, packages, onClose }: { user: AdminUserRow, pack
       amount: selectedPackage?.price || 0,
     });
     
+    // FIXED: Properly calling Timestamp function without import conflict
     setLocalUser({ ...localUser, plan: packageForm.plan, planExpiry: Timestamp.fromDate(endDate) });
     setIsChangingPackage(false);
     setSaving(false);
   };
 
-  // CASCADING DELETE LOGIC (Menghapus user dan semua data yang terikat dengannya)
   const executePermanentDelete = async () => {
     if (deleteConfirmText !== "DELETE") return;
     setSaving(true);
     try {
       const batch = writeBatch(db);
       
-      // 1. Delete User Document
       batch.delete(doc(db, "users", localUser.id));
 
-      // 2. Delete All Linked Sensors
       const qSensors = query(collection(db, "sensors"), where("userId", "==", localUser.id));
       const snapSensors = await getDocs(qSensors);
       snapSensors.forEach(d => batch.delete(d.ref));
 
-      // 3. Delete All Linked Alerts
       const qAlerts = query(collection(db, "alerts"), where("userId", "==", localUser.id));
       const snapAlerts = await getDocs(qAlerts);
       snapAlerts.forEach(d => batch.delete(d.ref));
 
-      // 4. Delete All Linked Subscriptions
       const qSubs = query(collection(db, "userSubscriptions"), where("userId", "==", localUser.id));
       const snapSubs = await getDocs(qSubs);
       snapSubs.forEach(d => batch.delete(d.ref));
 
-      // Commit all deletions securely in one transaction
       await batch.commit();
       onClose();
     } catch (error) {
@@ -422,7 +410,6 @@ function UserDetailModal({ user, packages, onClose }: { user: AdminUserRow, pack
           <p className="mt-1 text-sm text-slate-500">{localUser.email}</p>
         </div>
         
-        {/* TAMPILKAN TOMBOL DELETE HANYA JIKA TIDAK SEDANG DALAM MODE DELETE */}
         {!isDeleting && (
           <button onClick={() => setIsDeleting(true)} className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-100 cursor-pointer transition-colors">
             <Trash2 size={14} /> Permanent Delete
@@ -431,7 +418,6 @@ function UserDetailModal({ user, packages, onClose }: { user: AdminUserRow, pack
       </div>
 
       {isDeleting ? (
-        // DANGER ZONE UI
         <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 md:p-8 animate-in fade-in zoom-in-95">
           <div className="flex flex-col items-center text-center max-w-lg mx-auto">
             <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mb-4">
@@ -443,7 +429,8 @@ function UserDetailModal({ user, packages, onClose }: { user: AdminUserRow, pack
             </p>
             
             <div className="w-full text-left bg-white p-4 rounded-xl border border-rose-200 shadow-sm mb-6">
-              <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Type "DELETE" to confirm</label>
+              {/* FIXED: Unescaped quotes warning fixed by using &quot; */}
+              <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Type &quot;DELETE&quot; to confirm</label>
               <input 
                 type="text" 
                 value={deleteConfirmText} 
@@ -531,7 +518,7 @@ function UserDetailModal({ user, packages, onClose }: { user: AdminUserRow, pack
                     <SelectField label="Change Package" value={packageForm.plan} onChange={(v: string) => setPackageForm({...packageForm, plan: v})} options={packages.map(p => ({label: p.name, value: p.id}))} />
                     <InputField label="Manual Extend (Days)" type="number" value={packageForm.extendDays.toString()} onChange={(v: string) => setPackageForm({...packageForm, extendDays: parseInt(v)||0})} />
                     <div className="md:col-span-2">
-                      <SelectField label="Payment Status" value={packageForm.paymentStatus} onChange={(v: string) => setPackageForm({...packageForm, paymentStatus: v as any})} options={[{label: "Paid", value: "paid"}, {label: "Pending", value: "pending"}]} />
+                      <SelectField label="Payment Status" value={packageForm.paymentStatus} onChange={(v: string) => setPackageForm({...packageForm, paymentStatus: v as "paid" | "pending"})} options={[{label: "Paid", value: "paid"}, {label: "Pending", value: "pending"}]} />
                     </div>
                   </div>
                   <div className="flex justify-end gap-2 pt-3 mt-2 border-t border-slate-200/60">
@@ -593,8 +580,23 @@ function UserDetailModal({ user, packages, onClose }: { user: AdminUserRow, pack
 // ============================================================================
 // 5. UI MICRO-COMPONENTS
 // ============================================================================
-function StatCard({ title, value, icon: Icon, tone, note }: any) {
-  const tones: any = { blue: "bg-blue-50 text-blue-700", emerald: "bg-emerald-50 text-emerald-700", rose: "bg-rose-50 text-rose-700", amber: "bg-amber-50 text-amber-700" };
+
+// FIXED: Defined precise Typescript interfaces for ALL Micro-components to replace 'any'
+interface StatCardProps {
+  title: string;
+  value: string;
+  icon: React.ElementType;
+  tone: "blue" | "emerald" | "rose" | "amber";
+  note: string;
+}
+
+function StatCard({ title, value, icon: Icon, tone, note }: StatCardProps) {
+  const tones: Record<string, string> = { 
+    blue: "bg-blue-50 text-blue-700", 
+    emerald: "bg-emerald-50 text-emerald-700", 
+    rose: "bg-rose-50 text-rose-700", 
+    amber: "bg-amber-50 text-amber-700" 
+  };
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
       <div className="flex items-start justify-between gap-3">
@@ -620,9 +622,15 @@ function FilterChip({ label, active, onClick }: { label: string; active: boolean
   );
 }
 
-function Modal({ children, onClose, widthClass }: any) {
+interface ModalProps {
+  children: React.ReactNode;
+  onClose: () => void;
+  widthClass?: string;
+}
+
+function Modal({ children, onClose, widthClass = "max-w-md" }: ModalProps) {
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm px-4 py-6 overflow-y-auto">
+    <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm px-4 py-6 overflow-y-auto">
       <div className={`w-full ${widthClass} rounded-3xl bg-white p-6 md:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar`}>
         <button onClick={onClose} className="absolute top-6 right-6 p-2 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-full transition-colors border-none cursor-pointer"><X size={18} /></button>
         {children}
@@ -631,7 +639,14 @@ function Modal({ children, onClose, widthClass }: any) {
   );
 }
 
-function InputField({ label, value, onChange, type = "text" }: any) {
+interface InputFieldProps {
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+  type?: string;
+}
+
+function InputField({ label, value, onChange, type = "text" }: InputFieldProps) {
   return (
     <label className="block">
       <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500">{label}</span>
@@ -640,18 +655,31 @@ function InputField({ label, value, onChange, type = "text" }: any) {
   );
 }
 
-function SelectField({ label, value, onChange, options }: any) {
+interface SelectFieldProps {
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+  options: { label: string; value: string }[];
+}
+
+function SelectField({ label, value, onChange, options }: SelectFieldProps) {
   return (
     <label className="block">
       <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500">{label}</span>
       <select value={value} onChange={(e) => onChange(e.target.value)} className="mt-1.5 w-full h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-xs font-bold outline-none focus:border-[#4D6344] focus:ring-2 focus:ring-[#4D6344]/20 transition-all text-slate-800 cursor-pointer">
-        {options.map((o: any) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
     </label>
   );
 }
 
-function Panel({ title, icon: Icon, children }: any) {
+interface PanelProps {
+  title: string;
+  icon: React.ElementType;
+  children: React.ReactNode;
+}
+
+function Panel({ title, icon: Icon, children }: PanelProps) {
   return (
     <section className="rounded-2xl border border-slate-200 bg-slate-50/50 p-5 shadow-inner">
       <div className="mb-5 flex items-center gap-2.5">
@@ -663,19 +691,19 @@ function Panel({ title, icon: Icon, children }: any) {
   );
 }
 
-function DetailGrid({ items }: any) {
+function DetailGrid({ items }: { items: [string, string | null | undefined][] }) {
   return (
     <div className="grid gap-3 md:grid-cols-2">
-      {items.map(([label, value]: any) => (
+      {items.map(([label, value]) => (
         <div key={label} className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm">
           <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-slate-400">{label}</p>
-          <p className="mt-1.5 text-xs font-bold text-slate-800 break-words">{value || "-"}</p>
+          <p className="mt-1.5 text-xs font-bold text-slate-800 wrap-break-word">{value || "-"}</p>
         </div>
       ))}
     </div>
   );
 }
 
-function EmptyState({ text }: any) {
+function EmptyState({ text }: { text: string }) {
   return <div className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-8 text-center text-xs font-medium text-slate-500 shadow-sm">{text}</div>;
 }

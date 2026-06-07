@@ -39,17 +39,28 @@ export default function AdminAlertsPage() {
     return () => unsubscribeAlerts();
   }, []);
 
-  const formatAlertTime = (createdAt: any) => {
+  // PERBAIKAN 1: Mengganti tipe 'any' menjadi 'unknown' dengan validasi tipe data (Type Guard)
+  const formatAlertTime = (createdAt: unknown) => {
     if (!createdAt) return "-";
-    const date = (createdAt && typeof createdAt === "object" && "toDate" in createdAt && typeof createdAt.toDate === "function")
-      ? createdAt.toDate()
-      : new Date(createdAt);
+    
+    // Mengecek dengan aman apakah object tersebut memiliki fungsi "toDate" (ciri khas Firestore Timestamp)
+    const isFirestoreTimestamp = 
+      typeof createdAt === "object" && 
+      createdAt !== null && 
+      "toDate" in createdAt && 
+      typeof (createdAt as Record<string, unknown>).toDate === "function";
+
+    const date = isFirestoreTimestamp
+      ? (createdAt as { toDate: () => Date }).toDate()
+      : new Date(createdAt as string | number | Date);
+
     return date.toISOString().replace('T', ' ').substring(0, 16);
   };
 
   // Transform and Sort Data
   const tableData = useMemo(() => {
-    let formattedData = alertsData.map((item) => {
+    // PERBAIKAN 2: Mengganti 'let' menjadi 'const' karena tidak pernah di-reassign
+    const formattedData = alertsData.map((item) => {
       const timeStr = formatAlertTime(item.createdAt);
       return {
         id: item.userId ? `RES-${item.userId.substring(0, 4).toUpperCase()}` : "RES-000",

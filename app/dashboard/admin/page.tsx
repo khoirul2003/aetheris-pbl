@@ -151,7 +151,7 @@ export default function AdminDashboard() {
       { label: "Total Alerts Today", value: String(todayAlertCount), detail: `${alerts.filter((alert) => alert.level === "danger").length} in critical status`, icon: Bell, tone: "amber" },
       { label: "Total Offline Sensors", value: String(offlineSensorCount), detail: `${Math.max(0, sensors.length - offlineSensorCount)} online sensors`, icon: WifiOff, tone: "rose" },
     ];
-  }, [alerts, liveSensors, restaurantUsers.length, sensors]);
+  }, [alerts, liveSensors, restaurantUsers, sensors]);
 
   const realtimeRestaurants = useMemo(() => {
     const activeAlerts = alerts.filter((alert) => (alert.level === "warning" || alert.level === "danger") && alert.isResolved !== true).sort((left, right) => { const rightDate = toDate(right.createdAt)?.getTime() || 0; const leftDate = toDate(left.createdAt)?.getTime() || 0; return rightDate - leftDate; });
