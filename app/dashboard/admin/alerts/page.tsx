@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Sidebar from "@/app/components/Sidebar";
-import Navbar from "@/app/components/Navbar";
+import AdminLayout from "@/src/components/layout/AdminLayout";
 import { ClientAlertModel, AlertData } from "@/models/clientAlertModel";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, query } from "firebase/firestore";
@@ -168,41 +167,13 @@ export default function AdminAlertsPage() {
   );
 
   return (
-    <div className="flex bg-slate-50 min-h-screen font-sans text-slate-800 overflow-y-scroll" style={{ scrollbarGutter: "stable" }}>
-      <div className="print:hidden">
-        <Sidebar role="admin" />
-      </div>
-      
-      <div className="flex flex-col flex-grow min-w-0">
-        <Navbar title="Riwayat Alert" />
+    <AdminLayout
+      title="Riwayat Alert"
+      description="Lihat dan tindak lanjuti seluruh alert terdeteksi."
+    >
+      <div className="flex w-full flex-col gap-5">
 
-        <main className="ml-0 md:ml-64 pt-24 p-8 w-auto print:ml-0 print:p-0 transition-all flex-grow">
-          <header className="flex justify-between items-start mb-8 border-b border-slate-200 pb-5 print:mb-4 print:pb-2">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Riwayat Alert (Semua Restoran)</h1>
-              <p className="text-slate-500 text-sm mt-1 print:text-xs">Daftar log peringatan bahaya dari seluruh sistem sensor mitra.</p>
-            </div>
-            
-            <div className="flex gap-3 print:hidden">
-              <button 
-                onClick={handleExportCSV}
-                className="group flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100/80 text-emerald-600 border border-emerald-200 hover:border-emerald-300 font-semibold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm shadow-emerald-100/50 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
-              >
-                <FileSpreadsheet size={15} className="text-emerald-500 transition-transform group-hover:scale-110" /> 
-                <span>Export Excel / CSV</span>
-              </button>
-              
-              <button 
-                onClick={handleExportPDF}
-                className="group flex items-center gap-2 bg-rose-50 hover:bg-rose-100/80 text-rose-600 border border-rose-200 hover:border-rose-300 font-semibold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm shadow-rose-100/50 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
-              >
-                <FileText size={15} className="text-rose-500 transition-transform group-hover:scale-110" /> 
-                <span>Export PDF Report</span>
-              </button>
-            </div>
-          </header>
-
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-6 print:hidden">
+          <section className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-6 print:hidden">
             <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
               <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
                 <div className="relative">
@@ -247,7 +218,7 @@ export default function AdminAlertsPage() {
                 />
               </div>
             </div>
-          </div>
+          </section>
 
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print:border-none print:shadow-none">
             {renderPaginationControls()}
@@ -299,8 +270,7 @@ export default function AdminAlertsPage() {
 
             {renderPaginationControls()}
           </div>
-        </main>
-      </div>
-    </div>
+        </div>
+    </AdminLayout>
   );
 }

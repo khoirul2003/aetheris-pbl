@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Sidebar from "@/app/components/Sidebar";
-import Navbar from "@/app/components/Navbar";
+import AdminLayout from "@/src/components/layout/AdminLayout";
 import { ClientAlertModel, AlertData } from "@/models/clientAlertModel"; 
 import { ClientProfileModel } from "@/models/clientProfileModel"; 
 import { Filter, FileText, BarChart3 } from "lucide-react";
@@ -103,23 +102,19 @@ export default function AdminAnalyticsPage() {
   const dynamicChartData = getFilteredChartData();
 
   return (
-    <div className="flex bg-slate-50 min-h-screen font-sans text-slate-800 overflow-y-scroll" style={{ scrollbarGutter: "stable" }}>
-      <div className="print:hidden"><Sidebar role="admin" /></div>
-      <div className="flex flex-col flex-grow min-w-0">
-        <Navbar title="Analitik Platform" />
-        <main className="ml-0 md:ml-64 pt-24 px-8 pb-8 w-auto print:ml-0 print:p-0 transition-all flex-grow">
-          <header className="flex justify-between items-start mb-8 border-b border-slate-200 pb-5 print:mb-4 print:pb-2">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Laporan & Analitik Platform</h1>
-              <p className="text-slate-500 text-sm mt-1 print:text-xs">Analisis data performa, pertumbuhan user, pendapatan, serta metrik kerusakan alat.</p>
-            </div>
-            <div className="hidden print:block text-right text-xs text-slate-400 font-mono">Aetheris Analytics Report // Generated: {new Date().toLocaleDateString('id-ID')}</div>
-            <div className="flex gap-2.5 print:hidden">
-              <button onClick={handleExportPDF} className="group flex items-center gap-2 bg-rose-50 hover:bg-rose-100/80 text-rose-600 border border-rose-200 hover:border-rose-300 font-semibold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm shadow-rose-100/50 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] cursor-pointer">
-                <FileText size={15} className="text-rose-500 transition-transform group-hover:scale-110" /> <span>Export PDF Report</span>
-              </button>
-            </div>
-          </header>
+    <AdminLayout
+      title="Laporan & Analitik Platform"
+      description="Analisis data performa, pertumbuhan user, pendapatan, serta metrik kerusakan alat."
+    >
+      <div className="space-y-6">
+        <header className="flex justify-between items-center mb-8 border-b border-slate-200 pb-5 print:mb-4 print:pb-2">
+          <div className="hidden print:block text-right text-xs text-slate-400 font-mono">Aetheris Analytics Report // Generated: {new Date().toLocaleDateString('id-ID')}</div>
+          <div className="flex gap-2.5 print:hidden ml-auto">
+            <button onClick={handleExportPDF} className="group flex items-center gap-2 bg-rose-50 hover:bg-rose-100/80 text-rose-600 border border-rose-200 hover:border-rose-300 font-semibold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm shadow-rose-100/50 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] cursor-pointer">
+              <FileText size={15} className="text-rose-500 transition-transform group-hover:scale-110" /> <span>Export PDF Report</span>
+            </button>
+          </div>
+        </header>
 
           <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-6 print:hidden space-y-4">
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full">
@@ -219,8 +214,7 @@ export default function AdminAnalyticsPage() {
               </table>
             </div>
           </div>
-        </main>
       </div>
-    </div>
+    </AdminLayout>
   );
 }
