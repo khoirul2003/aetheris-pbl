@@ -27,7 +27,7 @@ export default function AdminLayout({
   
   const router = useRouter();
 
-  // PERBAIKAN: Set selalu false di awal agar hasil render Server dan Client sama persis
+  // Set selalu false di awal agar hasil render Server dan Client sama persis
   const [isAuthorized, setIsAuthorized] = useState(false);
 
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
@@ -41,12 +41,17 @@ export default function AdminLayout({
   const [isMobileOpen, setIsMobileOpen] = useState<boolean>(false);
   const [mounted, setMounted] = useState<boolean>(false);
 
-  // Optimistic Auth Caching: Pindahkan pengecekan sessionStorage ke dalam useEffect
+  // Optimistic Auth Caching & Mencegah Cascading Render
   useEffect(() => {
-    setMounted(true);
+    const timer = setTimeout(() => {
+      setMounted(true);
+    }, 0);
+
     if (sessionStorage.getItem("aetheris_admin_auth") === "true") {
       setIsAuthorized(true);
     }
+
+    return () => clearTimeout(timer);
   }, []);
 
   // FITUR SATPAM (AUTH GUARD) UNTUK ADMIN
@@ -61,7 +66,11 @@ export default function AdminLayout({
           
           if (userDoc.exists() && userDoc.data().role === "admin") {
             sessionStorage.setItem("aetheris_admin_auth", "true");
-            if (!isAuthorized) setIsAuthorized(true); 
+            // Menggunakan functional update agar tidak perlu memasukkan isAuthorized ke dependency array
+            setIsAuthorized((prev) => {
+              if (!prev) return true;
+              return prev;
+            });
           } else {
             sessionStorage.removeItem("aetheris_admin_auth");
             router.replace("/dashboard/user"); 
@@ -74,7 +83,7 @@ export default function AdminLayout({
     });
 
     return () => unsubscribe();
-  }, [router, isAuthorized]);
+  }, [router]); // Hanya bergantung pada router, sehingga lebih efisien
 
   return (
     <div className="relative flex min-h-screen text-[#1A1F24] font-sans antialiased overflow-hidden">

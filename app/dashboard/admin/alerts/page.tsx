@@ -39,7 +39,6 @@ export default function AdminAlertsPage() {
     return () => unsubscribeAlerts();
   }, []);
 
-  // PERBAIKAN 1: Mengganti tipe 'any' menjadi 'unknown' dengan validasi tipe data (Type Guard)
   const formatAlertTime = (createdAt: unknown) => {
     if (!createdAt) return "-";
     
@@ -54,17 +53,32 @@ export default function AdminAlertsPage() {
       ? (createdAt as { toDate: () => Date }).toDate()
       : new Date(createdAt as string | number | Date);
 
-    return date.toISOString().replace('T', ' ').substring(0, 16);
+    // FORMAT BARU: Thu, Jun 4, 2026 - 12:31 PM
+    const formattedDate = new Intl.DateTimeFormat('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    }).format(date);
+
+    const formattedTime = new Intl.DateTimeFormat('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    }).format(date);
+
+    return `${formattedDate} - ${formattedTime}`;
   };
 
   // Transform and Sort Data
   const tableData = useMemo(() => {
-    // PERBAIKAN 2: Mengganti 'let' menjadi 'const' karena tidak pernah di-reassign
     const formattedData = alertsData.map((item) => {
       const timeStr = formatAlertTime(item.createdAt);
       return {
         id: item.userId ? `RES-${item.userId.substring(0, 4).toUpperCase()}` : "RES-000",
         time: timeStr,
+        // Menyimpan nilai Date mentah untuk keperluan sorting yang akurat
+        rawDate: item.createdAt ? (typeof item.createdAt === "object" && "toDate" in item.createdAt ? (item.createdAt as any).toDate().getTime() : new Date(item.createdAt as string).getTime()) : 0,
         restaurant: usersMap[item.userId] || item.sensorName || "Partner Restaurant",
         sensor: item.sensorName || item.location || "Main Sensor",
         level: item.level === "danger" ? "DANGER" : "WARNING",
@@ -75,6 +89,11 @@ export default function AdminAlertsPage() {
 
     if (sortConfig !== null) {
       formattedData.sort((a, b) => {
+        // PERBAIKAN: Jika yang disortir adalah waktu, gunakan rawDate (angka milidetik) agar urutannya benar (bukan urutan abjad A-Z)
+        if (sortConfig.key === "time") {
+          return sortConfig.direction === "asc" ? a.rawDate - b.rawDate : b.rawDate - a.rawDate;
+        }
+
         const aValue = a[sortConfig.key];
         const bValue = b[sortConfig.key];
         if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
@@ -126,7 +145,7 @@ export default function AdminAlertsPage() {
                 {currentRows.map((item, i) => (
                   <tr key={i} className="hover:bg-slate-50/50">
                     <td className="px-6 py-4 font-mono text-xs font-bold">{item.id}</td>
-                    <td className="px-6 py-4 text-slate-500">{item.time}</td>
+                    <td className="px-6 py-4 text-slate-500 whitespace-nowrap">{item.time}</td>
                     <td className="px-6 py-4 font-medium">{item.restaurant}</td>
                     <td className="px-6 py-4 text-slate-600">{item.sensor}</td>
                     <td className="px-6 py-4">
