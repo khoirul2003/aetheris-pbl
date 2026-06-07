@@ -1,391 +1,681 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Sidebar from "@/app/components/Sidebar";
-import Navbar from "@/app/components/Navbar";
-import { auth, db } from "@/lib/firebase";
-import { onAuthStateChanged, User } from "firebase/auth";
-import { collection, query, where, orderBy, limit, onSnapshot } from "firebase/firestore";
-import { ClientSensorModel, FirestoreSensor, LiveSensorData } from "@/models/clientSensorModel";
+import { useEffect, useMemo, useState } from "react";
+import AdminLayout from "@/src/components/layout/AdminLayout";
+import { ClientProfileModel } from "@/models/clientProfileModel";
+import { ClientSensorModel, type FirestoreSensor, type LiveSensorData } from "@/models/clientSensorModel";
+import { ClientSubscriptionModel, type SubscriptionPackage, type UserSubscriptionLog } from "@/models/clientSubscriptionModel";
+import { db } from "@/lib/firebase";
 import { 
-  AlertTriangle, 
-  Loader2, 
-  Check, 
-  BellRing, 
-  AlertCircle, 
-  LayoutDashboard, 
-  Cpu, 
-  TrendingUp 
+  addDoc, collection, doc, onSnapshot, query, serverTimestamp, setDoc, updateDoc, where, type Timestamp,
+  writeBatch, getDocs 
+} from "firebase/firestore";
+import {
+  AlertTriangle, BadgeCheck, CircleCheck, CircleOff, Clock3, CreditCard,
+  Database, Edit3, Eye, Plus, Shield, ToggleLeft, ToggleRight, UserRound, X, Copy, Search, Save, Loader2, Trash2
 } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 
-interface AlertLog {
-  id: string;
-  message: string;
-  level: string;
-  isResolved: boolean;
-  timeStr: string;
+// ============================================================================
+// 1. TYPES & UTILS
+// ============================================================================
+type AdminUserRow = {
+  id: string; name: string; email: string; restaurantName: string; phone: string; address: string;
+  operationalHours?: { open?: string; close?: string; };
+  plan?: string; planExpiry?: Timestamp | null; isActive?: boolean; role?: string; createdAt?: Timestamp | Date | null;
+};
+type UserDetailAlert = {
+  id: string; message: string; level: "warning" | "danger"; createdAt: Timestamp | null; isResolved: boolean; sensorName?: string; location?: string;
+};
+type DetailSensorRow = FirestoreSensor & { live?: LiveSensorData; };
+
+const DEFAULT_PACKAGE = "Basic";
+
+function formatDate(value?: Timestamp | Date | string | null) {
+  if (!value) return "-";
+  const date = typeof value === "string" ? new Date(value) : value instanceof Date ? value : value.toDate();
+  return date.toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-const LINE_COLORS = ["#4A6741", "#C67023", "#2E5A88", "#A04040", "#6D4C41", "#7B1FA2"];
+function formatDateTime(value?: Timestamp | Date | string | null) {
+  if (!value) return "-";
+  const date = typeof value === "string" ? new Date(value) : value instanceof Date ? value : value.toDate();
+  return date.toLocaleString("en-US", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
 
-export default function UserDashboard() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loadingAuth, setLoadingAuth] = useState(true);
-  const [loadingData, setLoadingData] = useState(true);
+function addDays(base: Date, days: number) {
+  const next = new Date(base);
+  next.setDate(next.getDate() + days);
+  return next;
+}
 
-  const [dynamicSensors, setDynamicSensors] = useState<FirestoreSensor[]>([]);
-  const [liveSensors, setLiveSensors] = useState<{ [key: string]: LiveSensorData }>({});
-  const [latestAlerts, setLatestAlerts] = useState<AlertLog[]>([]);
-  const [chartHistory, setChartHistory] = useState<Record<string, string | number>[]>([]);
-  const [stats, setStats] = useState({ totalToday: 0, unresolved: 0, lastCheck: "-" });
+const copyToClipboard = (text: string) => {
+  navigator.clipboard.writeText(text);
+  alert(`User ID [${text}] successfully copied!`);
+};
 
-  // 1. Auth Checker
+// ============================================================================
+// 2. MAIN PAGE COMPONENT
+// ============================================================================
+export default function AdminUsersPage() {
+  const [users, setUsers] = useState<AdminUserRow[]>([]);
+  const [packages, setPackages] = useState<SubscriptionPackage[]>([]);
+  const [sensorCounts, setSensorCounts] = useState<Record<string, number>>({});
+  
+  const [search, setSearch] = useState("");
+  const [packageFilter, setPackageFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"" | "active" | "inactive">("");
+  
+  const [selectedUser, setSelectedUser] = useState<AdminUserRow | null>(null);
+  const [newUserOpen, setNewUserOpen] = useState(false);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setLoadingAuth(false);
-    });
-    return () => unsubscribeAuth();
-  }, []);
-
-  // 2. Hubungkan Semua Komponen ke Database secara 100% Dinamis
-  useEffect(() => {
-    if (loadingAuth || !user) return;
-    
-    const currentUserId = user.uid;
-    let unsubscribeSummary: (() => void) | undefined;
-
-    const sensorsQ = query(collection(db, "sensors"), where("userId", "==", currentUserId));
-    const unsubscribeSensors = onSnapshot(sensorsQ, (snapshot) => {
-      const sensorList: FirestoreSensor[] = [];
-      snapshot.forEach((doc) => {
-        sensorList.push({ id: doc.id, ...doc.data() } as FirestoreSensor);
-      });
-      
-      setDynamicSensors(sensorList);
-      setLoadingData(false);
-
-      if (unsubscribeSummary) unsubscribeSummary();
-      
-      const summaryQ = query(
-        collection(db, "dailySummaries"),
-        where("userId", "==", currentUserId),
-        orderBy("date", "asc"),
-        limit(7)
-      );
-
-      unsubscribeSummary = onSnapshot(summaryQ, (summarySnapshot) => {
-        // PERBAIKAN UTAMA: Mengubah dari any[] menjadi tipe structural object yang aman
-        const history: Record<string, string | number>[] = [];
-        
-        summarySnapshot.forEach((doc) => {
-          const data = doc.data();
-          const rawDate = data.date ? data.date.split("-") : [];
-          const formattedDate = rawDate.length === 3 ? `${rawDate[2]}/${rawDate[1]}` : data.date;
-          
-          // Deklarasi object row grafik dengan tipe data aman
-          const chartRow: Record<string, string | number> = { time: formattedDate };
-          
-          sensorList.forEach((sensor) => {
-            chartRow[sensor.name] = data.avgGasPerSensor?.[sensor.id] || 0;
-          });
-
-          history.push(chartRow);
-        });
-
-        if (history.length > 0) {
-          setChartHistory(history);
+    const unsubscribeUsers = onSnapshot(collection(db, "users"), (snapshot) => {
+      const rows: AdminUserRow[] = [];
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data() as any;
+        if ((data.role ?? "user") === "user") {
+          rows.push({ id: docSnap.id, ...data, isActive: data.isActive ?? true });
         }
       });
-    }, (error) => {
-      console.error("Gagal memuat sensor secara real-time:", error);
-      setLoadingData(false);
+      rows.sort((a, b) => (a.restaurantName || a.name).localeCompare(b.restaurantName || b.name));
+      setUsers(rows);
+      setLoadingUsers(false);
     });
 
-    const alertsQ = query(
-      collection(db, "alerts"),
-      where("userId", "==", currentUserId),
-      orderBy("createdAt", "desc"),
-      limit(5)
-    );
-    const unsubscribeAlerts = onSnapshot(alertsQ, (snapshot) => {
-      const logs: AlertLog[] = [];
-      let unresolvedCount = 0;
-
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        if (!data.isResolved) unresolvedCount++;
-        
-        const timestamp = data.createdAt?.toDate();
-        const timeStr = timestamp 
-          ? timestamp.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) 
-          : "-";
-
-        logs.push({
-          id: doc.id,
-          message: data.message || "Anomali terdeteksi",
-          level: data.level || "warning",
-          isResolved: !!data.isResolved,
-          timeStr
-        });
+    const unsubscribePackages = ClientSubscriptionModel.subscribeToPackages(setPackages);
+    
+    const unsubscribeSensors = onSnapshot(collection(db, "sensors"), (snapshot) => {
+      const counts: Record<string, number> = {};
+      snapshot.forEach((docSnap) => {
+        const userId = docSnap.data().userId;
+        if (userId) counts[userId] = (counts[userId] || 0) + 1;
       });
-
-      setLatestAlerts(logs);
-      setStats(prev => ({ ...prev, unresolved: unresolvedCount, totalToday: snapshot.size }));
+      setSensorCounts(counts);
     });
 
-    return () => {
-      unsubscribeSensors();
-      unsubscribeAlerts();
-      if (unsubscribeSummary) unsubscribeSummary();
-    };
-  }, [user, loadingAuth]);
+    return () => { unsubscribeUsers(); unsubscribePackages(); unsubscribeSensors(); };
+  }, []);
 
-  // 3. Ambil data realtime status sensor live
-  useEffect(() => {
-    if (dynamicSensors.length === 0) return;
-
-    const now = new Date();
-    const timeString = now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) + " WIB";
-
-    const unsubscribers = dynamicSensors.map((sensor) => {
-      return ClientSensorModel.subscribeToLiveStatus(sensor.id, (data) => {
-        setLiveSensors((prev: Record<string, LiveSensorData>) => ({
-          ...prev,
-          [sensor.id]: data,
-        }));
-        
-        setStats((prev: typeof stats) => ({
-          ...prev,
-          lastCheck: timeString
-        }));
-      });
+  const filteredUsers = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return users.filter((u) => {
+      const matchSearch = q === "" || u.restaurantName.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || u.id.toLowerCase().includes(q);
+      const matchPkg = packageFilter === "" || u.plan?.toLowerCase() === packageFilter.toLowerCase();
+      const matchStatus = statusFilter === "" || (statusFilter === "active" ? u.isActive !== false : u.isActive === false);
+      return matchSearch && matchPkg && matchStatus;
     });
+  }, [users, search, packageFilter, statusFilter]);
 
-    return () => {
-      unsubscribers.forEach((unsub) => unsub());
+  const summary = useMemo(() => {
+    const active = users.filter((u) => u.isActive !== false).length;
+    return { 
+      total: users.length, active, inactive: users.length - active, 
+      sensors: Object.values(sensorCounts).reduce((a, b) => a + b, 0) 
     };
-  }, [dynamicSensors]);
+  }, [users, sensorCounts]);
 
-  const getOverallStatus = () => {
-    if (dynamicSensors.length === 0) return "Aman";
-    const statuses = dynamicSensors.map(sensor => liveSensors[sensor.id]?.status || "safe");
-    if (statuses.includes("danger")) return "Bahaya";
-    if (statuses.includes("warning")) return "Waspada";
-    return "Aman";
+  const toggleUserActive = async (user: AdminUserRow) => {
+    await updateDoc(doc(db, "users", user.id), { isActive: !(user.isActive ?? true) });
   };
 
-  const overallStatus = getOverallStatus();
-  const connectedCount = dynamicSensors.filter(sensor => liveSensors[sensor.id]?.isOnline).length;
+  return (
+    <AdminLayout title="User Management" description="Manage users, account statuses, and create new clients.">
+      <div className="flex w-full flex-col gap-6">
 
-  if (loadingAuth || loadingData) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-[#FDFBF7]">
-        <div className="text-center space-y-2">
-          <Loader2 className="animate-spin text-emerald-600 mx-auto" size={32} />
-          <p className="text-slate-700 font-medium text-sm">Menghubungkan Database Dinamis...</p>
-        </div>
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <StatCard title="Total Restaurants" value={summary.total.toString()} icon={UserRound} tone="blue" note="All users" />
+          <StatCard title="Active Accounts" value={summary.active.toString()} icon={CircleCheck} tone="emerald" note="Operating normally" />
+          <StatCard title="Inactive Accounts" value={summary.inactive.toString()} icon={CircleOff} tone="rose" note="Needs action" />
+          <StatCard title="Total Sensors" value={summary.sensors.toString()} icon={Database} tone="amber" note="Registered sensors" />
+        </section>
+
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <h2 className="text-lg font-bold text-slate-900">User Directory</h2>
+            <button onClick={() => setNewUserOpen(true)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#4D6344] px-5 py-3 text-sm font-bold text-white hover:bg-[#3d5535] transition-all shadow-sm w-full lg:w-auto cursor-pointer border-none">
+              <Plus size={18} /> Add New User
+            </button>
+          </div>
+          <hr className="my-5 border-slate-100" />
+          <div className="flex flex-col gap-3 sm:flex-row lg:items-center">
+            <div className="relative w-full sm:max-w-xs">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+              <input type="text" placeholder="Search name, email, ID..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full h-11 rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-4 text-sm outline-none focus:border-[#4D6344] focus:ring-2 focus:ring-[#4D6344]/20 transition-all" />
+            </div>
+            <select value={packageFilter} onChange={(e) => setPackageFilter(e.target.value)} className="rounded-xl h-11 border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-[#4D6344] focus:ring-2 focus:ring-[#4D6344]/20 cursor-pointer">
+              <option value="">All Packages</option>
+              {packages.map((pkg) => <option key={pkg.id} value={pkg.id}>{pkg.name}</option>)}
+            </select>
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as any)} className="rounded-xl h-11 border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-[#4D6344] focus:ring-2 focus:ring-[#4D6344]/20 cursor-pointer">
+              <option value="">All Statuses</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <FilterChip label="All" active={packageFilter === "" && statusFilter === ""} onClick={() => { setPackageFilter(""); setStatusFilter(""); }} />
+            {packages.map((pkg) => (
+              <FilterChip key={pkg.id} label={pkg.name} active={packageFilter === pkg.id} onClick={() => setPackageFilter((prev) => (prev === pkg.id ? "" : pkg.id))} />
+            ))}
+          </div>
+        </section>
+
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left">
+              <thead className="bg-slate-50 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+                <tr>
+                  <th className="px-6 py-4">Restaurant / ID</th>
+                  <th className="px-6 py-4">Email</th>
+                  <th className="px-6 py-4">Active Package</th>
+                  <th className="px-6 py-4">Account Status</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {loadingUsers ? (
+                  <tr><td colSpan={5} className="px-6 py-10 text-center text-sm text-slate-500">Loading data...</td></tr>
+                ) : filteredUsers.length === 0 ? (
+                  <tr><td colSpan={5} className="px-6 py-10 text-center text-sm text-slate-500">No users match the filters.</td></tr>
+                ) : filteredUsers.map((user) => {
+                  const active = user.isActive !== false;
+                  return (
+                    <tr key={user.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="font-bold text-slate-900">{user.restaurantName}</div>
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <code className="text-[10px] bg-slate-100 border border-slate-200 text-slate-500 px-1.5 py-0.5 rounded font-mono">ID: {user.id}</code>
+                          <button onClick={() => copyToClipboard(user.id)} className="text-slate-400 hover:text-[#4D6344] transition-colors cursor-pointer border-none bg-transparent p-0"><Copy size={13} /></button>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-slate-600">{user.email}</td>
+                      <td className="px-6 py-4">
+                        <span className="inline-flex rounded-full px-3 py-1 text-xs font-bold bg-[#EAF2EB] text-[#4D6344]">
+                          {packages.find(p => p.id === user.plan)?.name || user.plan || "Basic"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${active ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
+                          {active ? "Active" : "Inactive"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex justify-end gap-2">
+                          <button onClick={() => setSelectedUser(user)} className="inline-flex items-center gap-2 bg-[#EAF2EB] text-[#4D6344] font-bold px-3 py-1.5 rounded-lg text-xs hover:bg-[#D4E4D3] transition-colors cursor-pointer border-none">
+                            <Eye size={14} /> Details
+                          </button>
+                          <button onClick={() => toggleUserActive(user)} className={`inline-flex items-center gap-2 font-bold px-3 py-1.5 rounded-lg text-xs transition-colors border cursor-pointer whitespace-nowrap ${active ? "bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100" : "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"}`}>
+                            {active ? <ToggleLeft size={14} /> : <ToggleRight size={14} />}
+                            {active ? "Deactivate" : "Activate"}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
       </div>
-    );
-  }
 
-  if (!user) return <div className="p-8">Akses Ditolak. Silakan Login.</div>;
+      {newUserOpen && <AddUserModal packages={packages} onClose={() => setNewUserOpen(false)} />}
+      {selectedUser && <UserDetailModal user={selectedUser} packages={packages} onClose={() => setSelectedUser(null)} />}
+    </AdminLayout>
+  );
+}
+
+// ============================================================================
+// 3. COMPONENT: ADD NEW USER MODAL
+// ============================================================================
+function AddUserModal({ packages, onClose }: { packages: SubscriptionPackage[], onClose: () => void }) {
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    restaurantName: "", email: "", password: "", phone: "", address: "", 
+    openHour: "08:00", closeHour: "22:00", plan: DEFAULT_PACKAGE, planDurationDays: 30
+  });
+
+  const handlePlanChange = (val: string) => {
+    const selectedPkg = packages.find((p) => p.id === val);
+    setForm({ ...form, plan: val, planDurationDays: selectedPkg?.historyDurationDays || 30 }); 
+  };
+
+  const createUser = async () => {
+    setSaving(true);
+    try {
+      const newRef = doc(collection(db, "users"));
+      const now = new Date();
+      const endDate = addDays(now, form.planDurationDays);
+
+      // TODO: PENTING UNTUK SECURITY!
+      // Memanggil fungsi Firebase Auth (Admin SDK) untuk mendaftarkan kredensial email & password ke sistem Login.
+      // await fetch('/api/create-user-auth', { method: "POST", body: JSON.stringify({ email: form.email, password: form.password, uid: newRef.id }) });
+
+      // Simpan User (Password TIDAK DISIMPAN ke dalam Firestore text biasa demi keamanan)
+      await setDoc(newRef, {
+        name: form.restaurantName, restaurantName: form.restaurantName, email: form.email,
+        phone: form.phone, address: form.address,
+        operationalHours: { open: form.openHour, close: form.closeHour },
+        plan: form.plan, planExpiry: endDate, role: "user", isActive: true, 
+        createdAt: serverTimestamp(),
+      });
+
+      await addDoc(collection(db, "userSubscriptions"), {
+        userId: newRef.id, userName: form.restaurantName, userEmail: form.email, restaurantName: form.restaurantName,
+        packageName: packages.find(p => p.id === form.plan)?.name || form.plan,
+        startDate: now, endDate, paymentStatus: "paid", 
+        amount: packages.find(p => p.id === form.plan)?.price || 0,
+      });
+
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
-    <div className="flex bg-[#FDFBF7] min-h-screen font-sans text-slate-900 antialiased">
-      <Sidebar role="user" userEmail={user.email || "khoirul@email.com"} />
-      <Navbar title="Beranda" />
+    <Modal onClose={onClose} widthClass="max-w-3xl">
+      <div className="mb-8">
+        <h3 className="text-2xl font-extrabold text-slate-900">Add New Client</h3>
+        <p className="text-sm text-slate-500 mt-1">Create a restaurant profile, set a login password, and select an initial package.</p>
+      </div>
 
-      <main className="md:ml-64 pt-24 px-6 md:px-8 pb-8 w-full max-w-6xl mx-auto">
+      <div className="grid gap-4 md:grid-cols-2 mb-4">
+        <InputField label="Restaurant Name" value={form.restaurantName} onChange={(v: string) => setForm({ ...form, restaurantName: v })} />
+        <InputField label="WhatsApp Number" type="tel" value={form.phone} onChange={(v: string) => setForm({ ...form, phone: v })} />
+        <InputField label="Login Email" type="email" value={form.email} onChange={(v: string) => setForm({ ...form, email: v })} />
+        <InputField label="Login Password" type="password" value={form.password} onChange={(v: string) => setForm({ ...form, password: v })} />
+        <div className="md:col-span-2">
+          <InputField label="Full Address" value={form.address} onChange={(v: string) => setForm({ ...form, address: v })} />
+        </div>
         
-        {/* BANNER NOTIFIKASI */}
-        {overallStatus !== "Aman" && (
-          <div className={`border p-4 rounded-md flex items-start gap-3 mb-6 shadow-sm ${
-            overallStatus === "Bahaya" ? "bg-red-50 border-red-200 animate-pulse" : "bg-[#FDF0E1] border-[#F3D5B5]"
-          }`}>
-            <AlertCircle className={overallStatus === "Bahaya" ? "text-red-500" : "text-[#C67023]"} size={20} />
-            <div>
-              <p className={`text-xs font-semibold leading-relaxed ${overallStatus === "Bahaya" ? "text-red-900" : "text-amber-950"}`}>
-                <span className="font-black uppercase tracking-wider">Peringatan Keamanan!</span> Terdeteksi kenaikan volume gas. Segera periksa area dapur Anda.
-              </p>
-            </div>
+        <div className="grid grid-cols-2 gap-3 md:col-span-2">
+          <InputField label="Opening Time" type="time" value={form.openHour} onChange={(v: string) => setForm({ ...form, openHour: v })} />
+          <InputField label="Closing Time" type="time" value={form.closeHour} onChange={(v: string) => setForm({ ...form, closeHour: v })} />
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 p-5 rounded-2xl bg-[#F0F4EC] border border-[#C4D0B7]/50 shadow-inner">
+        <SelectField label="Select Initial Package" value={form.plan} onChange={handlePlanChange} options={packages.map((p) => ({ label: p.name, value: p.id }))} />
+        <InputField label="Active Duration (Days)" type="number" value={form.planDurationDays.toString()} onChange={(v: string) => setForm({ ...form, planDurationDays: parseInt(v) || 0 })} />
+      </div>
+
+      <div className="mt-8 flex justify-end gap-3">
+        <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-100 transition-colors border-none cursor-pointer">Cancel</button>
+        <button disabled={saving} onClick={createUser} className="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-[#4D6344] hover:bg-[#3d5535] disabled:opacity-60 transition-colors flex items-center gap-2 border-none cursor-pointer shadow-sm">
+          {saving ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />} Register Client
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+// ============================================================================
+// 4. COMPONENT: USER DETAIL MODAL (DENGAN INLINE EDITING & PERMANENT DELETE)
+// ============================================================================
+function UserDetailModal({ user, packages, onClose }: { user: AdminUserRow, packages: SubscriptionPackage[], onClose: () => void }) {
+  const [localUser, setLocalUser] = useState(user);
+  const [detailSensors, setDetailSensors] = useState<DetailSensorRow[]>([]);
+  const [subscriptionHistory, setSubscriptionHistory] = useState<UserSubscriptionLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editForm, setEditForm] = useState({ ...user, openHour: user.operationalHours?.open || "08:00", closeHour: user.operationalHours?.close || "22:00" });
+
+  const [isChangingPackage, setIsChangingPackage] = useState(false);
+  const [packageForm, setPackageForm] = useState({ plan: user.plan || DEFAULT_PACKAGE, extendDays: 30, paymentStatus: "paid" });
+
+  // States for Permanent Deletion
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+
+  useEffect(() => {
+    const unsubSensors = onSnapshot(query(collection(db, "sensors"), where("userId", "==", localUser.id)), (snap) => {
+      setDetailSensors(snap.docs.map(d => ({ ...(d.data() as FirestoreSensor), id: d.id })));
+    });
+    const unsubSubs = onSnapshot(query(collection(db, "userSubscriptions"), where("userId", "==", localUser.id)), (snap) => {
+      const rows = snap.docs.map(d => ({ ...(d.data() as UserSubscriptionLog), id: d.id }));
+      rows.sort((a, b) => (b.startDate?.toDate?.().getTime() || 0) - (a.startDate?.toDate?.().getTime() || 0));
+      setSubscriptionHistory(rows);
+      setLoading(false);
+    });
+    return () => { unsubSensors(); unsubSubs(); };
+  }, [localUser.id]);
+
+  const saveProfile = async () => {
+    setSaving(true);
+    await ClientProfileModel.updateSettings(localUser.id, {
+      name: editForm.restaurantName, restaurantName: editForm.restaurantName, email: editForm.email,
+      phone: editForm.phone, address: editForm.address, operationalHours: { open: editForm.openHour, close: editForm.closeHour }
+    });
+    setLocalUser({ ...localUser, ...editForm, operationalHours: { open: editForm.openHour, close: editForm.closeHour }});
+    setIsEditingProfile(false);
+    setSaving(false);
+  };
+
+  const savePackage = async () => {
+    setSaving(true);
+    const selectedPackage = packages.find(p => p.id === packageForm.plan);
+    const now = new Date();
+    const endDate = addDays(now, packageForm.extendDays);
+
+    await updateDoc(doc(db, "users", localUser.id), { plan: packageForm.plan, planExpiry: endDate });
+    await addDoc(collection(db, "userSubscriptions"), {
+      userId: localUser.id, userName: localUser.name, userEmail: localUser.email, restaurantName: localUser.restaurantName,
+      packageName: selectedPackage?.name || packageForm.plan, startDate: now, endDate, paymentStatus: packageForm.paymentStatus,
+      amount: selectedPackage?.price || 0,
+    });
+    
+    setLocalUser({ ...localUser, plan: packageForm.plan, planExpiry: Timestamp.fromDate(endDate) });
+    setIsChangingPackage(false);
+    setSaving(false);
+  };
+
+  // CASCADING DELETE LOGIC (Menghapus user dan semua data yang terikat dengannya)
+  const executePermanentDelete = async () => {
+    if (deleteConfirmText !== "DELETE") return;
+    setSaving(true);
+    try {
+      const batch = writeBatch(db);
+      
+      // 1. Delete User Document
+      batch.delete(doc(db, "users", localUser.id));
+
+      // 2. Delete All Linked Sensors
+      const qSensors = query(collection(db, "sensors"), where("userId", "==", localUser.id));
+      const snapSensors = await getDocs(qSensors);
+      snapSensors.forEach(d => batch.delete(d.ref));
+
+      // 3. Delete All Linked Alerts
+      const qAlerts = query(collection(db, "alerts"), where("userId", "==", localUser.id));
+      const snapAlerts = await getDocs(qAlerts);
+      snapAlerts.forEach(d => batch.delete(d.ref));
+
+      // 4. Delete All Linked Subscriptions
+      const qSubs = query(collection(db, "userSubscriptions"), where("userId", "==", localUser.id));
+      const snapSubs = await getDocs(qSubs);
+      snapSubs.forEach(d => batch.delete(d.ref));
+
+      // Commit all deletions securely in one transaction
+      await batch.commit();
+      onClose();
+    } catch (error) {
+      console.error("Failed to delete user data:", error);
+      alert("An error occurred while deleting the user.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal onClose={onClose} widthClass="max-w-6xl">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between mb-6">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">Client Details</p>
+          <div className="flex items-center gap-3 mt-1">
+            <h3 className="text-2xl font-extrabold text-slate-900">{localUser.restaurantName}</h3>
+            <button onClick={() => copyToClipboard(localUser.id)} className="p-1.5 text-slate-400 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-lg transition-all border-none cursor-pointer" title="Copy ID"><Copy size={16} /></button>
           </div>
+          <p className="mt-1 text-sm text-slate-500">{localUser.email}</p>
+        </div>
+        
+        {/* TAMPILKAN TOMBOL DELETE HANYA JIKA TIDAK SEDANG DALAM MODE DELETE */}
+        {!isDeleting && (
+          <button onClick={() => setIsDeleting(true)} className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-100 cursor-pointer transition-colors">
+            <Trash2 size={14} /> Permanent Delete
+          </button>
         )}
+      </div>
 
-        {/* KARTU RINGKASAN ATAS */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white border border-slate-200 p-5 rounded-md shadow-sm">
-            <p className="text-slate-600 text-[12px] font-black mb-1 uppercase tracking-widest">Kondisi Dapur</p>
-            <h2 className={`text-xl font-black mb-0.5 ${overallStatus === 'Waspada' ? 'text-[#C67023]' : overallStatus === 'Bahaya' ? 'text-red-600' : 'text-[#4A6741]'}`}>
-              {overallStatus}
-            </h2>
-            <p className="text-slate-500 text-[12px] font-semibold">
-              {stats.unresolved > 0 ? `${stats.unresolved} sektor butuh tindakan` : 'Zona memasak aman'}
+      {isDeleting ? (
+        // DANGER ZONE UI
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 md:p-8 animate-in fade-in zoom-in-95">
+          <div className="flex flex-col items-center text-center max-w-lg mx-auto">
+            <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mb-4">
+              <AlertTriangle size={32} />
+            </div>
+            <h3 className="text-xl font-extrabold text-rose-900 mb-2">Warning: Permanent Deletion</h3>
+            <p className="text-sm text-rose-700/80 mb-6 font-medium">
+              You are about to permanently delete <strong>{localUser.restaurantName}</strong>. This action will erase their profile, ALL assigned sensors, ALL alert history, and ALL billing records. <strong>This cannot be undone.</strong>
             </p>
-          </div>
-          <div className="bg-white border border-slate-200 p-5 rounded-md shadow-sm">
-            <p className="text-slate-600 text-[12px] font-black mb-1 uppercase tracking-widest">Sensor Aktif</p>
-            <h2 className="text-xl font-black text-slate-800 mb-0.5">{connectedCount} <span className="text-xs text-slate-600 font-bold">/ {dynamicSensors.length} Node</span></h2>
-            <p className="text-slate-500 text-[12px] font-semibold">Otomatis Terdeteksi</p>
-          </div>
-          <div className="bg-white border border-slate-200 p-5 rounded-md shadow-sm">
-            <p className="text-slate-600 text-[12px] font-black mb-1 uppercase tracking-widest">Alert Hari Ini</p>
-            <h2 className="text-xl font-black text-slate-800 mb-0.5">{stats.totalToday} <span className="text-xs text-slate-600 font-bold">Kali</span></h2>
-            <p className="text-slate-500 text-[12px] font-semibold">{stats.unresolved} Perlu perhatian</p>
-          </div>
-          <div className="bg-white border border-slate-200 p-5 rounded-md shadow-sm">
-            <p className="text-slate-600 text-[12px] font-black mb-1 uppercase tracking-widest">Terakhir Dicek</p>
-            <h2 className="text-xl font-black text-slate-800 mb-0.5">{stats.lastCheck.split(" ")[0]}</h2>
-            <p className="text-slate-500 text-[12px] font-semibold">Real-time Sinkron</p>
+            
+            <div className="w-full text-left bg-white p-4 rounded-xl border border-rose-200 shadow-sm mb-6">
+              <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Type "DELETE" to confirm</label>
+              <input 
+                type="text" 
+                value={deleteConfirmText} 
+                onChange={(e) => setDeleteConfirmText(e.target.value)} 
+                className="w-full h-11 rounded-lg border border-slate-300 bg-slate-50 px-4 text-sm font-bold outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 transition-all text-slate-900" 
+                placeholder="DELETE"
+              />
+            </div>
+
+            <div className="flex w-full gap-3">
+              <button onClick={() => { setIsDeleting(false); setDeleteConfirmText(""); }} className="flex-1 py-3 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold hover:bg-slate-50 transition-colors cursor-pointer border-none shadow-sm">
+                Cancel
+              </button>
+              <button 
+                onClick={executePermanentDelete} 
+                disabled={deleteConfirmText !== "DELETE" || saving} 
+                className="flex-1 py-3 rounded-xl bg-rose-600 text-white font-bold hover:bg-rose-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 cursor-pointer border-none shadow-md shadow-rose-600/20"
+              >
+                {saving ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />} Destroy Data
+              </button>
+            </div>
           </div>
         </div>
-
-        {/* GRIDS TENGAH */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      ) : loading ? (<div className="py-16 text-center text-sm text-slate-500">Loading client details...</div>) : (
+        <div className="grid gap-6 xl:grid-cols-2">
           
-          {/* TABEL STATUS SEMUA AREA */}
-          <div className="bg-white border border-slate-200 p-6 rounded-md shadow-sm flex flex-col h-full">
-            <h3 className="text-xs font-black text-slate-600 tracking-widest uppercase mb-4 flex items-center gap-2">
-              <LayoutDashboard size={14} className="text-slate-600" /> Status Semua Area
-            </h3>
-            <div className="space-y-0 grow divide-y divide-slate-100">
-              {dynamicSensors.length === 0 ? (
-                <p className="text-xs text-slate-600 py-6 text-center font-medium">Tidak ada sensor yang ditemukan.</p>
-              ) : (
-                dynamicSensors.map((sensor) => {
-                  const live = liveSensors[sensor.id];
-                  const isWarning = live?.status === "warning" || live?.status === "danger";
-
-                  return (
-                    <div key={sensor.id} className="flex items-center justify-between py-3.5 first:pt-0 last:pb-0">
-                      <div className="flex items-center gap-4">
-                        <div className={`w-9 h-9 rounded-md flex items-center justify-center shrink-0 ${
-                          isWarning ? 'bg-red-50 text-red-500' : 'bg-[#E9F2E4] text-[#4A6741]'
-                        }`}>
-                          {isWarning ? <AlertTriangle size={16} /> : <Check size={16} strokeWidth={3} />}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-bold text-slate-900 text-xs truncate">{sensor.name}</p>
-                          <p className="text-[12px] text-slate-600 font-medium truncate">{sensor.location}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <span className={`inline-block px-3 py-1 rounded-md text-[12px] font-black uppercase tracking-wide ${
-                          live?.status === "danger" ? 'bg-red-100 text-red-700' : 
-                          live?.status === "warning" ? 'bg-[#FDF0E1] text-[#A05E1A]' : 'bg-[#E9F2E4] text-[#4A6741]'
-                        }`}>
-                          {live ? (live.status === "safe" ? "Aman" : live.status === "warning" ? "Waspada" : "Bahaya") : "Offline"}
-                        </span>
-                        <p className="font-mono text-[12px] text-slate-600 font-bold mt-1">{live ? `${live.gas} PPM` : "-"}</p>
-                      </div>
+          <div className="space-y-6">
+            <Panel title="Restaurant Profile Information" icon={UserRound}>
+              {isEditingProfile ? (
+                <div className="space-y-4">
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <InputField label="Restaurant Name" value={editForm.restaurantName} onChange={(v: string) => setEditForm({...editForm, restaurantName: v})} />
+                    <InputField label="WhatsApp Number" value={editForm.phone} onChange={(v: string) => setEditForm({...editForm, phone: v})} />
+                    <div className="md:col-span-2">
+                      <InputField label="Address" value={editForm.address} onChange={(v: string) => setEditForm({...editForm, address: v})} />
                     </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-
-          {/* DENAH MATRIKS ZONA DAPUR */}
-          <div className="bg-white border border-slate-200 p-6 rounded-md shadow-sm flex flex-col h-full">
-            <h3 className="text-xs font-black text-slate-600 tracking-widest uppercase mb-4 flex items-center gap-2">
-              <Cpu size={14} className="text-slate-600" /> Peta Denah Zona Dapur
-            </h3>
-            <div className="bg-slate-50/60 p-4 rounded-md border border-slate-100 grid grid-cols-2 gap-4 grow items-center">
-              {dynamicSensors.map((sensor) => {
-                const live = liveSensors[sensor.id];
-                const isWarning = live?.status === "warning" || live?.status === "danger";
-
-                return (
-                  <div key={sensor.id} className={`p-4 rounded-md border flex flex-col justify-between h-24 transition-all bg-white shadow-sm ${
-                    isWarning ? 'border-red-200 bg-red-50/30' : 'border-slate-100'
-                  }`}>
-                    <p className="font-bold text-[11px] text-slate-800 line-clamp-2 leading-tight">
-                      {sensor.name}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[12px] text-slate-600 font-bold font-mono">{live ? `${live.temperature}°C` : "-"}</span>
-                      <div className="flex items-center gap-1.5">
-                        <div className={`w-1.5 h-1.5 rounded-md ${
-                          live?.status === "danger" ? 'bg-red-500 animate-ping' : 
-                          live?.status === "warning" ? 'bg-amber-500' : 'bg-emerald-500'
-                        }`} />
-                        <span className="text-[12px] font-black uppercase text-slate-500 tracking-wide">
-                          {live ? (live.status === "safe" ? "Aman" : live.status === "warning" ? "Waspada" : "Bahaya") : "Offline"}
-                        </span>
-                      </div>
-                    </div>
+                    <InputField label="Opening Time" type="time" value={editForm.openHour} onChange={(v: string) => setEditForm({...editForm, openHour: v})} />
+                    <InputField label="Closing Time" type="time" value={editForm.closeHour} onChange={(v: string) => setEditForm({...editForm, closeHour: v})} />
                   </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* GRAFIK & LOGS */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white border border-slate-200 p-6 rounded-md shadow-sm flex flex-col">
-            <h3 className="text-xs font-black text-slate-600 tracking-widest uppercase mb-4 flex items-center gap-2">
-              <TrendingUp size={14} className="text-slate-600" /> Tren Rata-rata Gas Mingguan
-            </h3>
-            <div className="h-65 w-full text-[12px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartHistory} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="time" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontWeight: 'bold'}} />
-                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontWeight: 'bold'}} />
-                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }} />
-                  <Legend iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px' }} />
-                  
-                  {dynamicSensors.map((sensor, index) => (
-                    <Line 
-                      key={sensor.id}
-                      name={sensor.name} 
-                      type="monotone" 
-                      dataKey={sensor.name} 
-                      stroke={LINE_COLORS[index % LINE_COLORS.length]} 
-                      strokeWidth={2.5} 
-                      dot={false} 
-                    />
-                  ))}
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          <div className="bg-white border border-slate-200 p-6 rounded-md shadow-sm flex flex-col h-81">
-            <h3 className="text-xs font-black text-slate-600 tracking-widest uppercase mb-4 flex items-center gap-2">
-              <BellRing size={14} className="text-slate-600" /> Riwayat Log Aktivitas Peringatan
-            </h3>
-            <div className="space-y-3 overflow-y-auto pr-1 grow custom-scrollbar">
-              {latestAlerts.length === 0 ? (
-                <div className="text-center py-20 text-xs text-slate-600 font-medium">
-                  Kondisi dapur steril. Tidak ada riwayat bahaya.
+                  <div className="flex justify-end gap-2 pt-3 mt-2 border-t border-slate-200/60">
+                    <button onClick={() => setIsEditingProfile(false)} className="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-all border-none cursor-pointer">Cancel</button>
+                    <button onClick={saveProfile} disabled={saving} className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#4D6344] hover:bg-[#3d5535] rounded-xl transition-all disabled:opacity-50 border-none cursor-pointer">
+                      {saving ? <Loader2 size={14} className="animate-spin"/> : <Save size={14} />} Save Profile
+                    </button>
+                  </div>
                 </div>
               ) : (
-                latestAlerts.map((alert) => (
-                  <div key={alert.id} className="flex gap-3 py-2.5 border-b border-slate-50 last:border-0 items-start">
-                    <div className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 mt-0.5 ${
-                      alert.level === "danger" ? "bg-red-50 text-red-500" : "bg-[#FDF0E1] text-[#C67023]"
-                    }`}>
-                      <AlertTriangle size={14} />
-                    </div>
-                    <div className="w-full min-w-0">
-                      <p className="text-xs font-bold text-slate-800 leading-tight mb-1 line-clamp-2">{alert.message}</p>
-                      <div className="flex justify-between items-center text-[12px] text-slate-600 font-bold">
-                        <span>Pukul {alert.timeStr} WIB</span>
-                        <span className={alert.isResolved ? "text-[#4A6741]" : "text-[#A05E1A]"}>
-                          {alert.isResolved ? "✓ Selesai" : "• Perlu Atensi"}
-                        </span>
-                      </div>
+                <div className="space-y-4">
+                  <DetailGrid items={[
+                    ["Restaurant Name", localUser.restaurantName], ["WhatsApp Number", localUser.phone],
+                    ["Operational Address", localUser.address], ["Working Hours", `${localUser.operationalHours?.open || "08:00"} - ${localUser.operationalHours?.close || "22:00"}`]
+                  ]} />
+                  <div className="flex justify-end">
+                    <button onClick={() => setIsEditingProfile(true)} className="flex items-center gap-2 text-[11px] font-bold text-slate-600 bg-white border border-slate-200 px-4 py-2 rounded-xl hover:bg-slate-50 shadow-sm transition-all cursor-pointer">
+                      <Edit3 size={14} /> Edit Profile
+                    </button>
+                  </div>
+                </div>
+              )}
+            </Panel>
+
+            <Panel title="Installed Sensors List" icon={Database}>
+              {detailSensors.length === 0 ? (<EmptyState text="No sensors allocated yet." />) : (
+                <div className="border border-slate-200 rounded-xl overflow-hidden">
+                  <table className="min-w-full text-left bg-white text-sm">
+                    <thead className="bg-slate-50 text-[10px] font-bold text-slate-500 uppercase">
+                      <tr><th className="px-4 py-3">Sensor ID</th><th className="px-4 py-3">Location</th></tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {detailSensors.map(s => (
+                        <tr key={s.id}><td className="px-4 py-3 font-bold text-slate-800">{s.id}</td><td className="px-4 py-3 text-slate-600">{s.location || "-"}</td></tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </Panel>
+          </div>
+
+          <div className="space-y-6">
+            <Panel title="Package & Billing Status" icon={CreditCard}>
+              {isChangingPackage ? (
+                <div className="space-y-4">
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <SelectField label="Change Package" value={packageForm.plan} onChange={(v: string) => setPackageForm({...packageForm, plan: v})} options={packages.map(p => ({label: p.name, value: p.id}))} />
+                    <InputField label="Manual Extend (Days)" type="number" value={packageForm.extendDays.toString()} onChange={(v: string) => setPackageForm({...packageForm, extendDays: parseInt(v)||0})} />
+                    <div className="md:col-span-2">
+                      <SelectField label="Payment Status" value={packageForm.paymentStatus} onChange={(v: string) => setPackageForm({...packageForm, paymentStatus: v as any})} options={[{label: "Paid", value: "paid"}, {label: "Pending", value: "pending"}]} />
                     </div>
                   </div>
-                ))
+                  <div className="flex justify-end gap-2 pt-3 mt-2 border-t border-slate-200/60">
+                    <button onClick={() => setIsChangingPackage(false)} className="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-all border-none cursor-pointer">Cancel</button>
+                    <button onClick={savePackage} disabled={saving} className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-[#4D6344] bg-[#EAF2EB] border border-[#C4D0B7] hover:bg-[#D4E4D3] rounded-xl transition-all disabled:opacity-50 border-none cursor-pointer">
+                      {saving ? <Loader2 size={14} className="animate-spin"/> : <Save size={14} />} Apply Package
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 rounded-xl border border-[#C4D0B7] bg-[#F0F4EC] shadow-inner">
+                    <div>
+                      <p className="text-[10px] font-bold text-[#4D6344] uppercase tracking-widest">Current Package</p>
+                      <p className="text-xl font-black text-slate-900 mt-1">{packages.find(p => p.id === localUser.plan)?.name || localUser.plan}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Expires On</p>
+                      <p className="text-sm font-bold text-slate-800 mt-1">{formatDate(localUser.planExpiry)}</p>
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <button onClick={() => setIsChangingPackage(true)} className="flex items-center gap-2 text-[11px] font-bold text-[#4D6344] bg-[#EAF2EB] border border-[#C4D0B7] px-4 py-2 rounded-xl hover:bg-[#D4E4D3] shadow-sm transition-all cursor-pointer">
+                      <CreditCard size={14} /> Change Package / Extend
+                    </button>
+                  </div>
+                </div>
               )}
-            </div>
+            </Panel>
+
+            <Panel title="Transaction Log History" icon={Clock3}>
+              {subscriptionHistory.length === 0 ? (<EmptyState text="No transaction history yet." />) : (
+                <div className="space-y-3 max-h-64 overflow-y-auto custom-scrollbar pr-2">
+                  {subscriptionHistory.map((log) => (
+                    <div key={log.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm flex items-center justify-between">
+                      <div>
+                        <p className="font-bold text-slate-900 text-sm">{log.packageName}</p>
+                        <p className="mt-1 text-[11px] font-medium text-slate-500">{formatDate(log.startDate)} - {formatDate(log.endDate)}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className={`px-2.5 py-1 text-[10px] font-bold rounded-md uppercase tracking-wider ${log.paymentStatus === 'paid' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                          {log.paymentStatus}
+                        </span>
+                        <p className="mt-2 text-xs font-black text-slate-800">Rp {log.amount.toLocaleString("id-ID")}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Panel>
           </div>
+
         </div>
-      </main>
+      )}
+    </Modal>
+  );
+}
+
+// ============================================================================
+// 5. UI MICRO-COMPONENTS
+// ============================================================================
+function StatCard({ title, value, icon: Icon, tone, note }: any) {
+  const tones: any = { blue: "bg-blue-50 text-blue-700", emerald: "bg-emerald-50 text-emerald-700", rose: "bg-rose-50 text-rose-700", amber: "bg-amber-50 text-amber-700" };
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">{title}</p>
+          <p className="mt-2 text-3xl font-extrabold text-slate-900">{value}</p>
+          <p className="mt-1 text-[11px] font-medium text-slate-500">{note}</p>
+        </div>
+        <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${tones[tone]}`}><Icon size={18} /></div>
+      </div>
     </div>
   );
+}
+
+function FilterChip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void; }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${active ? "border-[#4D6344] bg-[#4D6344] text-white" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function Modal({ children, onClose, widthClass }: any) {
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm px-4 py-6 overflow-y-auto">
+      <div className={`w-full ${widthClass} rounded-3xl bg-white p-6 md:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar`}>
+        <button onClick={onClose} className="absolute top-6 right-6 p-2 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-full transition-colors border-none cursor-pointer"><X size={18} /></button>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function InputField({ label, value, onChange, type = "text" }: any) {
+  return (
+    <label className="block">
+      <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500">{label}</span>
+      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} className="mt-1.5 w-full h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-xs font-bold outline-none focus:border-[#4D6344] focus:ring-2 focus:ring-[#4D6344]/20 transition-all text-slate-800" />
+    </label>
+  );
+}
+
+function SelectField({ label, value, onChange, options }: any) {
+  return (
+    <label className="block">
+      <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500">{label}</span>
+      <select value={value} onChange={(e) => onChange(e.target.value)} className="mt-1.5 w-full h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-xs font-bold outline-none focus:border-[#4D6344] focus:ring-2 focus:ring-[#4D6344]/20 transition-all text-slate-800 cursor-pointer">
+        {options.map((o: any) => <option key={o.value} value={o.value}>{o.label}</option>)}
+      </select>
+    </label>
+  );
+}
+
+function Panel({ title, icon: Icon, children }: any) {
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-slate-50/50 p-5 shadow-inner">
+      <div className="mb-5 flex items-center gap-2.5">
+        <div className="p-1.5 bg-white border border-slate-200 rounded-lg shadow-sm"><Icon size={16} className="text-[#4D6344]" /></div>
+        <h4 className="font-extrabold text-slate-900 text-sm tracking-wide">{title}</h4>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function DetailGrid({ items }: any) {
+  return (
+    <div className="grid gap-3 md:grid-cols-2">
+      {items.map(([label, value]: any) => (
+        <div key={label} className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm">
+          <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-slate-400">{label}</p>
+          <p className="mt-1.5 text-xs font-bold text-slate-800 break-words">{value || "-"}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function EmptyState({ text }: any) {
+  return <div className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-8 text-center text-xs font-medium text-slate-500 shadow-sm">{text}</div>;
 }
