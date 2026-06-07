@@ -209,14 +209,14 @@ export default function AlertsPage() {
                           <td className="py-5 px-4 md:px-6 text-center whitespace-nowrap">
                             <div className="flex justify-center items-center">
                               {isResolved ? (
-                                <span className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest text-emerald-700 bg-emerald-50 border border-emerald-100 min-w-[100px] md:min-w-[110px] justify-center">
+                                <span className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-black uppercase tracking-widest text-emerald-700 bg-emerald-50 border border-emerald-100 min-w-25 md:min-w-27.5 justify-center">
                                   <CheckCircle2 size={16} /> Resolved
                                 </span>
                               ) : (
                                 <button
                                   onClick={() => handleResolve(alert.id)}
                                   disabled={resolvingId === alert.id}
-                                  className="px-3 py-2 md:px-4 md:py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-black uppercase tracking-widest text-[11px] transition-all shadow-sm active:scale-95 flex items-center gap-2 min-w-[100px] md:min-w-[110px] justify-center cursor-pointer border-none"
+                                  className="px-3 py-2 md:px-4 md:py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-black uppercase tracking-widest text-[11px] transition-all shadow-sm active:scale-95 flex items-center gap-2 min-w-25 md:min-w-27.5 justify-center cursor-pointer border-none"
                                 >
                                   {resolvingId === alert.id ? (
                                     <>

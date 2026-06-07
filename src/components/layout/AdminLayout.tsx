@@ -39,7 +39,7 @@ export default function AdminLayout({
   });
 
   const [isMobileOpen, setIsMobileOpen] = useState<boolean>(false);
-  const [mounted, setMounted] = useState<boolean>(false);
+  const [, setMounted] = useState<boolean>(false);
 
   // Optimistic Auth Caching & Mencegah Cascading Render
   useEffect(() => {
@@ -48,6 +48,7 @@ export default function AdminLayout({
     }, 0);
 
     if (sessionStorage.getItem("aetheris_admin_auth") === "true") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsAuthorized(true);
     }
 
@@ -89,9 +90,9 @@ export default function AdminLayout({
     <div className="relative flex min-h-screen text-[#1A1F24] font-sans antialiased overflow-hidden">
       
       {/* MESH GRADIENT BACKGROUND */}
-      <div className="fixed inset-0 z-[-1] bg-gradient-to-br from-[#F6F8F4] via-[#F0F4EC] to-[#E6ECE0]">
-        <div className="absolute top-[-15%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-gradient-to-br from-[#C4D0B7]/50 to-[#9EAF8C]/20 blur-[120px] mix-blend-multiply opacity-80 pointer-events-none" />
-        <div className="absolute bottom-[-15%] right-[-5%] w-[60vw] h-[60vw] rounded-full bg-gradient-to-tl from-[#B3C2A4]/50 to-[#D5DFCB]/20 blur-[120px] mix-blend-multiply opacity-80 pointer-events-none" />
+      <div className="fixed inset-0 z-[-1] bg-linear-to-br from-[#F6F8F4] via-[#F0F4EC] to-[#E6ECE0]">
+        <div className="absolute top-[-15%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-linear-to-br from-[#C4D0B7]/50 to-[#9EAF8C]/20 blur-[120px] mix-blend-multiply opacity-80 pointer-events-none" />
+        <div className="absolute bottom-[-15%] right-[-5%] w-[60vw] h-[60vw] rounded-full bg-linear-to-tl from-[#B3C2A4]/50 to-[#D5DFCB]/20 blur-[120px] mix-blend-multiply opacity-80 pointer-events-none" />
         <div className="absolute top-[20%] left-[20%] w-[40vw] h-[40vw] rounded-full bg-[#FFFFFF]/70 blur-[100px] pointer-events-none" />
       </div>
 

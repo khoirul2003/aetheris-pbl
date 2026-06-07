@@ -78,6 +78,7 @@ export default function AdminAlertsPage() {
         id: item.userId ? `RES-${item.userId.substring(0, 4).toUpperCase()}` : "RES-000",
         time: timeStr,
         // Menyimpan nilai Date mentah untuk keperluan sorting yang akurat
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         rawDate: item.createdAt ? (typeof item.createdAt === "object" && "toDate" in item.createdAt ? (item.createdAt as any).toDate().getTime() : new Date(item.createdAt as string).getTime()) : 0,
         restaurant: usersMap[item.userId] || item.sensorName || "Partner Restaurant",
         sensor: item.sensorName || item.location || "Main Sensor",
