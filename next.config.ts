@@ -15,3 +15,4 @@ const nextConfig: NextConfig & { eslint?: { ignoreDuringBuilds?: boolean } } = {
 };
 
 export default nextConfig;
+import('@opennextjs/cloudflare').then(m => m.initOpenNextCloudflareForDev());

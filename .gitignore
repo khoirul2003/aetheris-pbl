@@ -48,3 +48,12 @@ bigdata/firebase-key.json
 bigdata/data/raw/*.json
 bigdata/data/processed/*.json
 bigdata/reports/results/*
+# OpenNext
+.open-next
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+
+!.env.example
