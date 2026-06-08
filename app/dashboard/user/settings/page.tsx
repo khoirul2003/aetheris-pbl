@@ -76,36 +76,36 @@ function getLastNDays(count: number) {
 function SectionHeading({ title, description, compact = false }: { title: string; description?: string; compact?: boolean; }) {
   return (
     <div>
-      <h3 className={`font-bold text-slate-900 ${compact ? "text-sm" : "text-lg"}`}>{title}</h3>
-      {description ? <p className="mt-1 text-xs text-slate-400">{description}</p> : null}
+      <h3 className={`font-bold ${compact ? "text-sm" : "text-lg"}`} style={{ color: "var(--card-title)" }}>{title}</h3>
+      {description ? <p className="mt-1 text-xs" style={{ color: "var(--card-text-muted)" }}>{description}</p> : null}
     </div>
   );
 }
 
 function ChartPanel({ title, accent, data, labels }: { title: string; accent: "olive" | "rose" | "emerald"; data: number[]; labels: string[]; }) {
-  const accentClass = accent === "olive" ? "bg-[#4D6344]" : accent === "emerald" ? "bg-emerald-500" : "bg-rose-500";
+  const accentClass = accent === "olive" ? "var(--accent-primary)" : accent === "emerald" ? "rgb(16, 185, 129)" : "rgb(244, 63, 94)";
   
   return (
-    <div className="flex flex-col rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm overflow-hidden w-full h-full">
+    <div className="flex flex-col rounded-2xl border p-5 shadow-sm overflow-hidden w-full h-full" style={{ backgroundColor: "var(--card-bg-solid)", borderColor: "var(--card-surface-border)" }}>
       <div className="mb-5 flex items-center justify-between gap-4 shrink-0">
         <SectionHeading title={title} description="Data fetched directly from Firestore." />
       </div>
       
       <div className="w-full overflow-x-auto pb-2 custom-scrollbar mt-auto">
-        <div className="flex h-56 min-w-70 items-end gap-2 border-b border-l border-slate-200 px-2 pt-4 text-[10px] text-slate-400">
+        <div className="flex h-56 min-w-70 items-end gap-2 border-b border-l px-2 pt-4 text-[10px]" style={{ borderColor: "var(--card-surface-border)", color: "var(--card-text-muted)" }}>
           {data.map((value, index) => (
             <div key={labels[index] ?? index} className="group flex h-full flex-1 flex-col items-center justify-end gap-2">
               <div className="flex w-full items-end justify-center gap-1">
                 <div 
-                  className={`${accentClass} relative flex-1 rounded-t-md transition-all group-hover:opacity-90 min-w-4`} 
-                  style={{ height: `${Math.max(8, value)}%` }}
+                  className={`relative flex-1 rounded-t-md transition-all group-hover:opacity-90 min-w-4`} 
+                  style={{ height: `${Math.max(8, value)}%`, backgroundColor: accentClass }}
                 >
-                  <span className="absolute -top-7 left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded bg-[#1A1F24] px-2 py-1 font-sans text-[10px] font-bold text-white opacity-0 transition-opacity group-hover:opacity-100 sm:block z-10 shadow-md pointer-events-none">
+                  <span className="absolute -top-7 left-1/2 hidden -translate-x-1/2 whitespace-nowrap rounded px-2 py-1 font-sans text-[10px] font-bold text-white opacity-0 transition-opacity group-hover:opacity-100 sm:block z-10 shadow-md pointer-events-none" style={{ backgroundColor: "var(--card-title)" }}>
                     {value}
                   </span>
                 </div>
               </div>
-              <span className="font-medium text-slate-500 truncate w-full text-center">
+              <span className="font-medium truncate w-full text-center">
                 {labels[index]}
               </span>
             </div>
@@ -151,7 +151,6 @@ export default function AdminDashboard() {
       { label: "Total Alerts Today", value: String(todayAlertCount), detail: `${alerts.filter((alert) => alert.level === "danger").length} in critical status`, icon: Bell, tone: "amber" },
       { label: "Total Offline Sensors", value: String(offlineSensorCount), detail: `${Math.max(0, sensors.length - offlineSensorCount)} online sensors`, icon: WifiOff, tone: "rose" },
     ];
-  // PERBAIKAN: Mengganti restaurantUsers.length menjadi restaurantUsers secara keseluruhan.
   }, [alerts, liveSensors, restaurantUsers, sensors]);
 
   const realtimeRestaurants = useMemo(() => {
@@ -200,10 +199,10 @@ export default function AdminDashboard() {
   return (
     <AdminLayout title="Dashboard" description="All figures below are fetched directly from Firestore and Realtime Database.">
       <div className="flex w-full flex-col gap-5 h-full">
-          <section className="flex flex-col gap-4 rounded-2xl border border-slate-200/70 bg-white/70 p-5 shadow-sm backdrop-blur">
+          <section className="flex flex-col gap-4 rounded-2xl border p-5 shadow-sm" style={{ backgroundColor: "var(--card-bg-solid)", borderColor: "var(--card-surface-border)" }}>
             <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
               <div><SectionHeading title="Platform Overview" description="Today's operational conditions of the industrial monitoring platform." /></div>
-              <button className="inline-flex items-center gap-2 self-start rounded-xl border border-[#4D6344]/30 bg-white px-4 py-2.5 text-sm font-bold text-[#4D6344] shadow-sm transition-colors hover:bg-[#EAF2EB] cursor-pointer">
+              <button className="inline-flex items-center gap-2 self-start rounded-xl border px-4 py-2.5 text-sm font-bold shadow-sm transition-colors cursor-pointer hover:opacity-80" style={{ backgroundColor: "var(--card-surface)", borderColor: "var(--card-surface-border)", color: "var(--card-text)" }}>
                 <Download size={16} />
                 Export Data
               </button>
@@ -212,20 +211,20 @@ export default function AdminDashboard() {
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               {dashboardStats.map((stat) => {
                 const Icon = stat.icon;
-                const accentClass = stat.tone === "olive" ? "border-t-[#4D6344]" : stat.tone === "emerald" ? "border-t-emerald-500" : stat.tone === "amber" ? "border-t-amber-500" : "border-t-rose-500";
-                const pillClass = stat.tone === "olive" ? "border-[#4D6344]/30 text-[#4D6344] bg-[#EAF2EB]" : stat.tone === "emerald" ? "border-emerald-500 text-emerald-700 bg-emerald-50" : stat.tone === "amber" ? "border-amber-500 text-amber-700 bg-amber-50" : "border-rose-500 text-rose-700 bg-rose-50";
+                const accentColor = stat.tone === "olive" ? "var(--accent-primary)" : stat.tone === "emerald" ? "rgb(16, 185, 129)" : stat.tone === "amber" ? "rgb(245, 158, 11)" : "rgb(244, 63, 94)";
+                const pillBg = stat.tone === "olive" ? "var(--accent-primary-hover)" : stat.tone === "emerald" ? "rgba(16, 185, 129, 0.1)" : stat.tone === "amber" ? "rgba(245, 158, 11, 0.1)" : "rgba(244, 63, 94, 0.1)";
 
                 return (
-                  <div key={stat.label} className={`rounded-xl border border-slate-200 bg-white p-5 shadow-[0_1px_0_rgba(15,23,42,0.03)] border-t-4 ${accentClass}`}>
-                    <div className="flex items-start justify-between gap-3">
+                  <div key={stat.label} className={`rounded-xl border shadow-xs border-t-4`} style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-surface-border)", borderTopColor: accentColor }}>
+                    <div className="flex items-start justify-between gap-3 p-5">
                       <div>
-                        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">{stat.label}</p>
-                        <div className="mt-4 flex items-end gap-3">
-                          <p className="text-4xl font-extrabold tracking-tight text-slate-900">{stat.value}</p>
-                          <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold border ${pillClass}`}>{stat.detail}</span>
+                        <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: "var(--card-text-faint)" }}>{stat.label}</p>
+                        <div className="mt-4 flex flex-col gap-2">
+                          <p className="text-4xl font-extrabold tracking-tight" style={{ color: "var(--card-title)" }}>{stat.value}</p>
+                          <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold border inline-block`} style={{ backgroundColor: pillBg, borderColor: accentColor, color: accentColor }}>{stat.detail}</span>
                         </div>
                       </div>
-                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-50 text-slate-500"><Icon size={18} /></div>
+                      <div className="flex h-11 w-11 items-center justify-center rounded-xl" style={{ backgroundColor: "var(--card-surface)", color: "var(--card-text-muted)" }}><Icon size={18} /></div>
                     </div>
                   </div>
                 );
@@ -239,13 +238,13 @@ export default function AdminDashboard() {
             <div className="space-y-5 lg:col-span-2 flex flex-col h-full">
               <div className="grid gap-5 xl:grid-cols-[1.6fr_1fr]">
                 
-                <div className="rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm">
+                <div className="rounded-2xl border p-5 shadow-sm" style={{ backgroundColor: "var(--card-bg-solid)", borderColor: "var(--card-surface-border)" }}>
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-50 text-rose-500"><AlertTriangle size={18} /></div>
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ backgroundColor: "rgba(244, 63, 94, 0.1)", color: "rgb(244, 63, 94)" }}><AlertTriangle size={18} /></div>
                       <SectionHeading title="Restaurants in Danger/Warning" description="Locations requiring quick action, sorted by most recent events." compact />
                     </div>
-                    <button className="inline-flex items-center gap-1 text-sm font-bold text-[#4D6344] hover:opacity-80 transition-opacity cursor-pointer whitespace-nowrap">
+                    <button className="inline-flex items-center gap-1 text-sm font-bold hover:opacity-80 transition-opacity cursor-pointer whitespace-nowrap border-none bg-transparent" style={{ color: "var(--accent-primary)" }}>
                       View All
                       <ArrowUpRight size={16} />
                     </button>
@@ -254,21 +253,21 @@ export default function AdminDashboard() {
                   <div className="mt-5 space-y-3">
                     {realtimeRestaurants.length > 0 ? (
                       realtimeRestaurants.map((item) => {
-                        const badgeClass = item.tone === "rose" ? "bg-rose-50 text-rose-600" : "bg-amber-50 text-amber-600";
+                        const isDanger = item.tone === "rose";
                         return (
-                          <div key={`${item.restaurant}-${item.location}`} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                          <div key={`${item.restaurant}-${item.location}`} className="rounded-xl border p-4 shadow-sm" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-surface-border)" }}>
                             <div className="flex items-start gap-3">
-                              <div className="mt-1 flex h-9 w-9 items-center justify-center rounded-lg bg-slate-50 text-slate-500"><AlertTriangle size={16} /></div>
+                              <div className="mt-1 flex h-9 w-9 items-center justify-center rounded-lg" style={{ backgroundColor: "var(--card-surface)", color: "var(--card-text-muted)" }}><AlertTriangle size={16} /></div>
                               <div className="min-w-0 flex-1">
                                 <div className="flex flex-wrap items-center justify-between gap-2">
                                   <div>
-                                    <h4 className="font-semibold text-slate-900">{item.restaurant}</h4>
-                                    <p className="mt-1 text-sm text-slate-600">{item.message}</p>
-                                    <p className="mt-1 text-xs text-slate-500">{item.location}</p>
+                                    <h4 className="font-semibold" style={{ color: "var(--card-title)" }}>{item.restaurant}</h4>
+                                    <p className="mt-1 text-sm" style={{ color: "var(--card-text)" }}>{item.message}</p>
+                                    <p className="mt-1 text-xs" style={{ color: "var(--card-text-faint)" }}>{item.location}</p>
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${badgeClass}`}>{item.status}</span>
-                                    <button className="text-sm font-bold text-[#4D6344] hover:underline cursor-pointer">Investigate</button>
+                                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold`} style={{ backgroundColor: isDanger ? "rgba(244, 63, 94, 0.1)" : "rgba(245, 158, 11, 0.1)", color: isDanger ? "rgb(244, 63, 94)" : "rgb(245, 158, 11)" }}>{item.status}</span>
+                                    <button className="text-sm font-bold hover:underline cursor-pointer border-none bg-transparent" style={{ color: "var(--accent-primary)" }}>Investigate</button>
                                   </div>
                                 </div>
                               </div>
@@ -277,33 +276,33 @@ export default function AdminDashboard() {
                         );
                       })
                     ) : (
-                      <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">No restaurants currently in danger or warning condition.</div>
+                      <div className="rounded-xl border border-dashed p-6 text-center text-sm" style={{ backgroundColor: "var(--card-surface)", borderColor: "var(--card-surface-border)", color: "var(--card-text-muted)" }}>No restaurants currently in danger or warning condition.</div>
                     )}
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm">
+                <div className="rounded-2xl border p-5 shadow-sm" style={{ backgroundColor: "var(--card-bg-solid)", borderColor: "var(--card-surface-border)" }}>
                   <div className="flex items-start justify-between gap-3">
                     <SectionHeading title="This Month's Revenue Summary" description="Calculated from Firestore payment logs." compact />
-                    <button className="text-slate-400 transition-colors hover:text-[#4D6344]"><MoreVertical size={18} /></button>
+                    <button className="transition-colors hover:opacity-80 border-none bg-transparent cursor-pointer" style={{ color: "var(--card-text-muted)" }}><MoreVertical size={18} /></button>
                   </div>
 
                   <div className="mt-10">
-                    <p className="text-4xl font-extrabold tracking-tight text-[#4D6344]">
+                    <p className="text-4xl font-extrabold tracking-tight" style={{ color: "var(--accent-primary)" }}>
                       {formatCurrency(monthlyRevenue.total)}
                     </p>
-                    <p className="mt-2 text-sm text-slate-600">{monthlyRevenue.paidCount} paid payments this month</p>
+                    <p className="mt-2 text-sm" style={{ color: "var(--card-text)" }}>{monthlyRevenue.paidCount} paid payments this month</p>
                   </div>
 
-                  <div className="mt-8 border-t border-slate-200 pt-5">
+                  <div className="mt-8 border-t pt-5" style={{ borderColor: "var(--card-surface-border)" }}>
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <p className="text-sm font-semibold text-slate-600">Payment pending</p>
-                        <p className="mt-1 text-sm font-semibold text-slate-600">Subscription logs</p>
+                        <p className="text-sm font-semibold" style={{ color: "var(--card-text)" }}>Payment pending</p>
+                        <p className="mt-1 text-sm font-semibold" style={{ color: "var(--card-text)" }}>Subscription logs</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-bold text-slate-900">{monthlyRevenue.pendingCount} pending</p>
-                        <p className="mt-1 text-sm font-semibold text-[#4D6344]">Live Firestore data</p>
+                        <p className="text-sm font-bold" style={{ color: "var(--card-title)" }}>{monthlyRevenue.pendingCount} pending</p>
+                        <p className="mt-1 text-sm font-semibold" style={{ color: "var(--accent-primary)" }}>Live Firestore data</p>
                       </div>
                     </div>
 
@@ -311,14 +310,14 @@ export default function AdminDashboard() {
                       {Object.entries(monthlyRevenue.byPackage).length > 0 ? (
                         Object.entries(monthlyRevenue.byPackage).slice(0, 6).map(([packageName, amount]) => (
                           <div key={packageName} className="flex flex-col items-center gap-2">
-                            <div className="flex h-32 w-full items-end justify-center rounded-xl bg-[#F6F5F0] px-2 py-2">
-                              <div className="w-full rounded-t-lg bg-[#C2D1C0]" style={{ height: `${Math.min(100, Math.max(18, (amount / Math.max(monthlyRevenue.total, 1)) * 100))}%` }} />
+                            <div className="flex h-32 w-full items-end justify-center rounded-xl px-2 py-2" style={{ backgroundColor: "var(--card-surface)" }}>
+                              <div className="w-full rounded-t-lg" style={{ height: `${Math.min(100, Math.max(18, (amount / Math.max(monthlyRevenue.total, 1)) * 100))}%`, backgroundColor: "var(--accent-primary-border)" }} />
                             </div>
-                            <span className="text-[11px] font-semibold text-slate-500">{packageName}</span>
+                            <span className="text-[11px] font-semibold" style={{ color: "var(--card-text-faint)" }}>{packageName}</span>
                           </div>
                         ))
                       ) : (
-                        <div className="col-span-6 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">No payment logs for this month yet.</div>
+                        <div className="col-span-6 rounded-xl border border-dashed px-4 py-8 text-center text-sm" style={{ backgroundColor: "var(--card-surface)", borderColor: "var(--card-surface-border)", color: "var(--card-text-muted)" }}>No payment logs for this month yet.</div>
                       )}
                     </div>
                   </div>
@@ -335,32 +334,32 @@ export default function AdminDashboard() {
             {/* RIGHT COLUMN (Narrower: 1/3) with flex flex-col and h-full */}
             <div className="flex flex-col gap-5 lg:col-span-1 h-full">
               
-              <div className="rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm shrink-0">
+              <div className="rounded-2xl border p-5 shadow-sm shrink-0" style={{ backgroundColor: "var(--card-bg-solid)", borderColor: "var(--card-surface-border)" }}>
                 <SectionHeading title="Real-time Restaurant Conditions" description="Data fetched from the latest unresolved Firestore alerts." />
                 <div className="mt-4 space-y-3">
                   {realtimeRestaurants.length > 0 ? (
                     realtimeRestaurants.slice(0, 3).map((item) => (
-                      <div key={item.restaurant} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                      <div key={item.restaurant} className="rounded-xl border p-4" style={{ backgroundColor: "var(--card-surface)", borderColor: "var(--card-surface-border)" }}>
                         <div className="flex items-start justify-between gap-3">
-                          <div><p className="font-semibold text-slate-900">{item.restaurant}</p><p className="mt-1 text-sm text-slate-600">{item.message}</p></div>
-                          <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold shrink-0 ${item.tone === "rose" ? "bg-rose-50 text-rose-600" : "bg-amber-50 text-amber-600"}`}>{item.status}</span>
+                          <div><p className="font-semibold" style={{ color: "var(--card-title)" }}>{item.restaurant}</p><p className="mt-1 text-sm" style={{ color: "var(--card-text)" }}>{item.message}</p></div>
+                          <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold shrink-0`} style={{ backgroundColor: item.tone === "rose" ? "rgba(244, 63, 94, 0.1)" : "rgba(245, 158, 11, 0.1)", color: item.tone === "rose" ? "rgb(244, 63, 94)" : "rgb(245, 158, 11)" }}>{item.status}</span>
                         </div>
                       </div>
                     ))
                   ) : (
-                    <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm text-slate-500">No active emergencies at the moment.</div>
+                    <div className="rounded-xl border border-dashed p-5 text-sm" style={{ backgroundColor: "var(--card-surface)", borderColor: "var(--card-surface-border)", color: "var(--card-text-muted)" }}>No active emergencies at the moment.</div>
                   )}
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm flex flex-col shrink-0">
+              <div className="rounded-2xl border p-5 shadow-sm flex flex-col shrink-0" style={{ backgroundColor: "var(--card-bg-solid)", borderColor: "var(--card-surface-border)" }}>
                 <SectionHeading title="Platform Status" description="Quick snapshot of current live database data." />
                 <div className="mt-4 space-y-3 text-sm grow">
-                  <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3"><span className="text-slate-600">Total active alerts</span><span className="font-semibold text-slate-900">{alerts.filter((alert) => alert.isResolved !== true).length}</span></div>
-                  <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3"><span className="text-slate-600">Total partner users</span><span className="font-semibold text-slate-900">{restaurantUsers.length}</span></div>
-                  <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
-                    <span className="text-slate-600">Live online sensors</span>
-                    <span className="font-semibold text-slate-900">
+                  <div className="flex items-center justify-between rounded-xl px-4 py-3" style={{ backgroundColor: "var(--card-surface)" }}><span style={{ color: "var(--card-text)" }}>Total active alerts</span><span className="font-semibold" style={{ color: "var(--card-title)" }}>{alerts.filter((alert) => alert.isResolved !== true).length}</span></div>
+                  <div className="flex items-center justify-between rounded-xl px-4 py-3" style={{ backgroundColor: "var(--card-surface)" }}><span style={{ color: "var(--card-text)" }}>Total partner users</span><span className="font-semibold" style={{ color: "var(--card-title)" }}>{restaurantUsers.length}</span></div>
+                  <div className="flex items-center justify-between rounded-xl px-4 py-3" style={{ backgroundColor: "var(--card-surface)" }}>
+                    <span style={{ color: "var(--card-text)" }}>Live online sensors</span>
+                    <span className="font-semibold" style={{ color: "var(--card-title)" }}>
                       {sensors.filter((sensor) => { const live = liveSensors[sensor.id]; const effectiveOnline = typeof live?.isOnline === "boolean" ? live.isOnline : sensor.isOnline !== false; return sensor.isActive !== false && effectiveOnline; }).length}
                     </span>
                   </div>
@@ -368,32 +367,32 @@ export default function AdminDashboard() {
               </div>
 
               {/* OFFLINE SENSORS CARD: Uses flex-1 to stretch dynamically to fill column height */}
-              <div className="rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm flex flex-col flex-1">
+              <div className="rounded-2xl border p-5 shadow-sm flex flex-col flex-1" style={{ backgroundColor: "var(--card-bg-solid)", borderColor: "var(--card-surface-border)" }}>
                 <div className="flex items-center justify-between gap-4 mb-4 shrink-0">
                   <div><SectionHeading title="Offline Sensors" description="Sensors currently disconnected from the network." /></div>
-                  <span className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-600 whitespace-nowrap">{offlineSensorRows.length} item(s)</span>
+                  <span className="rounded-full border px-3 py-1 text-xs font-semibold whitespace-nowrap" style={{ backgroundColor: "rgba(244, 63, 94, 0.1)", borderColor: "rgba(244, 63, 94, 0.2)", color: "rgb(244, 63, 94)" }}>{offlineSensorRows.length} item(s)</span>
                 </div>
                 
-                <div className="overflow-x-auto custom-scrollbar rounded-xl border border-slate-200 flex-1">
-                  <table className="min-w-full divide-y divide-slate-200 text-left text-sm whitespace-nowrap">
-                    <thead className="bg-slate-50 text-slate-500 sticky top-0">
+                <div className="overflow-x-auto custom-scrollbar rounded-xl border flex-1" style={{ borderColor: "var(--card-surface-border)" }}>
+                  <table className="min-w-full divide-y text-left text-sm whitespace-nowrap" style={{ borderColor: "var(--table-border)" }}>
+                    <thead className="sticky top-0" style={{ backgroundColor: "var(--table-head-bg)", color: "var(--card-text-muted)" }}>
                       <tr>
                         <th className="px-4 py-3 font-semibold">Sensor Name</th>
                         <th className="px-4 py-3 font-semibold">Restaurant</th>
                         <th className="px-4 py-3 font-semibold">Last online</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-200 bg-white text-slate-700">
+                    <tbody className="divide-y" style={{ backgroundColor: "var(--table-body-bg)", borderColor: "var(--table-border)", color: "var(--card-text)" }}>
                       {offlineSensorRows.length > 0 ? (
                         offlineSensorRows.map((sensor) => (
                           <tr key={sensor.sensor}>
-                            <td className="px-4 py-4 font-medium text-slate-900">{sensor.sensor}</td>
+                            <td className="px-4 py-4 font-medium" style={{ color: "var(--card-title)" }}>{sensor.sensor}</td>
                             <td className="px-4 py-4 max-w-30 truncate" title={sensor.restaurant}>{sensor.restaurant}</td>
-                            <td className="px-4 py-4 text-slate-500">{sensor.lastOnline}</td>
+                            <td className="px-4 py-4" style={{ color: "var(--card-text-muted)" }}>{sensor.lastOnline}</td>
                           </tr>
                         ))
                       ) : (
-                        <tr><td colSpan={3} className="px-4 py-8 text-center text-sm text-slate-500">All sensors are currently online.</td></tr>
+                        <tr><td colSpan={3} className="px-4 py-8 text-center text-sm" style={{ color: "var(--card-text-muted)" }}>All sensors are currently online.</td></tr>
                       )}
                     </tbody>
                   </table>

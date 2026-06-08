@@ -65,7 +65,6 @@ export default function AdminUsersPage() {
     const unsubscribeUsers = onSnapshot(collection(db, "users"), (snapshot) => {
       const rows: AdminUserRow[] = [];
       snapshot.forEach((docSnap) => {
-        // FIXED: Removed `any`, used proper partial typing
         const data = docSnap.data() as Omit<AdminUserRow, "id">;
         if ((data.role ?? "user") === "user") {
           rows.push({ id: docSnap.id, ...data, isActive: data.isActive ?? true });
@@ -123,18 +122,18 @@ export default function AdminUsersPage() {
           <StatCard title="Total Sensors" value={summary.sensors.toString()} icon={Database} tone="amber" note="Registered sensors" />
         </section>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="rounded-2xl border p-5 shadow-sm" style={{ backgroundColor: "var(--card-bg-solid)", borderColor: "var(--card-surface-border)" }}>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <h2 className="text-lg font-bold text-slate-900">User Directory</h2>
-            <button onClick={() => setNewUserOpen(true)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#4D6344] px-5 py-3 text-sm font-bold text-white hover:bg-[#3d5535] transition-all shadow-sm w-full lg:w-auto cursor-pointer border-none">
+            <h2 className="text-lg font-bold" style={{ color: "var(--card-title)" }}>User Directory</h2>
+            <button onClick={() => setNewUserOpen(true)} className="inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-bold text-white transition-all shadow-sm w-full lg:w-auto cursor-pointer border-none hover:opacity-80" style={{ backgroundColor: "var(--accent-primary)" }}>
               <Plus size={18} /> Add New User
             </button>
           </div>
-          <hr className="my-5 border-slate-100" />
+          <hr className="my-5" style={{ borderColor: "var(--card-surface-border)" }} />
           <div className="flex flex-col gap-3 sm:flex-row lg:items-center">
             <div className="relative w-full sm:max-w-xs">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-              <input type="text" placeholder="Search name, email, ID..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full h-11 rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-4 text-sm outline-none focus:border-[#4D6344] focus:ring-2 focus:ring-[#4D6344]/20 transition-all" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--card-text-faint)" }} size={16} />
+              <input type="text" placeholder="Search name, email, ID..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full h-11 rounded-xl border pl-9 pr-4 text-sm outline-none focus:ring-2 transition-all" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-surface-border)", color: "var(--card-text)", "--tw-ring-color": "var(--accent-primary)" } as React.CSSProperties} />
             </div>
           </div>
 
@@ -146,10 +145,10 @@ export default function AdminUsersPage() {
           </div>
         </section>
 
-        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <section className="overflow-hidden rounded-2xl border shadow-sm" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}>
           <div className="overflow-x-auto">
             <table className="min-w-full text-left">
-              <thead className="bg-slate-50 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
+              <thead className="text-[11px] font-bold uppercase tracking-[0.18em]" style={{ backgroundColor: "var(--table-head-bg)", color: "var(--card-text-muted)" }}>
                 <tr>
                   <th className="px-6 py-4">Restaurant / ID</th>
                   <th className="px-6 py-4">Email</th>
@@ -158,39 +157,39 @@ export default function AdminUsersPage() {
                   <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y" style={{ borderColor: "var(--table-border)", backgroundColor: "var(--table-body-bg)", color: "var(--card-text)" }}>
                 {loadingUsers ? (
-                  <tr><td colSpan={5} className="px-6 py-10 text-center text-sm text-slate-500">Loading data...</td></tr>
+                  <tr><td colSpan={5} className="px-6 py-10 text-center text-sm" style={{ color: "var(--card-text-faint)" }}>Loading data...</td></tr>
                 ) : filteredUsers.length === 0 ? (
-                  <tr><td colSpan={5} className="px-6 py-10 text-center text-sm text-slate-500">No users match the filters.</td></tr>
+                  <tr><td colSpan={5} className="px-6 py-10 text-center text-sm" style={{ color: "var(--card-text-faint)" }}>No users match the filters.</td></tr>
                 ) : filteredUsers.map((user) => {
                   const active = user.isActive !== false;
                   return (
-                    <tr key={user.id} className="hover:bg-slate-50 transition-colors">
+                    <tr key={user.id} className="transition-colors hover:opacity-90">
                       <td className="px-6 py-4">
-                        <div className="font-bold text-slate-900">{user.restaurantName}</div>
+                        <div className="font-bold" style={{ color: "var(--card-title)" }}>{user.restaurantName}</div>
                         <div className="flex items-center gap-1.5 mt-1">
-                          <code className="text-[10px] bg-slate-100 border border-slate-200 text-slate-500 px-1.5 py-0.5 rounded font-mono">ID: {user.id}</code>
-                          <button onClick={() => copyToClipboard(user.id)} className="text-slate-400 hover:text-[#4D6344] transition-colors cursor-pointer border-none bg-transparent p-0"><Copy size={13} /></button>
+                          <code className="text-[10px] border px-1.5 py-0.5 rounded font-mono" style={{ backgroundColor: "var(--card-surface)", borderColor: "var(--card-surface-border)", color: "var(--card-text-muted)" }}>ID: {user.id}</code>
+                          <button onClick={() => copyToClipboard(user.id)} className="transition-colors cursor-pointer border-none bg-transparent p-0 hover:text-emerald-500" style={{ color: "var(--card-text-faint)" }}><Copy size={13} /></button>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-slate-600">{user.email}</td>
+                      <td className="px-6 py-4 text-sm" style={{ color: "var(--card-text-muted)" }}>{user.email}</td>
                       <td className="px-6 py-4">
-                        <span className="inline-flex rounded-full px-3 py-1 text-xs font-bold bg-[#EAF2EB] text-[#4D6344]">
+                        <span className="inline-flex rounded-full px-3 py-1 text-xs font-bold" style={{ backgroundColor: "var(--accent-primary-hover)", color: "var(--accent-primary)" }}>
                           {packages.find(p => p.id === user.plan)?.name || user.plan || "Basic"}
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${active ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
+                        <span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${active ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" : "bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400"}`}>
                           {active ? "Active" : "Inactive"}
                         </span>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex justify-end gap-2">
-                          <button onClick={() => setSelectedUser(user)} className="inline-flex items-center gap-2 bg-[#EAF2EB] text-[#4D6344] font-bold px-3 py-1.5 rounded-lg text-xs hover:bg-[#D4E4D3] transition-colors cursor-pointer border-none">
+                          <button onClick={() => setSelectedUser(user)} className="inline-flex items-center gap-2 font-bold px-3 py-1.5 rounded-lg text-xs transition-colors cursor-pointer border-none hover:opacity-80" style={{ backgroundColor: "var(--accent-primary-hover)", color: "var(--accent-primary)" }}>
                             <Eye size={14} /> Details
                           </button>
-                          <button onClick={() => toggleUserActive(user)} className={`inline-flex items-center gap-2 font-bold px-3 py-1.5 rounded-lg text-xs transition-colors border cursor-pointer whitespace-nowrap ${active ? "bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100" : "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"}`}>
+                          <button onClick={() => toggleUserActive(user)} className={`inline-flex items-center gap-2 font-bold px-3 py-1.5 rounded-lg text-xs transition-colors border cursor-pointer whitespace-nowrap ${active ? "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-500/20" : "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20"}`}>
                             {active ? <ToggleLeft size={14} /> : <ToggleRight size={14} />}
                             {active ? "Deactivate" : "Activate"}
                           </button>
@@ -257,8 +256,8 @@ function AddUserModal({ packages, onClose }: { packages: SubscriptionPackage[], 
   return (
     <Modal onClose={onClose} widthClass="max-w-3xl">
       <div className="mb-8">
-        <h3 className="text-2xl font-extrabold text-slate-900">Add New Client</h3>
-        <p className="text-sm text-slate-500 mt-1">Create a restaurant profile, set a login password, and select an initial package.</p>
+        <h3 className="text-2xl font-extrabold" style={{ color: "var(--card-title)" }}>Add New Client</h3>
+        <p className="text-sm mt-1" style={{ color: "var(--card-text-muted)" }}>Create a restaurant profile, set a login password, and select an initial package.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 mb-4">
@@ -276,14 +275,14 @@ function AddUserModal({ packages, onClose }: { packages: SubscriptionPackage[], 
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 p-5 rounded-2xl bg-[#F0F4EC] border border-[#C4D0B7]/50 shadow-inner">
+      <div className="grid gap-4 md:grid-cols-2 p-5 rounded-2xl border shadow-inner" style={{ backgroundColor: "var(--card-surface)", borderColor: "var(--card-surface-border)" }}>
         <SelectField label="Select Initial Package" value={form.plan} onChange={handlePlanChange} options={packages.map((p) => ({ label: p.name, value: p.id }))} />
         <InputField label="Active Duration (Days)" type="number" value={form.planDurationDays.toString()} onChange={(v: string) => setForm({ ...form, planDurationDays: parseInt(v) || 0 })} />
       </div>
 
-      <div className="mt-8 flex justify-end gap-3">
-        <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-100 transition-colors border-none cursor-pointer">Cancel</button>
-        <button disabled={saving} onClick={createUser} className="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-[#4D6344] hover:bg-[#3d5535] disabled:opacity-60 transition-colors flex items-center gap-2 border-none cursor-pointer shadow-sm">
+      <div className="mt-8 flex justify-end gap-3" style={{ borderTopWidth: 1, borderTopColor: "var(--card-surface-border)", paddingTop: "1rem" }}>
+        <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-sm font-bold transition-colors border-none cursor-pointer hover:opacity-80" style={{ backgroundColor: "var(--card-surface)", color: "var(--card-text)" }}>Cancel</button>
+        <button disabled={saving} onClick={createUser} className="px-5 py-2.5 rounded-xl text-sm font-bold text-white disabled:opacity-60 transition-colors flex items-center gap-2 border-none cursor-pointer shadow-sm hover:opacity-80" style={{ backgroundColor: "var(--accent-primary)" }}>
           {saving ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />} Register Client
         </button>
       </div>
@@ -305,7 +304,6 @@ function UserDetailModal({ user, packages, onClose }: { user: AdminUserRow, pack
   const [editForm, setEditForm] = useState({ ...user, openHour: user.operationalHours?.open || "08:00", closeHour: user.operationalHours?.close || "22:00" });
 
   const [isChangingPackage, setIsChangingPackage] = useState(false);
-  // FIXED: Properly typed paymentStatus
   const [packageForm, setPackageForm] = useState<{ plan: string; extendDays: number; paymentStatus: "paid" | "pending" }>({ 
     plan: user.plan || DEFAULT_PACKAGE, 
     extendDays: 30, 
@@ -352,7 +350,6 @@ function UserDetailModal({ user, packages, onClose }: { user: AdminUserRow, pack
       amount: selectedPackage?.price || 0,
     });
     
-    // FIXED: Properly calling Timestamp function without import conflict
     setLocalUser({ ...localUser, plan: packageForm.plan, planExpiry: Timestamp.fromDate(endDate) });
     setIsChangingPackage(false);
     setSaving(false);
@@ -392,59 +389,59 @@ function UserDetailModal({ user, packages, onClose }: { user: AdminUserRow, pack
     <Modal onClose={onClose} widthClass="max-w-6xl">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between mb-6">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">Client Details</p>
+          <p className="text-[11px] font-bold uppercase tracking-[0.2em]" style={{ color: "var(--card-text-faint)" }}>Client Details</p>
           <div className="flex items-center gap-3 mt-1">
-            <h3 className="text-2xl font-extrabold text-slate-900">{localUser.restaurantName}</h3>
-            <button onClick={() => copyToClipboard(localUser.id)} className="p-1.5 text-slate-400 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-lg transition-all border-none cursor-pointer" title="Copy ID"><Copy size={16} /></button>
+            <h3 className="text-2xl font-extrabold" style={{ color: "var(--card-title)" }}>{localUser.restaurantName}</h3>
+            <button onClick={() => copyToClipboard(localUser.id)} className="p-1.5 rounded-lg transition-all border-none cursor-pointer hover:opacity-80" style={{ backgroundColor: "var(--card-surface)", color: "var(--card-text-muted)" }} title="Copy ID"><Copy size={16} /></button>
           </div>
-          <p className="mt-1 text-sm text-slate-500">{localUser.email}</p>
+          <p className="mt-1 text-sm" style={{ color: "var(--card-text-muted)" }}>{localUser.email}</p>
         </div>
         
         {!isDeleting && (
-          <button onClick={() => setIsDeleting(true)} className="inline-flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-100 cursor-pointer transition-colors">
+          <button onClick={() => setIsDeleting(true)} className="inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-xs font-bold cursor-pointer transition-colors" style={{ backgroundColor: "rgba(244, 63, 94, 0.1)", borderColor: "rgba(244, 63, 94, 0.2)", color: "rgb(244, 63, 94)" }}>
             <Trash2 size={14} /> Permanent Delete
           </button>
         )}
       </div>
 
       {isDeleting ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 md:p-8 animate-in fade-in zoom-in-95">
+        <div className="rounded-2xl border p-6 md:p-8 animate-in fade-in zoom-in-95" style={{ backgroundColor: "rgba(244, 63, 94, 0.05)", borderColor: "rgba(244, 63, 94, 0.2)" }}>
           <div className="flex flex-col items-center text-center max-w-lg mx-auto">
-            <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mb-4">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ backgroundColor: "rgba(244, 63, 94, 0.2)", color: "rgb(244, 63, 94)" }}>
               <AlertTriangle size={32} />
             </div>
-            <h3 className="text-xl font-extrabold text-rose-900 mb-2">Warning: Permanent Deletion</h3>
-            <p className="text-sm text-rose-700/80 mb-6 font-medium">
+            <h3 className="text-xl font-extrabold mb-2" style={{ color: "rgb(225, 29, 72)" }}>Warning: Permanent Deletion</h3>
+            <p className="text-sm mb-6 font-medium" style={{ color: "rgb(225, 29, 72)" }}>
               You are about to permanently delete <strong>{localUser.restaurantName}</strong>. This action will erase their profile, ALL assigned sensors, ALL alert history, and ALL billing records. <strong>This cannot be undone.</strong>
             </p>
             
-            <div className="w-full text-left bg-white p-4 rounded-xl border border-rose-200 shadow-sm mb-6">
-              {/* FIXED: Unescaped quotes warning fixed by using &quot; */}
-              <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Type &quot;DELETE&quot; to confirm</label>
+            <div className="w-full text-left p-4 rounded-xl border shadow-sm mb-6" style={{ backgroundColor: "var(--card-bg-solid)", borderColor: "rgba(244, 63, 94, 0.3)" }}>
+              <label className="block text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "var(--card-text-faint)" }}>Type &quot;DELETE&quot; to confirm</label>
               <input 
                 type="text" 
                 value={deleteConfirmText} 
                 onChange={(e) => setDeleteConfirmText(e.target.value)} 
-                className="w-full h-11 rounded-lg border border-slate-300 bg-slate-50 px-4 text-sm font-bold outline-none focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20 transition-all text-slate-900" 
+                className="w-full h-11 rounded-lg border px-4 text-sm font-bold outline-none focus:ring-2 transition-all" 
+                style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-surface-border)", color: "var(--card-title)", "--tw-ring-color": "rgb(244, 63, 94)" } as React.CSSProperties}
                 placeholder="DELETE"
               />
             </div>
 
             <div className="flex w-full gap-3">
-              <button onClick={() => { setIsDeleting(false); setDeleteConfirmText(""); }} className="flex-1 py-3 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold hover:bg-slate-50 transition-colors cursor-pointer border-none shadow-sm">
+              <button onClick={() => { setIsDeleting(false); setDeleteConfirmText(""); }} className="flex-1 py-3 rounded-xl border font-bold transition-colors cursor-pointer shadow-sm hover:opacity-80" style={{ backgroundColor: "var(--card-bg-solid)", borderColor: "var(--card-border)", color: "var(--card-text)" }}>
                 Cancel
               </button>
               <button 
                 onClick={executePermanentDelete} 
                 disabled={deleteConfirmText !== "DELETE" || saving} 
-                className="flex-1 py-3 rounded-xl bg-rose-600 text-white font-bold hover:bg-rose-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 cursor-pointer border-none shadow-md shadow-rose-600/20"
+                className="flex-1 py-3 rounded-xl text-white font-bold disabled:opacity-50 transition-colors flex items-center justify-center gap-2 cursor-pointer border-none shadow-md hover:opacity-80" style={{ backgroundColor: "rgb(225, 29, 72)" }}
               >
                 {saving ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />} Destroy Data
               </button>
             </div>
           </div>
         </div>
-      ) : loading ? (<div className="py-16 text-center text-sm text-slate-500">Loading client details...</div>) : (
+      ) : loading ? (<div className="py-16 text-center text-sm" style={{ color: "var(--card-text-faint)" }}>Loading client details...</div>) : (
         <div className="grid gap-6 xl:grid-cols-2">
           
           <div className="space-y-6">
@@ -460,9 +457,9 @@ function UserDetailModal({ user, packages, onClose }: { user: AdminUserRow, pack
                     <InputField label="Opening Time" type="time" value={editForm.openHour} onChange={(v: string) => setEditForm({...editForm, openHour: v})} />
                     <InputField label="Closing Time" type="time" value={editForm.closeHour} onChange={(v: string) => setEditForm({...editForm, closeHour: v})} />
                   </div>
-                  <div className="flex justify-end gap-2 pt-3 mt-2 border-t border-slate-200/60">
-                    <button onClick={() => setIsEditingProfile(false)} className="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-all border-none cursor-pointer">Cancel</button>
-                    <button onClick={saveProfile} disabled={saving} className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#4D6344] hover:bg-[#3d5535] rounded-xl transition-all disabled:opacity-50 border-none cursor-pointer">
+                  <div className="flex justify-end gap-2 pt-3 mt-2" style={{ borderTopWidth: 1, borderTopColor: "var(--card-surface-border)" }}>
+                    <button onClick={() => setIsEditingProfile(false)} className="px-4 py-2 text-xs font-bold rounded-xl transition-all border-none cursor-pointer hover:opacity-80" style={{ backgroundColor: "var(--card-surface)", color: "var(--card-text)" }}>Cancel</button>
+                    <button onClick={saveProfile} disabled={saving} className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white rounded-xl transition-all disabled:opacity-50 border-none cursor-pointer hover:opacity-80" style={{ backgroundColor: "var(--accent-primary)" }}>
                       {saving ? <Loader2 size={14} className="animate-spin"/> : <Save size={14} />} Save Profile
                     </button>
                   </div>
@@ -474,7 +471,7 @@ function UserDetailModal({ user, packages, onClose }: { user: AdminUserRow, pack
                     ["Operational Address", localUser.address], ["Working Hours", `${localUser.operationalHours?.open || "08:00"} - ${localUser.operationalHours?.close || "22:00"}`]
                   ]} />
                   <div className="flex justify-end">
-                    <button onClick={() => setIsEditingProfile(true)} className="flex items-center gap-2 text-[11px] font-bold text-slate-600 bg-white border border-slate-200 px-4 py-2 rounded-xl hover:bg-slate-50 shadow-sm transition-all cursor-pointer">
+                    <button onClick={() => setIsEditingProfile(true)} className="flex items-center gap-2 text-[11px] font-bold border px-4 py-2 rounded-xl shadow-sm transition-all cursor-pointer hover:opacity-80" style={{ backgroundColor: "var(--card-bg-solid)", borderColor: "var(--card-surface-border)", color: "var(--card-text)" }}>
                       <Edit3 size={14} /> Edit Profile
                     </button>
                   </div>
@@ -484,14 +481,14 @@ function UserDetailModal({ user, packages, onClose }: { user: AdminUserRow, pack
 
             <Panel title="Installed Sensors List" icon={Database}>
               {detailSensors.length === 0 ? (<EmptyState text="No sensors allocated yet." />) : (
-                <div className="border border-slate-200 rounded-xl overflow-hidden">
-                  <table className="min-w-full text-left bg-white text-sm">
-                    <thead className="bg-slate-50 text-[10px] font-bold text-slate-500 uppercase">
+                <div className="border rounded-xl overflow-hidden" style={{ borderColor: "var(--table-border)" }}>
+                  <table className="min-w-full text-left text-sm" style={{ backgroundColor: "var(--table-body-bg)" }}>
+                    <thead className="text-[10px] font-bold uppercase" style={{ backgroundColor: "var(--table-head-bg)", color: "var(--card-text-faint)" }}>
                       <tr><th className="px-4 py-3">Sensor ID</th><th className="px-4 py-3">Location</th></tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y" style={{ borderColor: "var(--table-border)" }}>
                       {detailSensors.map(s => (
-                        <tr key={s.id}><td className="px-4 py-3 font-bold text-slate-800">{s.id}</td><td className="px-4 py-3 text-slate-600">{s.location || "-"}</td></tr>
+                        <tr key={s.id}><td className="px-4 py-3 font-bold" style={{ color: "var(--card-title)" }}>{s.id}</td><td className="px-4 py-3" style={{ color: "var(--card-text)" }}>{s.location || "-"}</td></tr>
                       ))}
                     </tbody>
                   </table>
@@ -511,27 +508,27 @@ function UserDetailModal({ user, packages, onClose }: { user: AdminUserRow, pack
                       <SelectField label="Payment Status" value={packageForm.paymentStatus} onChange={(v: string) => setPackageForm({...packageForm, paymentStatus: v as "paid" | "pending"})} options={[{label: "Paid", value: "paid"}, {label: "Pending", value: "pending"}]} />
                     </div>
                   </div>
-                  <div className="flex justify-end gap-2 pt-3 mt-2 border-t border-slate-200/60">
-                    <button onClick={() => setIsChangingPackage(false)} className="px-4 py-2 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-xl transition-all border-none cursor-pointer">Cancel</button>
-                    <button onClick={savePackage} disabled={saving} className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-[#4D6344] bg-[#EAF2EB] border border-[#C4D0B7] hover:bg-[#D4E4D3] rounded-xl transition-all disabled:opacity-50 border-none cursor-pointer">
+                  <div className="flex justify-end gap-2 pt-3 mt-2" style={{ borderTopWidth: 1, borderTopColor: "var(--card-surface-border)" }}>
+                    <button onClick={() => setIsChangingPackage(false)} className="px-4 py-2 text-xs font-bold rounded-xl transition-all border-none cursor-pointer hover:opacity-80" style={{ backgroundColor: "var(--card-surface)", color: "var(--card-text)" }}>Cancel</button>
+                    <button onClick={savePackage} disabled={saving} className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold border rounded-xl transition-all disabled:opacity-50 cursor-pointer hover:opacity-80" style={{ backgroundColor: "var(--accent-primary-hover)", borderColor: "var(--accent-primary-border)", color: "var(--accent-primary)" }}>
                       {saving ? <Loader2 size={14} className="animate-spin"/> : <Save size={14} />} Apply Package
                     </button>
                   </div>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 rounded-xl border border-[#C4D0B7] bg-[#F0F4EC] shadow-inner">
+                  <div className="flex items-center justify-between p-4 rounded-xl border shadow-inner" style={{ backgroundColor: "var(--card-surface)", borderColor: "var(--card-surface-border)" }}>
                     <div>
-                      <p className="text-[10px] font-bold text-[#4D6344] uppercase tracking-widest">Current Package</p>
-                      <p className="text-xl font-black text-slate-900 mt-1">{packages.find(p => p.id === localUser.plan)?.name || localUser.plan}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--accent-primary)" }}>Current Package</p>
+                      <p className="text-xl font-black mt-1" style={{ color: "var(--card-title)" }}>{packages.find(p => p.id === localUser.plan)?.name || localUser.plan}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Expires On</p>
-                      <p className="text-sm font-bold text-slate-800 mt-1">{formatDate(localUser.planExpiry)}</p>
+                      <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--card-text-faint)" }}>Expires On</p>
+                      <p className="text-sm font-bold mt-1" style={{ color: "var(--card-title)" }}>{formatDate(localUser.planExpiry)}</p>
                     </div>
                   </div>
                   <div className="flex justify-end">
-                    <button onClick={() => setIsChangingPackage(true)} className="flex items-center gap-2 text-[11px] font-bold text-[#4D6344] bg-[#EAF2EB] border border-[#C4D0B7] px-4 py-2 rounded-xl hover:bg-[#D4E4D3] shadow-sm transition-all cursor-pointer">
+                    <button onClick={() => setIsChangingPackage(true)} className="flex items-center gap-2 text-[11px] font-bold border px-4 py-2 rounded-xl shadow-sm transition-all cursor-pointer hover:opacity-80" style={{ backgroundColor: "var(--accent-primary-hover)", borderColor: "var(--accent-primary-border)", color: "var(--accent-primary)" }}>
                       <CreditCard size={14} /> Change Package / Extend
                     </button>
                   </div>
@@ -543,16 +540,16 @@ function UserDetailModal({ user, packages, onClose }: { user: AdminUserRow, pack
               {subscriptionHistory.length === 0 ? (<EmptyState text="No transaction history yet." />) : (
                 <div className="space-y-3 max-h-64 overflow-y-auto custom-scrollbar pr-2">
                   {subscriptionHistory.map((log) => (
-                    <div key={log.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm flex items-center justify-between">
+                    <div key={log.id} className="rounded-xl border p-4 shadow-sm flex items-center justify-between" style={{ backgroundColor: "var(--card-bg-solid)", borderColor: "var(--card-surface-border)" }}>
                       <div>
-                        <p className="font-bold text-slate-900 text-sm">{log.packageName}</p>
-                        <p className="mt-1 text-[11px] font-medium text-slate-500">{formatDate(log.startDate)} - {formatDate(log.endDate)}</p>
+                        <p className="font-bold text-sm" style={{ color: "var(--card-title)" }}>{log.packageName}</p>
+                        <p className="mt-1 text-[11px] font-medium" style={{ color: "var(--card-text-muted)" }}>{formatDate(log.startDate)} - {formatDate(log.endDate)}</p>
                       </div>
                       <div className="text-right">
-                        <span className={`px-2.5 py-1 text-[10px] font-bold rounded-md uppercase tracking-wider ${log.paymentStatus === 'paid' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                        <span className={`px-2.5 py-1 text-[10px] font-bold rounded-md uppercase tracking-wider ${log.paymentStatus === 'paid' ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400'}`}>
                           {log.paymentStatus}
                         </span>
-                        <p className="mt-2 text-xs font-black text-slate-800">Rp {log.amount.toLocaleString("id-ID")}</p>
+                        <p className="mt-2 text-xs font-black" style={{ color: "var(--card-title)" }}>Rp {log.amount.toLocaleString("id-ID")}</p>
                       </div>
                     </div>
                   ))}
@@ -571,7 +568,6 @@ function UserDetailModal({ user, packages, onClose }: { user: AdminUserRow, pack
 // 5. UI MICRO-COMPONENTS
 // ============================================================================
 
-// FIXED: Defined precise Typescript interfaces for ALL Micro-components to replace 'any'
 interface StatCardProps {
   title: string;
   value: string;
@@ -582,18 +578,18 @@ interface StatCardProps {
 
 function StatCard({ title, value, icon: Icon, tone, note }: StatCardProps) {
   const tones: Record<string, string> = { 
-    blue: "bg-blue-50 text-blue-700", 
-    emerald: "bg-emerald-50 text-emerald-700", 
-    rose: "bg-rose-50 text-rose-700", 
-    amber: "bg-amber-50 text-amber-700" 
+    blue: "bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400", 
+    emerald: "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400", 
+    rose: "bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400", 
+    amber: "bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400" 
   };
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-2xl border p-5 shadow-sm" style={{ backgroundColor: "var(--card-bg-solid)", borderColor: "var(--card-surface-border)" }}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">{title}</p>
-          <p className="mt-2 text-3xl font-extrabold text-slate-900">{value}</p>
-          <p className="mt-1 text-[11px] font-medium text-slate-500">{note}</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.15em]" style={{ color: "var(--card-text-faint)" }}>{title}</p>
+          <p className="mt-2 text-3xl font-extrabold" style={{ color: "var(--card-title)" }}>{value}</p>
+          <p className="mt-1 text-[11px] font-medium" style={{ color: "var(--card-text-muted)" }}>{note}</p>
         </div>
         <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${tones[tone]}`}><Icon size={18} /></div>
       </div>
@@ -605,7 +601,12 @@ function FilterChip({ label, active, onClick }: { label: string; active: boolean
   return (
     <button
       onClick={onClick}
-      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${active ? "border-[#4D6344] bg-[#4D6344] text-white" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"}`}
+      className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer`}
+      style={{
+        backgroundColor: active ? "var(--accent-primary)" : "var(--card-surface)",
+        borderColor: active ? "var(--accent-primary-border)" : "var(--card-surface-border)",
+        color: active ? "white" : "var(--card-text)"
+      }}
     >
       {label}
     </button>
@@ -620,9 +621,9 @@ interface ModalProps {
 
 function Modal({ children, onClose, widthClass = "max-w-md" }: ModalProps) {
   return (
-    <div className="fixed inset-0 z-100 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm px-4 py-6 overflow-y-auto">
-      <div className={`w-full ${widthClass} rounded-3xl bg-white p-6 md:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar`}>
-        <button onClick={onClose} className="absolute top-6 right-6 p-2 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-full transition-colors border-none cursor-pointer"><X size={18} /></button>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm px-4 py-6 overflow-y-auto">
+      <div className={`w-full ${widthClass} rounded-3xl p-6 md:p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar`} style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)", borderWidth: 1 }}>
+        <button onClick={onClose} className="absolute top-6 right-6 p-2 rounded-full transition-colors border-none cursor-pointer hover:opacity-80" style={{ backgroundColor: "var(--card-surface)", color: "var(--card-text-muted)" }}><X size={18} /></button>
         {children}
       </div>
     </div>
@@ -639,8 +640,8 @@ interface InputFieldProps {
 function InputField({ label, value, onChange, type = "text" }: InputFieldProps) {
   return (
     <label className="block">
-      <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500">{label}</span>
-      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} className="mt-1.5 w-full h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-xs font-bold outline-none focus:border-[#4D6344] focus:ring-2 focus:ring-[#4D6344]/20 transition-all text-slate-800" />
+      <span className="text-[10px] font-bold uppercase tracking-[0.15em]" style={{ color: "var(--card-text-faint)" }}>{label}</span>
+      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} className="mt-1.5 w-full h-11 rounded-xl border px-4 text-xs font-bold outline-none focus:ring-2 transition-all" style={{ backgroundColor: "var(--card-bg-solid)", borderColor: "var(--card-surface-border)", color: "var(--card-text)", "--tw-ring-color": "var(--accent-primary)" } as React.CSSProperties} />
     </label>
   );
 }
@@ -655,8 +656,8 @@ interface SelectFieldProps {
 function SelectField({ label, value, onChange, options }: SelectFieldProps) {
   return (
     <label className="block">
-      <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500">{label}</span>
-      <select value={value} onChange={(e) => onChange(e.target.value)} className="mt-1.5 w-full h-11 rounded-xl border border-slate-200 bg-slate-50 px-4 text-xs font-bold outline-none focus:border-[#4D6344] focus:ring-2 focus:ring-[#4D6344]/20 transition-all text-slate-800 cursor-pointer">
+      <span className="text-[10px] font-bold uppercase tracking-[0.15em]" style={{ color: "var(--card-text-faint)" }}>{label}</span>
+      <select value={value} onChange={(e) => onChange(e.target.value)} className="mt-1.5 w-full h-11 rounded-xl border px-4 text-xs font-bold outline-none focus:ring-2 transition-all cursor-pointer" style={{ backgroundColor: "var(--card-bg-solid)", borderColor: "var(--card-surface-border)", color: "var(--card-text)", "--tw-ring-color": "var(--accent-primary)" } as React.CSSProperties}>
         {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
     </label>
@@ -671,10 +672,10 @@ interface PanelProps {
 
 function Panel({ title, icon: Icon, children }: PanelProps) {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-slate-50/50 p-5 shadow-inner">
+    <section className="rounded-2xl border p-5 shadow-inner" style={{ backgroundColor: "var(--card-surface)", borderColor: "var(--card-surface-border)" }}>
       <div className="mb-5 flex items-center gap-2.5">
-        <div className="p-1.5 bg-white border border-slate-200 rounded-lg shadow-sm"><Icon size={16} className="text-[#4D6344]" /></div>
-        <h4 className="font-extrabold text-slate-900 text-sm tracking-wide">{title}</h4>
+        <div className="p-1.5 border rounded-lg shadow-sm" style={{ backgroundColor: "var(--card-bg-solid)", borderColor: "var(--card-surface-border)" }}><Icon size={16} style={{ color: "var(--accent-primary)" }} /></div>
+        <h4 className="font-extrabold text-sm tracking-wide" style={{ color: "var(--card-title)" }}>{title}</h4>
       </div>
       {children}
     </section>
@@ -685,9 +686,9 @@ function DetailGrid({ items }: { items: [string, string | null | undefined][] })
   return (
     <div className="grid gap-3 md:grid-cols-2">
       {items.map(([label, value]) => (
-        <div key={label} className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm">
-          <p className="text-[9px] font-bold uppercase tracking-[0.15em] text-slate-400">{label}</p>
-          <p className="mt-1.5 text-xs font-bold text-slate-800 wrap-break-word">{value || "-"}</p>
+        <div key={label} className="rounded-xl border p-3.5 shadow-sm" style={{ backgroundColor: "var(--card-bg-solid)", borderColor: "var(--card-surface-border)" }}>
+          <p className="text-[9px] font-bold uppercase tracking-[0.15em]" style={{ color: "var(--card-text-faint)" }}>{label}</p>
+          <p className="mt-1.5 text-xs font-bold wrap-break-word" style={{ color: "var(--card-title)" }}>{value || "-"}</p>
         </div>
       ))}
     </div>
@@ -695,5 +696,5 @@ function DetailGrid({ items }: { items: [string, string | null | undefined][] })
 }
 
 function EmptyState({ text }: { text: string }) {
-  return <div className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-8 text-center text-xs font-medium text-slate-500 shadow-sm">{text}</div>;
+  return <div className="rounded-xl border border-dashed px-4 py-8 text-center text-xs font-medium shadow-sm" style={{ backgroundColor: "var(--card-bg-solid)", borderColor: "var(--card-surface-border)", color: "var(--card-text-muted)" }}>{text}</div>;
 }

@@ -80,7 +80,7 @@ export default function AdminAnalyticsPage() {
       const computed = sorted.map((item, index) => ({
         ...item,
         percent: Math.round((item.count / maxCount) * 100),
-        color: index === 0 ? "bg-rose-500" : index === 1 ? "bg-amber-500" : index === 2 ? "bg-amber-400" : "bg-emerald-500"
+        color: index === 0 ? "bg-rose-500 dark:bg-rose-600" : index === 1 ? "bg-amber-500 dark:bg-amber-600" : index === 2 ? "bg-amber-400 dark:bg-amber-500" : "bg-emerald-500 dark:bg-emerald-600"
       }));
 
       setIncidentStats(computed.slice(0, 5));
@@ -189,20 +189,20 @@ export default function AdminAnalyticsPage() {
       description="Analisis data performa, pertumbuhan user, pendapatan, serta metrik kerusakan alat."
     >
       <div className="space-y-6">
-        <header className="flex justify-between items-center mb-8 border-b border-slate-200 pb-5 print:mb-4 print:pb-2">
-          <div className="hidden print:block text-right text-xs text-slate-400 font-mono">Aetheris Analytics Report // Generated: {new Date().toLocaleDateString('id-ID')}</div>
+        <header className="flex justify-between items-center mb-8 pb-5 print:mb-4 print:pb-2" style={{ borderBottomWidth: 1, borderBottomColor: "var(--card-surface-border)" }}>
+          <div className="hidden print:block text-right text-xs font-mono" style={{ color: "var(--card-text-faint)" }}>Aetheris Analytics Report // Generated: {new Date().toLocaleDateString('id-ID')}</div>
           <div className="flex gap-2.5 print:hidden ml-auto">
-            <button onClick={handleExportPDF} className="group flex items-center gap-2 bg-rose-50 hover:bg-rose-100/80 text-rose-600 border border-rose-200 hover:border-rose-300 font-semibold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm shadow-rose-100/50 hover:shadow-md hover:scale-[1.02] active:scale-[0.98] cursor-pointer">
-              <FileText size={15} className="text-rose-500 transition-transform group-hover:scale-110" /> <span>Export PDF Report</span>
+            <button onClick={handleExportPDF} className="group flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all shadow-sm cursor-pointer hover:opacity-80" style={{ backgroundColor: "var(--card-bg-solid)", borderWidth: 1, borderColor: "var(--accent-primary-border)", color: "var(--accent-primary)" }}>
+              <FileText size={15} className="transition-transform group-hover:scale-110" /> <span className="font-bold text-xs">Export PDF Report</span>
             </button>
           </div>
         </header>
 
-          <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-6 print:hidden space-y-4">
+          <div className="p-5 rounded-2xl shadow-sm mb-6 print:hidden space-y-4" style={{ backgroundColor: "var(--card-bg-solid)", borderWidth: 1, borderColor: "var(--card-surface-border)" }}>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full">
-              <div className="flex items-center gap-2 text-slate-900 font-medium text-xs uppercase tracking-wider shrink-0"><Filter size={15} className="text-blue-600" /><span>Rentang Waktu Laporan:</span></div>
+              <div className="flex items-center gap-2 font-medium text-xs uppercase tracking-wider shrink-0" style={{ color: "var(--card-title)" }}><Filter size={15} style={{ color: "var(--accent-primary)" }} /><span>Rentang Waktu Laporan:</span></div>
               <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                <select value={timeRange} onChange={(e) => setTimeRange(e.target.value)} className="bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer transition-colors">
+                <select value={timeRange} onChange={(e) => setTimeRange(e.target.value)} className="rounded-xl text-xs font-medium px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer transition-colors" style={{ backgroundColor: "var(--card-bg-solid)", borderColor: "var(--card-surface-border)", borderWidth: 1, color: "var(--card-text)" }}>
                   <option value="semua_bulan">Tahun Ini (12 Bulan)</option>
                   <option value="bulan_ini">Bulan Ini Saja</option>
                   <option value="3_bulan">3 Bulan Terakhir</option>
@@ -210,9 +210,9 @@ export default function AdminAnalyticsPage() {
                 </select>
                 {timeRange === "custom" && (
                   <div className="flex items-center gap-2 animate-in fade-in zoom-in-95 duration-150">
-                    <input type="date" value={customStartDate} onChange={(e) => setCustomStartDate(e.target.value)} className="bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer" />
-                    <span className="text-xs text-slate-400 font-medium">s/d</span>
-                    <input type="date" value={customEndDate} onChange={(e) => setCustomEndDate(e.target.value)} className="bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer" />
+                    <input type="date" value={customStartDate} onChange={(e) => setCustomStartDate(e.target.value)} className="rounded-xl text-xs font-medium px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer" style={{ backgroundColor: "var(--card-bg-solid)", borderColor: "var(--card-surface-border)", borderWidth: 1, color: "var(--card-text)" }} />
+                    <span className="text-xs font-medium" style={{ color: "var(--card-text-muted)" }}>s/d</span>
+                    <input type="date" value={customEndDate} onChange={(e) => setCustomEndDate(e.target.value)} className="rounded-xl text-xs font-medium px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer" style={{ backgroundColor: "var(--card-bg-solid)", borderColor: "var(--card-surface-border)", borderWidth: 1, color: "var(--card-text)" }} />
                   </div>
                 )}
               </div>
@@ -220,81 +220,81 @@ export default function AdminAnalyticsPage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm lg:col-span-2 flex flex-col justify-between">
+            <div className="p-6 rounded-2xl shadow-sm lg:col-span-2 flex flex-col justify-between" style={{ backgroundColor: "var(--card-bg)", borderWidth: 1, borderColor: "var(--card-border)" }}>
               <div className="flex justify-between items-center mb-6">
                 <div>
-                  <h4 className="font-bold text-slate-900 text-sm">Tren Pertumbuhan User & Pendapatan Bulanan</h4>
-                  <p className="text-xs text-slate-400 mt-0.5">Dihitung otomatis (Live) dari database log pendaftaran & pembayaran.</p>
+                  <h4 className="font-bold text-sm" style={{ color: "var(--card-title)" }}>Tren Pertumbuhan User & Pendapatan Bulanan</h4>
+                  <p className="text-xs mt-0.5" style={{ color: "var(--card-text-faint)" }}>Dihitung otomatis (Live) dari database log pendaftaran & pembayaran.</p>
                 </div>
                 <div className="flex gap-4 print:hidden text-xs font-medium">
-                  <span className="flex items-center gap-1.5 text-slate-600"><div className="w-2.5 h-2.5 rounded bg-blue-500" /> Pendapatan Total</span>
-                  <span className="flex items-center gap-1.5 text-slate-600"><div className="w-2.5 h-2.5 rounded bg-emerald-500" /> User Mendaftar</span>
+                  <span className="flex items-center gap-1.5" style={{ color: "var(--card-text)" }}><div className="w-2.5 h-2.5 rounded bg-blue-500 dark:bg-blue-600" /> Pendapatan Total</span>
+                  <span className="flex items-center gap-1.5" style={{ color: "var(--card-text)" }}><div className="w-2.5 h-2.5 rounded bg-emerald-500 dark:bg-emerald-600" /> User Mendaftar</span>
                 </div>
               </div>
               
               {/* PERBAIKAN: Menambah tinggi container (h-64) dan memastikan overflow terlihat */}
-              <div className="h-64 flex items-end justify-between gap-1.5 px-2 pt-6 border-b border-l border-slate-200 font-mono text-[10px] text-slate-400 overflow-visible">
+              <div className="h-64 flex items-end justify-between gap-1.5 px-2 pt-6 font-mono text-[10px] overflow-visible" style={{ borderBottomWidth: 1, borderLeftWidth: 1, borderColor: "var(--chart-axis)", color: "var(--card-text-muted)" }}>
                 {dynamicChartData.map((data, i) => (
                   <div key={i} className="flex-1 flex flex-col items-center gap-2 group h-full justify-end min-w-[20px]">
                     <div className="w-full flex items-end gap-1 h-full">
                       {/* BAR PENDAPATAN (REVENUE) */}
-                      <div style={{ height: `${Math.max(data.revenue, 1)}%` }} className="flex-1 bg-blue-500 rounded-t-sm transition-all group-hover:bg-blue-600 relative" title={data.valRev}>
-                        <span className="absolute -top-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white font-sans text-[9px] px-1 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block pointer-events-none whitespace-nowrap z-10 shadow-md">{data.valRev}</span>
+                      <div style={{ height: `${Math.max(data.revenue, 1)}%` }} className="flex-1 bg-blue-500 dark:bg-blue-600 rounded-t-sm transition-all group-hover:opacity-80 relative" title={data.valRev}>
+                        <span className="absolute -top-6 left-1/2 -translate-x-1/2 bg-[#1A1F24] text-white font-sans text-[9px] px-1 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block pointer-events-none whitespace-nowrap z-10 shadow-md">{data.valRev}</span>
                       </div>
                       {/* BAR PENGGUNA (USERS) */}
-                      <div style={{ height: `${Math.max(data.users, 1)}%` }} className="flex-1 bg-emerald-500 rounded-t-sm transition-all group-hover:bg-emerald-600 relative" title={data.valUsr}>
-                        <span className="absolute -top-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white font-sans text-[9px] px-1 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block pointer-events-none whitespace-nowrap z-10 shadow-md">{data.valUsr}</span>
+                      <div style={{ height: `${Math.max(data.users, 1)}%` }} className="flex-1 bg-emerald-500 dark:bg-emerald-600 rounded-t-sm transition-all group-hover:opacity-80 relative" title={data.valUsr}>
+                        <span className="absolute -top-6 left-1/2 -translate-x-1/2 bg-[#1A1F24] text-white font-sans text-[9px] px-1 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block pointer-events-none whitespace-nowrap z-10 shadow-md">{data.valUsr}</span>
                       </div>
                     </div>
-                    <span className="font-sans text-[10px] text-slate-500 font-medium mt-1">{data.label}</span>
+                    <span className="font-sans text-[10px] font-medium mt-1" style={{ color: "var(--card-text-muted)" }}>{data.label}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+            <div className="p-6 rounded-2xl shadow-sm flex flex-col justify-between" style={{ backgroundColor: "var(--card-bg)", borderWidth: 1, borderColor: "var(--card-border)" }}>
               <div>
-                <h4 className="font-bold text-slate-900 text-sm">Rasio Frekuensi Alert</h4>
-                <p className="text-xs text-slate-400 mt-0.5">Komparasi data insiden kebocoran gas terhitung di database.</p>
+                <h4 className="font-bold text-sm" style={{ color: "var(--card-title)" }}>Rasio Frekuensi Alert</h4>
+                <p className="text-xs mt-0.5" style={{ color: "var(--card-text-faint)" }}>Komparasi data insiden kebocoran gas terhitung di database.</p>
               </div>
               <div className="space-y-4 my-auto pt-4">
                 {incidentStats.length > 0 ? incidentStats.map((item, i) => (
                   <div key={i} className="space-y-1">
-                    <div className="flex justify-between text-xs font-medium text-slate-700"><span className="truncate max-w-[140px]">{item.name}</span><span className="font-mono text-slate-900 font-bold">{item.count} Alert</span></div>
-                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden"><div style={{ width: `${item.percent}%` }} className={`${item.color} h-full rounded-full`} /></div>
+                    <div className="flex justify-between text-xs font-medium"><span className="truncate max-w-[140px]" style={{ color: "var(--card-text)" }}>{item.name}</span><span className="font-mono font-bold" style={{ color: "var(--card-title)" }}>{item.count} Alert</span></div>
+                    <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: "var(--chart-bg)" }}><div style={{ width: `${item.percent}%` }} className={`${item.color} h-full rounded-full`} /></div>
                   </div>
-                )) : <p className="text-center text-xs text-slate-400 py-6">Belum ditemukan data log alert.</p>}
+                )) : <p className="text-center text-xs py-6" style={{ color: "var(--card-text-muted)" }}>Belum ditemukan data log alert.</p>}
               </div>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-              <div className="p-4 border-b border-slate-200 bg-slate-50/70 flex items-center gap-2"><BarChart3 size={15} className="text-red-500" /><h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">Restoran Paling Sering Alert Bahaya</h4></div>
+            <div className="rounded-2xl shadow-sm overflow-hidden" style={{ backgroundColor: "var(--card-bg)", borderWidth: 1, borderColor: "var(--card-border)" }}>
+              <div className="p-4 flex items-center gap-2" style={{ backgroundColor: "var(--card-surface)", borderBottomWidth: 1, borderBottomColor: "var(--card-surface-border)" }}><BarChart3 size={15} className="text-rose-500 dark:text-rose-400" /><h4 className="font-bold text-xs uppercase tracking-wider" style={{ color: "var(--card-title)" }}>Restoran Paling Sering Alert Bahaya</h4></div>
               <table className="w-full text-left table-auto">
-                <thead className="bg-slate-50 border-b border-slate-200 text-[11px] text-slate-500 uppercase font-medium">
+                <thead className="text-[11px] uppercase font-medium" style={{ backgroundColor: "var(--table-head-bg)", color: "var(--card-text-muted)", borderBottomWidth: 1, borderBottomColor: "var(--table-border)" }}>
                   <tr><th className="px-5 py-3">ID Baris</th><th className="px-5 py-3">Nama Mitra Restoran</th><th className="px-5 py-3 text-right">Frekuensi Insiden</th></tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
+                <tbody className="divide-y text-sm" style={{ backgroundColor: "var(--table-body-bg)", color: "var(--card-text)", borderColor: "var(--table-border)" }}>
                   {incidentStats.length > 0 ? incidentStats.slice(0, 3).map((item, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50/60 transition-colors">
-                      <td className="px-5 py-3.5 font-mono text-xs font-bold text-slate-700">RES-00{idx + 1}</td>
-                      <td className="px-5 py-3.5 font-medium text-slate-900">{item.name}</td>
-                      <td className="px-5 py-3.5 text-right font-mono font-bold text-rose-600 bg-rose-50/30">{item.count} Kali Alert</td>
+                    <tr key={idx} className="hover:opacity-90 transition-colors">
+                      <td className="px-5 py-3.5 font-mono text-xs font-bold" style={{ color: "var(--card-text)" }}>RES-00{idx + 1}</td>
+                      <td className="px-5 py-3.5 font-medium" style={{ color: "var(--card-title)" }}>{item.name}</td>
+                      <td className="px-5 py-3.5 text-right font-mono font-bold bg-rose-50/30 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400">{item.count} Kali Alert</td>
                     </tr>
-                  )) : <tr><td colSpan={3} className="text-center text-slate-400 py-10 text-xs">Tidak ditemukan riwayat log kebocoran.</td></tr>}
+                  )) : <tr><td colSpan={3} className="text-center py-10 text-xs" style={{ color: "var(--card-text-muted)" }}>Tidak ditemukan riwayat log kebocoran.</td></tr>}
                 </tbody>
               </table>
             </div>
 
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-              <div className="p-4 border-b border-slate-200 bg-slate-50/70 flex items-center gap-2"><BarChart3 size={15} className="text-slate-500" /><h4 className="font-bold text-slate-900 text-xs uppercase tracking-wider">Perangkat Sensor Paling Sering Offline</h4></div>
+            <div className="rounded-2xl shadow-sm overflow-hidden" style={{ backgroundColor: "var(--card-bg)", borderWidth: 1, borderColor: "var(--card-border)" }}>
+              <div className="p-4 flex items-center gap-2" style={{ backgroundColor: "var(--card-surface)", borderBottomWidth: 1, borderBottomColor: "var(--card-surface-border)" }}><BarChart3 size={15} style={{ color: "var(--card-text-muted)" }} /><h4 className="font-bold text-xs uppercase tracking-wider" style={{ color: "var(--card-title)" }}>Perangkat Sensor Paling Sering Offline</h4></div>
               <table className="w-full text-left table-auto">
-                <thead className="bg-slate-50 border-b border-slate-200 text-[11px] text-slate-500 uppercase font-medium">
+                <thead className="text-[11px] uppercase font-medium" style={{ backgroundColor: "var(--table-head-bg)", color: "var(--card-text-muted)", borderBottomWidth: 1, borderBottomColor: "var(--table-border)" }}>
                   <tr><th className="px-5 py-3">ID Sensor</th><th className="px-5 py-3">Nama Perangkat Sensor</th><th className="px-5 py-3 text-right">Durasi Terputus</th></tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
-                  <tr><td colSpan={3} className="px-5 py-10 text-center text-slate-400 text-xs">Tidak ditemukan perangkat sensor berstatus offline.</td></tr>
+                <tbody className="divide-y text-sm" style={{ backgroundColor: "var(--table-body-bg)", color: "var(--card-text)", borderColor: "var(--table-border)" }}>
+                  <tr><td colSpan={3} className="px-5 py-10 text-center text-xs" style={{ color: "var(--card-text-muted)" }}>Tidak ditemukan perangkat sensor berstatus offline.</td></tr>
                 </tbody>
               </table>
             </div>

@@ -239,13 +239,13 @@ export default function UserDashboard() {
 
   if (loadingAuth || loadingData) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#FDFBF7]">
+      <div className="flex h-screen items-center justify-center" style={{ backgroundColor: "var(--background)" }}>
         <div className="text-center space-y-2">
           <Loader2
-            className="animate-spin text-emerald-600 mx-auto"
+            className="animate-spin text-emerald-600 dark:text-emerald-400 mx-auto"
             size={32}
           />
-          <p className="text-slate-700 font-medium text-sm">
+          <p className="font-medium text-sm" style={{ color: "var(--card-text)" }}>
             Connecting to Dynamic Database...
           </p>
         </div>
@@ -264,11 +264,11 @@ export default function UserDashboard() {
       <div className="w-full box-border pb-8">
         {/* ACTION BUTTONS */}
         <div className="flex items-center justify-end gap-3 mb-6">
-          <button className="rounded-xl flex items-center gap-2 bg-rose-50 text-rose-700 px-4 py-2.5 text-xs md:text-sm font-bold border border-rose-200 shadow-sm transition-all hover:bg-rose-100 cursor-pointer">
+          <button className="rounded-xl flex items-center gap-2 bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 px-4 py-2.5 text-xs md:text-sm font-bold border border-rose-200 dark:border-rose-500/30 shadow-sm hover:bg-rose-100 dark:hover:bg-rose-500/20 cursor-pointer">
             <AlertTriangle size={16} />
             Emergency Shutdown
           </button>
-          <button className="p-2.5 rounded-xl bg-white border border-slate-200 shadow-sm text-slate-700 hover:bg-slate-50 transition-all cursor-pointer">
+          <button className="p-2.5 rounded-xl shadow-sm hover:opacity-80 cursor-pointer" style={{ backgroundColor: "var(--card-bg-solid)", borderWidth: 1, borderColor: "var(--card-surface-border)", color: "var(--card-text)" }}>
             <BellRing size={18} />
           </button>
         </div>
@@ -278,8 +278,8 @@ export default function UserDashboard() {
           <div
             className={`border p-4 rounded-xl flex items-start gap-3 mb-6 shadow-sm ${
               overallStatus === "Danger"
-                ? "bg-red-50 border-red-200 animate-pulse"
-                : "bg-[#FDF0E1] border-[#F3D5B5]"
+                ? "bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30 animate-pulse"
+                : "bg-[#FDF0E1] dark:bg-amber-500/10 border-[#F3D5B5] dark:border-amber-500/30"
             }`}
           >
             <AlertCircle
@@ -290,7 +290,7 @@ export default function UserDashboard() {
             />
             <div>
               <p
-                className={`text-xs font-semibold leading-relaxed ${overallStatus === "Danger" ? "text-red-900" : "text-amber-950"}`}
+                className={`text-xs font-semibold leading-relaxed ${overallStatus === "Danger" ? "text-red-900 dark:text-red-300" : "text-amber-950 dark:text-amber-300"}`}
               >
                 <span className="font-black uppercase tracking-wider">
                   Security Warning!
@@ -304,60 +304,60 @@ export default function UserDashboard() {
 
         {/* SUMMARY CARDS */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
-          <div className="bg-white border border-slate-200 p-4 md:p-5 rounded-2xl shadow-sm">
-            <p className="text-slate-600 text-[10px] md:text-[11px] font-bold mb-1 uppercase tracking-wider">
+          <div className="p-4 md:p-5 rounded-2xl shadow-sm" style={{ backgroundColor: "var(--card-bg-solid)", borderWidth: 1, borderColor: "var(--card-surface-border)" }}>
+            <p className="text-[10px] md:text-[11px] font-bold mb-1 uppercase tracking-wider" style={{ color: "var(--card-text-muted)" }}>
               Kitchen Condition
             </p>
             <h2
-              className={`text-base md:text-xl font-black mb-0.5 ${overallStatus === "Warning" ? "text-[#C67023]" : overallStatus === "Danger" ? "text-red-600" : "text-[#4A6741]"}`}
+              className={`text-base md:text-xl font-black mb-0.5 ${overallStatus === "Warning" ? "text-[#C67023]" : overallStatus === "Danger" ? "text-red-600 dark:text-red-400" : "text-[#4A6741] dark:text-[#8fac7e]"}`}
             >
               {overallStatus}
             </h2>
-            <p className="text-slate-500 text-[10px] md:text-xs font-medium truncate">
+            <p className="text-[10px] md:text-xs font-medium truncate" style={{ color: "var(--card-text-muted)" }}>
               {stats.unresolved > 0
                 ? `${stats.unresolved} danger zones`
                 : "Cooking zones are safe"}
             </p>
           </div>
 
-          <div className="bg-white border border-slate-200 p-4 md:p-5 rounded-2xl shadow-sm">
-            <p className="text-slate-600 text-[10px] md:text-[11px] font-bold mb-1 uppercase tracking-wider">
+          <div className="p-4 md:p-5 rounded-2xl shadow-sm" style={{ backgroundColor: "var(--card-bg-solid)", borderWidth: 1, borderColor: "var(--card-surface-border)" }}>
+            <p className="text-[10px] md:text-[11px] font-bold mb-1 uppercase tracking-wider" style={{ color: "var(--card-text-muted)" }}>
               Active Sensors
             </p>
-            <h2 className="text-base md:text-xl font-black text-slate-800 mb-0.5">
+            <h2 className="text-base md:text-xl font-black mb-0.5" style={{ color: "var(--card-title)" }}>
               {connectedCount}{" "}
-              <span className="text-[10px] md:text-xs text-slate-500 font-bold">
+              <span className="text-[10px] md:text-xs font-bold" style={{ color: "var(--card-text-muted)" }}>
                 / {dynamicSensors.length} Nodes
               </span>
             </h2>
-            <p className="text-slate-500 text-[10px] md:text-xs font-medium">
+            <p className="text-[10px] md:text-xs font-medium" style={{ color: "var(--card-text-muted)" }}>
               Automatically Detected
             </p>
           </div>
 
-          <div className="bg-white border border-slate-200 p-4 md:p-5 rounded-2xl shadow-sm">
-            <p className="text-slate-600 text-[10px] md:text-[11px] font-bold mb-1 uppercase tracking-wider">
+          <div className="p-4 md:p-5 rounded-2xl shadow-sm" style={{ backgroundColor: "var(--card-bg-solid)", borderWidth: 1, borderColor: "var(--card-surface-border)" }}>
+            <p className="text-[10px] md:text-[11px] font-bold mb-1 uppercase tracking-wider" style={{ color: "var(--card-text-muted)" }}>
               Alerts Today
             </p>
-            <h2 className="text-base md:text-xl font-black text-slate-800 mb-0.5">
+            <h2 className="text-base md:text-xl font-black mb-0.5" style={{ color: "var(--card-title)" }}>
               {stats.totalToday}{" "}
-              <span className="text-[10px] md:text-xs text-slate-500 font-bold">
+              <span className="text-[10px] md:text-xs font-bold" style={{ color: "var(--card-text-muted)" }}>
                 Times
               </span>
             </h2>
-            <p className="text-slate-500 text-[10px] md:text-xs font-medium truncate">
+            <p className="text-[10px] md:text-xs font-medium truncate" style={{ color: "var(--card-text-muted)" }}>
               {stats.unresolved} Needs attention
             </p>
           </div>
 
-          <div className="bg-white border border-slate-200 p-4 md:p-5 rounded-2xl shadow-sm">
-            <p className="text-slate-600 text-[10px] md:text-[11px] font-bold mb-1 uppercase tracking-wider">
+          <div className="p-4 md:p-5 rounded-2xl shadow-sm" style={{ backgroundColor: "var(--card-bg-solid)", borderWidth: 1, borderColor: "var(--card-surface-border)" }}>
+            <p className="text-[10px] md:text-[11px] font-bold mb-1 uppercase tracking-wider" style={{ color: "var(--card-text-muted)" }}>
               Last Checked
             </p>
-            <h2 className="text-base md:text-xl font-black text-slate-800 mb-0.5">
+            <h2 className="text-base md:text-xl font-black mb-0.5" style={{ color: "var(--card-title)" }}>
               {stats.lastCheck}
             </h2>
-            <p className="text-slate-500 text-[10px] md:text-xs font-medium">
+            <p className="text-[10px] md:text-xs font-medium" style={{ color: "var(--card-text-muted)" }}>
               Real-time Sync
             </p>
           </div>
@@ -366,14 +366,14 @@ export default function UserDashboard() {
         {/* MIDDLE LAYOUT SECTION */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* ALL AREAS STATUS TABLE */}
-          <div className="bg-white border border-slate-200 p-4 md:p-6 rounded-2xl shadow-sm flex flex-col h-full">
-            <h3 className="text-xs font-bold text-slate-600 tracking-wider uppercase mb-4 flex items-center gap-2">
-              <LayoutDashboard size={14} className="text-slate-600" /> All Areas
+          <div className="p-4 md:p-6 rounded-2xl shadow-sm flex flex-col h-full" style={{ backgroundColor: "var(--card-bg-solid)", borderWidth: 1, borderColor: "var(--card-surface-border)" }}>
+            <h3 className="text-xs font-bold tracking-wider uppercase mb-4 flex items-center gap-2" style={{ color: "var(--card-text-muted)" }}>
+              <LayoutDashboard size={14} /> All Areas
               Status
             </h3>
-            <div className="space-y-0 flex-grow divide-y divide-slate-100">
+            <div className="space-y-0 flex-grow divide-y" style={{ borderColor: "var(--card-surface-border)" }}>
               {dynamicSensors.length === 0 ? (
-                <p className="text-xs text-slate-500 py-6 text-center font-medium">
+                <p className="text-xs py-6 text-center font-medium" style={{ color: "var(--card-text-muted)" }}>
                   No sensors found.
                 </p>
               ) : (
@@ -391,8 +391,8 @@ export default function UserDashboard() {
                         <div
                           className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
                             isWarning
-                              ? "bg-red-50 text-red-500"
-                              : "bg-[#E9F2E4] text-[#4A6741]"
+                              ? "bg-red-50 dark:bg-red-500/10 text-red-500"
+                              : "bg-[#E9F2E4] dark:bg-[#4A6741]/15 text-[#4A6741] dark:text-[#8fac7e]"
                           }`}
                         >
                           {isWarning ? (
@@ -402,10 +402,10 @@ export default function UserDashboard() {
                           )}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-bold text-slate-900 text-xs truncate">
+                          <p className="font-bold text-xs truncate" style={{ color: "var(--card-title)" }}>
                             {sensor.name}
                           </p>
-                          <p className="text-[11px] md:text-xs text-slate-500 font-medium truncate">
+                          <p className="text-[11px] md:text-xs font-medium truncate" style={{ color: "var(--card-text-muted)" }}>
                             {sensor.location}
                           </p>
                         </div>
@@ -414,10 +414,10 @@ export default function UserDashboard() {
                         <span
                           className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                             live?.status === "danger"
-                              ? "bg-red-100 text-red-700"
+                              ? "bg-red-100 dark:bg-red-500/15 text-red-700 dark:text-red-400"
                               : live?.status === "warning"
-                                ? "bg-[#FDF0E1] text-[#A05E1A]"
-                                : "bg-[#E9F2E4] text-[#4A6741]"
+                                ? "bg-[#FDF0E1] dark:bg-amber-500/10 text-[#A05E1A] dark:text-amber-400"
+                                : "bg-[#E9F2E4] dark:bg-[#4A6741]/15 text-[#4A6741] dark:text-[#8fac7e]"
                           }`}
                         >
                           {live
@@ -428,7 +428,7 @@ export default function UserDashboard() {
                                 : "Danger"
                             : "Offline"}
                         </span>
-                        <p className="font-mono text-[11px] md:text-xs text-slate-600 font-bold mt-1">
+                        <p className="font-mono text-[11px] md:text-xs font-bold mt-1" style={{ color: "var(--card-text)" }}>
                           {live ? `${live.gas} PPM` : "-"}
                         </p>
                       </div>
@@ -440,11 +440,11 @@ export default function UserDashboard() {
           </div>
 
           {/* KITCHEN ZONE MAP MATRIX */}
-          <div className="bg-white border border-slate-200 p-4 md:p-6 rounded-2xl shadow-sm flex flex-col h-full">
-            <h3 className="text-xs font-bold text-slate-600 tracking-wider uppercase mb-4 flex items-center gap-2">
-              <Cpu size={14} className="text-slate-600" /> Kitchen Zone Map
+          <div className="p-4 md:p-6 rounded-2xl shadow-sm flex flex-col h-full" style={{ backgroundColor: "var(--card-bg-solid)", borderWidth: 1, borderColor: "var(--card-surface-border)" }}>
+            <h3 className="text-xs font-bold tracking-wider uppercase mb-4 flex items-center gap-2" style={{ color: "var(--card-text-muted)" }}>
+              <Cpu size={14} /> Kitchen Zone Map
             </h3>
-            <div className="bg-slate-50/60 p-3 md:p-4 rounded-xl border border-slate-100 grid grid-cols-2 gap-3 md:gap-4 flex-grow items-center">
+            <div className="p-3 md:p-4 rounded-xl grid grid-cols-2 gap-3 md:gap-4 flex-grow items-center" style={{ backgroundColor: "var(--card-surface)", borderWidth: 1, borderColor: "var(--card-surface-border)" }}>
               {dynamicSensors.map((sensor) => {
                 const live = liveSensors[sensor.id];
                 const isWarning =
@@ -453,17 +453,18 @@ export default function UserDashboard() {
                 return (
                   <div
                     key={sensor.id}
-                    className={`p-3 md:p-4 rounded-xl border flex flex-col justify-between h-24 transition-all bg-white shadow-sm ${
+                    className={`p-3 md:p-4 rounded-xl border flex flex-col justify-between h-24 shadow-sm ${
                       isWarning
-                        ? "border-red-200 bg-red-50/30"
-                        : "border-slate-100"
+                        ? "border-red-200 dark:border-red-500/30 bg-red-50/30 dark:bg-red-500/5"
+                        : ""
                     }`}
+                    style={isWarning ? undefined : { backgroundColor: "var(--card-bg-solid)", borderColor: "var(--card-surface-border)" }}
                   >
-                    <p className="font-bold text-[11px] md:text-xs text-slate-800 line-clamp-2 leading-tight">
+                    <p className="font-bold text-[11px] md:text-xs line-clamp-2 leading-tight" style={{ color: "var(--card-title)" }}>
                       {sensor.name}
                     </p>
                     <div className="flex items-center justify-between gap-1 mt-2">
-                      <span className="text-[11px] md:text-xs text-slate-600 font-bold font-mono shrink-0">
+                      <span className="text-[11px] md:text-xs font-bold font-mono shrink-0" style={{ color: "var(--card-text)" }}>
                         {live ? `${live.temperature}°C` : "-"}
                       </span>
                       <div className="flex items-center gap-1 min-w-0">
@@ -476,7 +477,7 @@ export default function UserDashboard() {
                                 : "bg-emerald-500"
                           }`}
                         />
-                        <span className="text-[9px] md:text-[10px] font-bold uppercase text-slate-500 tracking-wider truncate">
+                        <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider truncate" style={{ color: "var(--card-text-muted)" }}>
                           {live
                             ? live.status === "safe"
                               ? "Safe"
@@ -497,9 +498,9 @@ export default function UserDashboard() {
         {/* CHARTS & REALTIME LOGS SECTION */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
           {/* WEEKLY CHART TREND */}
-          <div className="bg-white border border-slate-200 p-4 md:p-6 rounded-2xl shadow-sm flex flex-col w-full h-full overflow-hidden">
-            <h3 className="text-xs font-black text-slate-600 tracking-wider uppercase mb-4 flex items-center gap-2">
-              <TrendingUp size={14} className="text-slate-600" /> Weekly Average
+          <div className="p-4 md:p-6 rounded-2xl shadow-sm flex flex-col w-full h-full overflow-hidden" style={{ backgroundColor: "var(--card-bg-solid)", borderWidth: 1, borderColor: "var(--card-surface-border)" }}>
+            <h3 className="text-xs font-black tracking-wider uppercase mb-4 flex items-center gap-2" style={{ color: "var(--card-text-muted)" }}>
+              <TrendingUp size={14} /> Weekly Average
               Gas Trend
             </h3>
             <div className="h-[260px] w-full text-[10px] md:text-[11px] flex-grow">
@@ -511,24 +512,26 @@ export default function UserDashboard() {
                   <CartesianGrid
                     strokeDasharray="3 3"
                     vertical={false}
-                    stroke="#f1f5f9"
+                    stroke="var(--chart-axis)"
                   />
                   <XAxis
                     dataKey="time"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: "#94a3b8", fontWeight: "bold" }}
+                    tick={{ fill: "var(--card-text-faint)", fontWeight: "bold" }}
                   />
                   <YAxis
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: "#94a3b8", fontWeight: "bold" }}
+                    tick={{ fill: "var(--card-text-faint)", fontWeight: "bold" }}
                   />
                   <Tooltip
                     contentStyle={{
                       borderRadius: "12px",
                       border: "none",
                       boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                      backgroundColor: "var(--card-bg-solid)",
+                      color: "var(--card-text)",
                     }}
                   />
                   <Legend
@@ -537,6 +540,7 @@ export default function UserDashboard() {
                       fontSize: "10px",
                       fontWeight: "bold",
                       paddingTop: "10px",
+                      color: "var(--card-text-muted)",
                     }}
                   />
                   {dynamicSensors.map((sensor, index) => (
@@ -556,42 +560,43 @@ export default function UserDashboard() {
           </div>
 
           {/* ALERTS ACTIVITY LOG HISTORY */}
-          <div className="bg-white border border-slate-200 p-4 md:p-6 rounded-2xl shadow-sm flex flex-col h-full">
-            <h3 className="text-xs font-black text-slate-600 tracking-wider uppercase mb-4 flex items-center gap-2">
-              <BellRing size={14} className="text-slate-600" /> Alert Activity
+          <div className="p-4 md:p-6 rounded-2xl shadow-sm flex flex-col h-full" style={{ backgroundColor: "var(--card-bg-solid)", borderWidth: 1, borderColor: "var(--card-surface-border)" }}>
+            <h3 className="text-xs font-black tracking-wider uppercase mb-4 flex items-center gap-2" style={{ color: "var(--card-text-muted)" }}>
+              <BellRing size={14} /> Alert Activity
               Log History
             </h3>
             <div className="space-y-3 overflow-y-auto pr-1 flex-grow custom-scrollbar max-h-[260px]">
               {latestAlerts.length === 0 ? (
-                <div className="text-center py-20 text-xs text-slate-500 font-medium">
+                <div className="text-center py-20 text-xs font-medium" style={{ color: "var(--card-text-muted)" }}>
                   Kitchen condition is sterile. No history of danger.
                 </div>
               ) : (
                 latestAlerts.map((alert) => (
                   <div
                     key={alert.id}
-                    className="flex gap-3 py-2.5 border-b border-slate-50 last:border-0 items-start"
+                    className="flex gap-3 py-2.5 last:border-0 items-start"
+                    style={{ borderBottom: "1px solid var(--card-surface-border)" }}
                   >
                     <div
                       className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
                         alert.level === "danger"
-                          ? "bg-red-50 text-red-500"
-                          : "bg-[#FDF0E1] text-[#C67023]"
+                          ? "bg-red-50 dark:bg-red-500/10 text-red-500"
+                          : "bg-[#FDF0E1] dark:bg-amber-500/10 text-[#C67023] dark:text-amber-400"
                       }`}
                     >
                       <AlertTriangle size={14} />
                     </div>
                     <div className="w-full min-w-0">
-                      <p className="text-xs font-bold text-slate-800 leading-tight mb-1 line-clamp-2">
+                      <p className="text-xs font-bold leading-tight mb-1 line-clamp-2" style={{ color: "var(--card-title)" }}>
                         {alert.message}
                       </p>
-                      <div className="flex justify-between items-center text-[10px] md:text-[11px] text-slate-500 font-bold">
+                      <div className="flex justify-between items-center text-[10px] md:text-[11px] font-bold" style={{ color: "var(--card-text-muted)" }}>
                         <span>{alert.timeStr}</span>
                         <span
                           className={
                             alert.isResolved
-                              ? "text-[#4A6741]"
-                              : "text-[#A05E1A]"
+                              ? "text-[#4A6741] dark:text-[#8fac7e]"
+                              : "text-[#A05E1A] dark:text-amber-400"
                           }
                         >
                           {alert.isResolved
