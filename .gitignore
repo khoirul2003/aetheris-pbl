@@ -40,3 +40,11 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 serviceAccountKey.json
+
+# Firebase Admin SDK
+bigdata/firebase-key.json
+
+# Big Data Output
+bigdata/data/raw/*.json
+bigdata/data/processed/*.json
+bigdata/reports/results/*
