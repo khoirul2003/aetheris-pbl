@@ -1,8 +1,159 @@
 @import "tailwindcss";
 
+/* =========================================
+   CSS CUSTOM PROPERTIES (DESIGN TOKENS)
+   ========================================= */
 :root {
   --background: #FCFBF8;
   --foreground: #1A1F24;
+
+  /* Sidebar */
+  --sidebar-bg: #F0F2EB;
+  --sidebar-footer-bg: #E8EBE1;
+  --sidebar-text: #1A1F24;
+  --sidebar-text-muted: #5B636B;
+  --sidebar-border: rgba(148, 163, 184, 0.15);
+  --sidebar-hover: #E3E7DC;
+  --sidebar-active-bg: #4D6344;
+  --sidebar-active-text: #FFFFFF;
+  --sidebar-badge-bg: #EAF2EB;
+  --sidebar-badge-text: #4D6344;
+  --sidebar-avatar-bg: #FFFFFF;
+  --sidebar-avatar-border: #D1D7C7;
+  --sidebar-collapse-bg: #FFFFFF;
+  --sidebar-collapse-hover: #f8fafc;
+
+  /* Header */
+  --header-bg: rgba(255, 255, 255, 0.9);
+  --header-border: rgba(148, 163, 184, 0.18);
+  --header-title: #0f172a;
+  --header-subtitle: #94a3b8;
+  --header-text-muted: #64748b;
+  --header-search-bg: rgba(248, 250, 252, 0.6);
+  --header-search-border: #e2e8f0;
+  --header-search-text: #334155;
+  --header-search-placeholder: #94a3b8;
+
+  /* Main Content Area */
+  --mesh-from: #F6F8F4;
+  --mesh-via: #F0F4EC;
+  --mesh-to: #E6ECE0;
+  --mesh-blob-1-from: rgba(196, 208, 183, 0.5);
+  --mesh-blob-1-to: rgba(158, 175, 140, 0.2);
+  --mesh-blob-2-from: rgba(179, 194, 164, 0.5);
+  --mesh-blob-2-to: rgba(213, 223, 203, 0.2);
+  --mesh-blob-3: rgba(255, 255, 255, 0.7);
+
+  /* Cards & Content */
+  --card-bg: rgba(255, 255, 255, 0.9);
+  --card-bg-solid: #ffffff;
+  --card-border: rgba(148, 163, 184, 0.18);
+  --card-surface: #f8fafc;
+  --card-surface-border: #e2e8f0;
+  --card-title: #0f172a;
+  --card-text: #334155;
+  --card-text-muted: #64748b;
+  --card-text-faint: #94a3b8;
+
+  /* Accent */
+  --accent-primary: #4D6344;
+  --accent-primary-hover: #EAF2EB;
+  --accent-primary-border: rgba(77, 99, 68, 0.3);
+
+  /* Chart */
+  --chart-bg: #F6F5F0;
+  --chart-bar: #C2D1C0;
+  --chart-axis: #e2e8f0;
+
+  /* Table */
+  --table-head-bg: #f8fafc;
+  --table-body-bg: #ffffff;
+  --table-border: #e2e8f0;
+
+  /* Logout button */
+  --logout-bg: #F0F2EB;
+  --logout-border: #D1D7C7;
+
+  /* Mobile overlay */
+  --mobile-overlay: rgba(26, 31, 36, 0.5);
+}
+
+/* =========================================
+   DARK MODE TOKENS — Warm, muted, low-contrast
+   ========================================= */
+.dark {
+  --background: #1a1d1b;
+  --foreground: #d5d8d0;
+
+  /* Sidebar — warm olive-tinted dark */
+  --sidebar-bg: #1f2420;
+  --sidebar-footer-bg: #1a1e19;
+  --sidebar-text: #d5d8d0;
+  --sidebar-text-muted: #8a907f;
+  --sidebar-border: rgba(77, 99, 68, 0.2);
+  --sidebar-hover: #2a3026;
+  --sidebar-active-bg: #4D6344;
+  --sidebar-active-text: #FFFFFF;
+  --sidebar-badge-bg: rgba(77, 99, 68, 0.2);
+  --sidebar-badge-text: #8fac7e;
+  --sidebar-avatar-bg: #2a3026;
+  --sidebar-avatar-border: #3a4235;
+  --sidebar-collapse-bg: #2a3026;
+  --sidebar-collapse-hover: #323a2e;
+
+  /* Header — semi-transparent dark with olive warmth */
+  --header-bg: rgba(31, 36, 32, 0.92);
+  --header-border: rgba(77, 99, 68, 0.2);
+  --header-title: #d5d8d0;
+  --header-subtitle: #7a8170;
+  --header-text-muted: #8a907f;
+  --header-search-bg: rgba(26, 29, 27, 0.6);
+  --header-search-border: #3a4235;
+  --header-search-text: #b8bdb0;
+  --header-search-placeholder: #5a6350;
+
+  /* Main Content Area — subtle olive-green mesh */
+  --mesh-from: #1a1d1b;
+  --mesh-via: #1c201b;
+  --mesh-to: #1f231e;
+  --mesh-blob-1-from: rgba(77, 99, 68, 0.06);
+  --mesh-blob-1-to: rgba(77, 99, 68, 0.02);
+  --mesh-blob-2-from: rgba(77, 99, 68, 0.05);
+  --mesh-blob-2-to: rgba(77, 99, 68, 0.02);
+  --mesh-blob-3: rgba(77, 99, 68, 0.03);
+
+  /* Cards & Content — softer dark with warm undertone */
+  --card-bg: rgba(38, 43, 36, 0.9);
+  --card-bg-solid: #262b24;
+  --card-border: rgba(77, 99, 68, 0.18);
+  --card-surface: #2a3026;
+  --card-surface-border: #3a4235;
+  --card-title: #d5d8d0;
+  --card-text: #b0b5a8;
+  --card-text-muted: #8a907f;
+  --card-text-faint: #6a7060;
+
+  /* Accent — brighter in dark mode for legibility */
+  --accent-primary: #8fac7e;
+  --accent-primary-hover: rgba(77, 99, 68, 0.2);
+  --accent-primary-border: rgba(143, 172, 126, 0.3);
+
+  /* Chart */
+  --chart-bg: #2a3026;
+  --chart-bar: #5a7a4e;
+  --chart-axis: #3a4235;
+
+  /* Table */
+  --table-head-bg: #2a3026;
+  --table-body-bg: #262b24;
+  --table-border: #3a4235;
+
+  /* Logout button */
+  --logout-bg: #1f2420;
+  --logout-border: #3a4235;
+
+  /* Mobile overlay */
+  --mobile-overlay: rgba(10, 12, 10, 0.65);
 }
 
 @theme inline {
@@ -14,16 +165,34 @@
   --font-sans: var(--font-plus-jakarta), "Inter", sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
+}
+
+/* =========================================
+   GLOBAL SMOOTH THEME TRANSITION
+   Applies transition to ALL elements so dark
+   mode switch feels buttery smooth.
+   ========================================= */
+*,
+*::before,
+*::after {
+  transition-property: background-color, border-color, color, box-shadow, opacity;
+  transition-duration: 0.35s;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Opt-out: animations and transforms should NOT be slowed down */
+[class*="animate-"],
+[class*="transition-transform"],
+[class*="transition-all"] {
+  transition-property: all;
+}
+
+/* Opt-out: sidebar width collapse should keep its own timing */
+[class*="transition-[width]"] {
+  transition-property: width;
 }
 
 /* =========================================

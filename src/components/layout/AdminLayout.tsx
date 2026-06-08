@@ -27,7 +27,7 @@ export default function AdminLayout({
   
   const router = useRouter();
 
-  // PERBAIKAN: Set selalu false di awal agar hasil render Server dan Client sama persis
+  // Set selalu false di awal agar hasil render Server dan Client sama persis
   const [isAuthorized, setIsAuthorized] = useState(false);
 
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
@@ -39,13 +39,14 @@ export default function AdminLayout({
   });
 
   const [isMobileOpen, setIsMobileOpen] = useState<boolean>(false);
-  const [mounted, setMounted] = useState<boolean>(false);
+  const [, setMounted] = useState<boolean>(false);
 
-  // Optimistic Auth Caching: Pindahkan pengecekan sessionStorage ke dalam useEffect
+  // Optimistic Auth Caching & Mencegah Cascading Render
   useEffect(() => {
   // Gunakan setTimeout agar eksekusi setState menjadi asinkron di mata linter
   const timer = setTimeout(() => {
     if (sessionStorage.getItem("aetheris_admin_auth") === "true") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsAuthorized(true);
     }
   }, 0);
@@ -65,7 +66,11 @@ export default function AdminLayout({
           
           if (userDoc.exists() && userDoc.data().role === "admin") {
             sessionStorage.setItem("aetheris_admin_auth", "true");
-            if (!isAuthorized) setIsAuthorized(true); 
+            // Menggunakan functional update agar tidak perlu memasukkan isAuthorized ke dependency array
+            setIsAuthorized((prev) => {
+              if (!prev) return true;
+              return prev;
+            });
           } else {
             sessionStorage.removeItem("aetheris_admin_auth");
             router.replace("/dashboard/user"); 
@@ -78,16 +83,19 @@ export default function AdminLayout({
     });
 
     return () => unsubscribe();
-  }, [router, isAuthorized]);
+  }, [router]); // Hanya bergantung pada router, sehingga lebih efisien
 
   return (
-    <div className="relative flex min-h-screen text-[#1A1F24] font-sans antialiased overflow-hidden">
+    <div className="relative flex min-h-screen text-[var(--foreground)] font-sans antialiased overflow-hidden transition-colors duration-300">
       
       {/* MESH GRADIENT BACKGROUND */}
-      <div className="fixed inset-0 z-[-1] bg-gradient-to-br from-[#F6F8F4] via-[#F0F4EC] to-[#E6ECE0]">
-        <div className="absolute top-[-15%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-gradient-to-br from-[#C4D0B7]/50 to-[#9EAF8C]/20 blur-[120px] mix-blend-multiply opacity-80 pointer-events-none" />
-        <div className="absolute bottom-[-15%] right-[-5%] w-[60vw] h-[60vw] rounded-full bg-gradient-to-tl from-[#B3C2A4]/50 to-[#D5DFCB]/20 blur-[120px] mix-blend-multiply opacity-80 pointer-events-none" />
-        <div className="absolute top-[20%] left-[20%] w-[40vw] h-[40vw] rounded-full bg-[#FFFFFF]/70 blur-[100px] pointer-events-none" />
+      <div 
+        className="fixed inset-0 z-[-1] transition-colors duration-500"
+        style={{ background: `linear-gradient(to bottom right, var(--mesh-from), var(--mesh-via), var(--mesh-to))` }}
+      >
+        <div className="absolute top-[-15%] left-[-10%] w-[50vw] h-[50vw] rounded-full blur-[120px] mix-blend-multiply opacity-80 pointer-events-none transition-colors duration-500" style={{ background: `linear-gradient(to bottom right, var(--mesh-blob-1-from), var(--mesh-blob-1-to))` }} />
+        <div className="absolute bottom-[-15%] right-[-5%] w-[60vw] h-[60vw] rounded-full blur-[120px] mix-blend-multiply opacity-80 pointer-events-none transition-colors duration-500" style={{ background: `linear-gradient(to top left, var(--mesh-blob-2-from), var(--mesh-blob-2-to))` }} />
+        <div className="absolute top-[20%] left-[20%] w-[40vw] h-[40vw] rounded-full blur-[100px] pointer-events-none transition-colors duration-500" style={{ backgroundColor: "var(--mesh-blob-3)" }} />
       </div>
 
       {/* Sidebar Container */}
