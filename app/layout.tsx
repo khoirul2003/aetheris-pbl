@@ -1,7 +1,7 @@
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import "./globals.css";
 import ThemeProvider from "@/src/components/ThemeProvider";
-
+import { Toaster } from "sonner";
 // Memuat Plus Jakarta Sans dengan variasi weight lengkap untuk standar SaaS
 const plusJakartaSans = Plus_Jakarta_Sans({ 
   subsets: ['latin'],
@@ -44,6 +44,7 @@ export default function RootLayout({
       <body className="font-sans bg-[var(--background)] text-[var(--foreground)]">
         <ThemeProvider>
           {children}
+          <Toaster position="top-right" richColors />
         </ThemeProvider>
       </body>
     </html>

@@ -6,6 +6,7 @@ import { ClientAlertModel, AlertData } from "@/models/clientAlertModel";
 import { ClientProfileModel } from "@/models/clientProfileModel"; 
 import { ClientSubscriptionModel, UserSubscriptionLog } from "@/models/clientSubscriptionModel";
 import { Filter, FileText, BarChart3 } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 interface IncidentStat {
   name: string;
@@ -163,6 +164,8 @@ export default function AdminAnalyticsPage() {
         // Label teks hover
         valRev: formatIDR(data.revenueRaw),
         valUsr: `+${data.usersRaw}`,
+        revenueRaw: data.revenueRaw,
+        usersRaw: data.usersRaw,
     }));
 
     // Filter Berdasarkan Pilihan Dropdown Waktu
@@ -232,23 +235,35 @@ export default function AdminAnalyticsPage() {
                 </div>
               </div>
               
-              {/* PERBAIKAN: Menambah tinggi container (h-64) dan memastikan overflow terlihat */}
-              <div className="h-64 flex items-end justify-between gap-1.5 px-2 pt-6 font-mono text-[10px] overflow-visible" style={{ borderBottomWidth: 1, borderLeftWidth: 1, borderColor: "var(--chart-axis)", color: "var(--card-text-muted)" }}>
-                {dynamicChartData.map((data, i) => (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-2 group h-full justify-end min-w-[20px]">
-                    <div className="w-full flex items-end gap-1 h-full">
-                      {/* BAR PENDAPATAN (REVENUE) */}
-                      <div style={{ height: `${Math.max(data.revenue, 1)}%` }} className="flex-1 bg-blue-500 dark:bg-blue-600 rounded-t-sm transition-all group-hover:opacity-80 relative" title={data.valRev}>
-                        <span className="absolute -top-6 left-1/2 -translate-x-1/2 bg-[#1A1F24] text-white font-sans text-[9px] px-1 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block pointer-events-none whitespace-nowrap z-10 shadow-md">{data.valRev}</span>
-                      </div>
-                      {/* BAR PENGGUNA (USERS) */}
-                      <div style={{ height: `${Math.max(data.users, 1)}%` }} className="flex-1 bg-emerald-500 dark:bg-emerald-600 rounded-t-sm transition-all group-hover:opacity-80 relative" title={data.valUsr}>
-                        <span className="absolute -top-6 left-1/2 -translate-x-1/2 bg-[#1A1F24] text-white font-sans text-[9px] px-1 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity hidden sm:block pointer-events-none whitespace-nowrap z-10 shadow-md">{data.valUsr}</span>
-                      </div>
-                    </div>
-                    <span className="font-sans text-[10px] font-medium mt-1" style={{ color: "var(--card-text-muted)" }}>{data.label}</span>
-                  </div>
-                ))}
+              {/* RECHARTS IMPLEMENTATION */}
+              <div className="h-64 w-full pt-4">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={dynamicChartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--chart-axis)" opacity={0.5} />
+                    <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: "var(--card-text-muted)" }} dy={10} />
+                    <YAxis yAxisId="left" orientation="left" stroke="none" tick={{ fontSize: 10, fill: "var(--card-text-muted)" }} tickFormatter={(val) => formatIDR(val)} />
+                    <YAxis yAxisId="right" orientation="right" stroke="none" tick={{ fontSize: 10, fill: "var(--card-text-muted)" }} />
+                    <Tooltip 
+                      cursor={{ fill: "var(--chart-axis)", opacity: 0.2 }}
+                      content={({ active, payload, label }) => {
+                        if (active && payload && payload.length) {
+                          return (
+                            <div className="bg-[#1A1F24] text-white p-3 rounded-lg shadow-xl border border-gray-700 text-xs font-sans">
+                              <p className="font-bold mb-2 text-gray-300">{label}</p>
+                              <div className="space-y-1">
+                                <p className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-blue-500"></span> Revenue: {payload[0].payload.valRev}</p>
+                                <p className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> Users: {payload[1].payload.valUsr}</p>
+                              </div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Bar yAxisId="left" dataKey="revenueRaw" fill="#3b82f6" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                    <Bar yAxisId="right" dataKey="usersRaw" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
             </div>
 
