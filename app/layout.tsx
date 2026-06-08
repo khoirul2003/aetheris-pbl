@@ -1,5 +1,6 @@
 import { Plus_Jakarta_Sans } from 'next/font/google';
 import "./globals.css";
+import ThemeProvider from "@/src/components/ThemeProvider";
 
 // Memuat Plus Jakarta Sans dengan variasi weight lengkap untuk standar SaaS
 const plusJakartaSans = Plus_Jakarta_Sans({ 
@@ -22,9 +23,28 @@ export default function RootLayout({
   return (
     // Memasukkan variabel font ke dalam tag HTML
     <html lang="id" className={`${plusJakartaSans.variable} antialiased`} suppressHydrationWarning>
+      {/* Inline script untuk mencegah flash tema yang salah (FOUC prevention) */}
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var theme = localStorage.getItem('aetheris_theme');
+                  if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    document.documentElement.classList.add('dark');
+                  }
+                } catch(e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
       {/* font-sans sekarang akan mengacu pada Plus Jakarta Sans */}
-      <body className="font-sans bg-[#FCFBF8] text-[#1A1F24]">
-        {children}
+      <body className="font-sans bg-[var(--background)] text-[var(--foreground)]">
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );
