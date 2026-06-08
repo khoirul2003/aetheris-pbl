@@ -4,18 +4,29 @@ import { useEffect, useState } from "react";
 import UserLayout from "@/src/components/layout/UserLayout";
 import { ClientAlertModel, AlertData } from "@/models/clientAlertModel";
 import { RefreshCw, CheckCircle2, Loader2 } from "lucide-react";
+import { auth } from "@/lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
 type FilterType = "all" | "danger" | "warning" | "unresolved" | "resolved";
 
 export default function AlertsPage() {
-  const userId = "O4O7ZiAKmCUoNtqBoJhTsk3prHW2";
-
+  const [userId, setUserId] = useState<string | null>(null);
   const [alerts, setAlerts] = useState<AlertData[]>([]);
   const [loading, setLoading] = useState(true);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterType>("all");
 
   useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      setUserId(user ? user.uid : null);
+      if (!user) setLoading(false);
+    });
+    return () => unsubscribeAuth();
+  }, []);
+
+  useEffect(() => {
+    if (!userId) return;
+    setLoading(true);
     const unsubscribe = ClientAlertModel.subscribeToAlerts(userId, (data) => {
       setAlerts(data);
       setLoading(false);

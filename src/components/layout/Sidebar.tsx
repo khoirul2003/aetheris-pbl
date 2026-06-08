@@ -15,6 +15,7 @@ import ThemeToggle from "@/src/components/ThemeToggle";
 interface SidebarProps {
   role?: "admin" | "user";
   userEmail?: string | null;
+  userName?: string | null;
   isCollapsed: boolean;
   setIsCollapsed: (collapsed: boolean) => void;
   isMobileOpen: boolean;
@@ -22,7 +23,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ 
-  role = "admin", userEmail, isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen
+  role = "admin", userEmail, userName, isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen
 }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -172,7 +173,7 @@ export default function Sidebar({
               </div>
               <div className={`overflow-hidden whitespace-nowrap transition-all duration-300 ease-in-out text-left ${collapsed ? "max-w-0 opacity-0 ml-0" : "max-w-45 opacity-100 ml-3"}`}>
                 <p className="text-sm font-bold text-[var(--sidebar-text)] leading-tight truncate">
-                  {role === "admin" ? "Administrator" : "Partner Restaurant"}
+                  {role === "admin" ? "Administrator" : (userName || "Partner Restaurant")}
                 </p>
                 <p className="text-[11px] text-[var(--sidebar-text-muted)] truncate mt-0.5 font-medium">
                   {userEmail || (role === "admin" ? "Platform Control" : "Pro Plan")}

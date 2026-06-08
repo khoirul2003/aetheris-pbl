@@ -40,6 +40,7 @@ export default function UserLayout({
 
   const [isMobileOpen, setIsMobileOpen] = useState<boolean>(false);
   const [mounted, setMounted] = useState<boolean>(false);
+  const [userName, setUserName] = useState<string | null>(null);
 
   // Optimistic Auth Caching & Mencegah Cascading Render
   useEffect(() => {
@@ -66,6 +67,7 @@ export default function UserLayout({
           const userDoc = await getDoc(doc(db, "users", user.uid));
           
           if (userDoc.exists() && userDoc.data().role !== "admin") {
+            setUserName(userDoc.data().restaurantName || null);
             sessionStorage.setItem("aetheris_user_auth", "true");
             setIsAuthorized((prev) => {
               if (!prev) return true;
@@ -107,6 +109,7 @@ export default function UserLayout({
         <Sidebar 
           role={role} 
           userEmail={userEmail}
+          userName={userName}
           isCollapsed={isCollapsed}
           setIsCollapsed={setIsCollapsed}
           isMobileOpen={isMobileOpen}

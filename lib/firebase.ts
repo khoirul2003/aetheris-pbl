@@ -4,7 +4,7 @@ import { getFirestore } from "firebase/firestore";
 import { getDatabase, Database } from "firebase/database";
 
 // Masukkan kredensial Firebase Anda secara langsung di sini
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: "AIzaSyDHJDIF1SYdlPVy7CNHVPfWo4u8xcMHe2w",
   authDomain: "aetheris-pbl.firebaseapp.com",
   projectId: "aetheris-pbl",

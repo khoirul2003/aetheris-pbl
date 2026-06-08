@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import UserLayout from "@/src/components/layout/UserLayout";
 import { ClientSensorModel, FirestoreSensor, LiveSensorData } from "@/models/clientSensorModel";
 import { AlertTriangle, Check, RefreshCw, Radio } from "lucide-react";
+import { auth } from "@/lib/firebase";
+import { onAuthStateChanged, User } from "firebase/auth";
 
 // Menyesuaikan struktur interface lokal dengan isi asli Firebase kamu
 interface CustomLiveSensorData extends LiveSensorData {
@@ -12,19 +14,34 @@ interface CustomLiveSensorData extends LiveSensorData {
 }
 
 export default function SensorsPage() {
-  // ID Pengguna utama sesuai data database Anda
-  const userId = "O4O7ZiAKmCUoNtqBoJhTsk3prHW2";
-
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [sensors, setSensors] = useState<FirestoreSensor[]>([]);
   const [liveData, setLiveData] = useState<{ [sensorId: string]: CustomLiveSensorData }>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 1. Ambil data konseptual statis sensor dari Firestore
+  // 1. Dengarkan Status Login User
   useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+      setUserId(user ? user.uid : null);
+      if (!user) {
+        setLoading(false);
+        setError("Anda belum login.");
+      }
+    });
+    return () => unsubscribeAuth();
+  }, []);
+
+  // 2. Ambil data konseptual statis sensor dari Firestore
+  useEffect(() => {
+    if (!userId) return;
+    
     async function fetchSensors() {
+      setLoading(true);
       try {
-        const fetchedSensors = await ClientSensorModel.getSensorsByUserId(userId);
+        const fetchedSensors = await ClientSensorModel.getSensorsByUserId(userId as string);
         setSensors(fetchedSensors);
       } catch (err) {
         console.error("Gagal memuat profil koleksi sensor:", err);
@@ -58,7 +75,7 @@ export default function SensorsPage() {
     <UserLayout 
       title="Area & Sensor" 
       description="Daftar perangkat monitoring gas dan kondisi real-time dapur Anda."
-      userEmail="khoirul@email.com"
+      userEmail={currentUser?.email || ""}
     >
       {loading ? (
         <div className="flex h-[60vh] w-full items-center justify-center">

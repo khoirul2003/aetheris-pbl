@@ -1,5 +1,5 @@
 import { db, auth } from '@/lib/firebase';
-import { doc, getDoc, updateDoc, collection, query, where, orderBy, onSnapshot, setDoc, deleteDoc, Timestamp } from 'firebase/firestore'; 
+import { doc, getDoc, getDocs, updateDoc, collection, query, where, orderBy, onSnapshot, setDoc, deleteDoc, Timestamp } from 'firebase/firestore'; 
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 
 export interface UserProfile {
@@ -43,6 +43,16 @@ export const ClientProfileModel = {
       return docSnap.data() as UserProfile;
     }
     return null;
+  },
+
+  async getAllProfiles(): Promise<any[]> {
+    const usersRef = collection(db, 'users');
+    const snapshot = await getDocs(usersRef);
+    const users: any[] = [];
+    snapshot.forEach((doc) => {
+      users.push({ id: doc.id, ...doc.data() });
+    });
+    return users;
   },
 
   async updateSettings(userId: string, updatedFields: Partial<UserProfile>): Promise<void> {

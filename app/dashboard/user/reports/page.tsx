@@ -8,18 +8,30 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
 } from "recharts";
 import { Download, FileText, RefreshCw, TrendingUp } from "lucide-react";
+import { auth } from "@/lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
 export default function ReportsPage() {
-  const userId = "O4O7ZiAKmCUoNtqBoJhTsk3prHW2";
-
+  const [userId, setUserId] = useState<string | null>(null);
   const [summaries, setSummaries] = useState<DailySummary[]>([]);
   const [alerts, setAlerts] = useState<AlertData[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("Minggu ini");
 
   useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      setUserId(user ? user.uid : null);
+      if (!user) setLoading(false);
+    });
+    return () => unsubscribeAuth();
+  }, []);
+
+  useEffect(() => {
+    if (!userId) return;
+    
     let isMounted = true;
     let unsubscribeAlerts: (() => void) | undefined;
+    setLoading(true);
 
     async function fetchReportData() {
       try {

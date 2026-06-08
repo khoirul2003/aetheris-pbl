@@ -10,6 +10,9 @@ import {
   addDoc, collection, doc, onSnapshot, query, serverTimestamp, setDoc, updateDoc, where, Timestamp,
   writeBatch, getDocs 
 } from "firebase/firestore";
+import { initializeApp, deleteApp } from "firebase/app";
+import { getAuth, createUserWithEmailAndPassword, signOut } from "firebase/auth";
+import { firebaseConfig } from "@/lib/firebase";
 import {
   AlertTriangle, CircleCheck, CircleOff, Clock3, CreditCard,
   Database, Edit3, Eye, Plus, ToggleLeft, ToggleRight, UserRound, X, Copy, Search, Save, Loader2, Trash2
@@ -226,9 +229,25 @@ function AddUserModal({ packages, onClose }: { packages: SubscriptionPackage[], 
   };
 
   const createUser = async () => {
+    if (!form.email || !form.password) {
+      alert("Email dan Password wajib diisi untuk login.");
+      return;
+    }
+    
     setSaving(true);
     try {
-      const newRef = doc(collection(db, "users"));
+      // 1. Buat user di Firebase Auth (Gunakan secondary app agar admin tidak ter-logout)
+      const secondaryApp = initializeApp(firebaseConfig, "SecondaryAuthApp" + Date.now());
+      const secondaryAuth = getAuth(secondaryApp);
+      
+      const userCredential = await createUserWithEmailAndPassword(secondaryAuth, form.email, form.password);
+      const uid = userCredential.user.uid;
+      
+      await signOut(secondaryAuth);
+      await deleteApp(secondaryApp);
+
+      // 2. Simpan profil ke Firestore
+      const newRef = doc(db, "users", uid);
       const now = new Date();
       const endDate = addDays(now, form.planDurationDays);
 
@@ -240,14 +259,18 @@ function AddUserModal({ packages, onClose }: { packages: SubscriptionPackage[], 
         createdAt: serverTimestamp(),
       });
 
+      // 3. Catat log berlangganan
       await addDoc(collection(db, "userSubscriptions"), {
-        userId: newRef.id, userName: form.restaurantName, userEmail: form.email, restaurantName: form.restaurantName,
+        userId: uid, userName: form.restaurantName, userEmail: form.email, restaurantName: form.restaurantName,
         packageName: packages.find(p => p.id === form.plan)?.name || form.plan,
         startDate: now, endDate, paymentStatus: "paid", 
         amount: packages.find(p => p.id === form.plan)?.price || 0,
       });
 
       onClose();
+    } catch (error: any) {
+      console.error("Gagal membuat user:", error);
+      alert("Gagal menambahkan user baru: " + (error.message || ""));
     } finally {
       setSaving(false);
     }
