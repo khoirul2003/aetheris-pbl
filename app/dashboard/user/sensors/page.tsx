@@ -25,7 +25,11 @@ export default function SensorsPage() {
 
   // Efek untuk menandai bahwa komponen sudah berjalan di client side
   useEffect(() => {
-    setIsMounted(true);
+    const timer = setTimeout(() => {
+      setIsMounted(true);
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, []);
 
   // 1. Ambil data konseptual statis sensor dari Firestore

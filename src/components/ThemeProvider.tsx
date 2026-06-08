@@ -27,13 +27,16 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
 
   // Memuat tema dari localStorage saat pertama kali dimuat
   useEffect(() => {
-    const savedTheme = localStorage.getItem("aetheris_theme") as Theme | null;
-    if (savedTheme === "dark" || savedTheme === "light") {
-      setTheme(savedTheme);
-    } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      setTheme("dark");
-    }
-    setMounted(true);
+    const timer = setTimeout(() => {
+      const savedTheme = localStorage.getItem("aetheris_theme") as Theme | null;
+      if (savedTheme === "dark" || savedTheme === "light") {
+        setTheme(savedTheme);
+      } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+        setTheme("dark");
+      }
+    }, 0);
+
+    return () => clearTimeout(timer);
   }, []);
 
   // Menyinkronkan class `dark` pada elemen <html> setiap kali tema berubah
