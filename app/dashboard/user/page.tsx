@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import UserLayout from "@/src/components/layout/UserLayout"; // Menggunakan layout User yang baru
+import UserLayout from "@/src/components/layout/UserLayout"; 
 import { auth, db } from "@/lib/firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
 import {
@@ -78,12 +78,12 @@ export default function UserDashboard() {
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      setLoadingAuth(false);
+      loadingAuth && setLoadingAuth(false);
     });
     return () => unsubscribeAuth();
-  }, []);
+  }, [loadingAuth]);
 
-  // 2. Connect All Components to Database 100% Dynamically
+  // 2. Connect All Components to Database 100% Dynamically (Updated for Hadoop Pipeline)
   useEffect(() => {
     if (loadingAuth || !user) return;
 
@@ -94,6 +94,7 @@ export default function UserDashboard() {
       collection(db, "sensors"),
       where("userId", "==", currentUserId),
     );
+
     const unsubscribeSensors = onSnapshot(
       sensorsQ,
       (snapshot) => {
@@ -107,11 +108,11 @@ export default function UserDashboard() {
 
         if (unsubscribeSummary) unsubscribeSummary();
 
+        // FIX: Menyesuaikan struktur data global per hari hasil upload Hadoop Big Data script
         const summaryQ = query(
           collection(db, "dailySummaries"),
-          where("userId", "==", currentUserId),
-          orderBy("date", "asc"),
-          limit(7),
+          orderBy("date", "desc"),
+          limit(7)
         );
 
         unsubscribeSummary = onSnapshot(summaryQ, (summarySnapshot) => {
@@ -121,12 +122,14 @@ export default function UserDashboard() {
             const data = doc.data();
             const rawDate = data.date ? data.date.split("-") : [];
             const formattedDate =
-              rawDate.length === 3 ? `${rawDate[1]}/${rawDate[2]}` : data.date; // Changed to MM/DD format
+              rawDate.length === 3 ? `${rawDate[1]}/${rawDate[2]}` : data.date; 
 
             const chartRow: Record<string, string | number> = {
               time: formattedDate,
+              rawDateStr: data.date || "", 
             };
 
+            // Memetakan map ID dari database (e.g. sensor_002) ke nama sensor grafik secara dinamis
             sensorList.forEach((sensor) => {
               chartRow[sensor.name] = data.avgGasPerSensor?.[sensor.id] || 0;
             });
@@ -135,7 +138,11 @@ export default function UserDashboard() {
           });
 
           if (history.length > 0) {
-            setChartHistory(history);
+            // Urutkan kronologis data dari tanggal terlama ke terbaru (Kiri ke Kanan)
+            const chronologicalHistory = history.sort((a, b) => 
+              String(a.rawDateStr).localeCompare(String(b.rawDateStr))
+            );
+            setChartHistory(chronologicalHistory);
           }
         });
       },
@@ -151,6 +158,7 @@ export default function UserDashboard() {
       orderBy("createdAt", "desc"),
       limit(5),
     );
+
     const unsubscribeAlerts = onSnapshot(alertsQ, (snapshot) => {
       const logs: AlertLog[] = [];
       let unresolvedCount = 0;
@@ -210,7 +218,7 @@ export default function UserDashboard() {
           [sensor.id]: data,
         }));
 
-        setStats((prev: typeof stats) => ({
+        setStats((prev) => ({
           ...prev,
           lastCheck: timeString,
         }));
@@ -368,8 +376,7 @@ export default function UserDashboard() {
           {/* ALL AREAS STATUS TABLE */}
           <div className="bg-white border border-slate-200 p-4 md:p-6 rounded-2xl shadow-sm flex flex-col h-full">
             <h3 className="text-xs font-bold text-slate-600 tracking-wider uppercase mb-4 flex items-center gap-2">
-              <LayoutDashboard size={14} className="text-slate-600" /> All Areas
-              Status
+              <LayoutDashboard size={14} className="text-slate-600" /> All Areas Status
             </h3>
             <div className="space-y-0 flex-grow divide-y divide-slate-100">
               {dynamicSensors.length === 0 ? (
@@ -499,8 +506,7 @@ export default function UserDashboard() {
           {/* WEEKLY CHART TREND */}
           <div className="bg-white border border-slate-200 p-4 md:p-6 rounded-2xl shadow-sm flex flex-col w-full h-full overflow-hidden">
             <h3 className="text-xs font-black text-slate-600 tracking-wider uppercase mb-4 flex items-center gap-2">
-              <TrendingUp size={14} className="text-slate-600" /> Weekly Average
-              Gas Trend
+              <TrendingUp size={14} className="text-slate-600" /> Weekly Average Gas Trend
             </h3>
             <div className="h-[260px] w-full text-[10px] md:text-[11px] flex-grow">
               <ResponsiveContainer width="100%" height="100%">
@@ -558,8 +564,7 @@ export default function UserDashboard() {
           {/* ALERTS ACTIVITY LOG HISTORY */}
           <div className="bg-white border border-slate-200 p-4 md:p-6 rounded-2xl shadow-sm flex flex-col h-full">
             <h3 className="text-xs font-black text-slate-600 tracking-wider uppercase mb-4 flex items-center gap-2">
-              <BellRing size={14} className="text-slate-600" /> Alert Activity
-              Log History
+              <BellRing size={14} className="text-slate-600" /> Alert Activity Log History
             </h3>
             <div className="space-y-3 overflow-y-auto pr-1 flex-grow custom-scrollbar max-h-[260px]">
               {latestAlerts.length === 0 ? (
@@ -594,9 +599,7 @@ export default function UserDashboard() {
                               : "text-[#A05E1A]"
                           }
                         >
-                          {alert.isResolved
-                            ? "✓ Resolved"
-                            : "• Needs Attention"}
+                          {alert.isResolved ? "✓ Resolved" : "• Needs Attention"}
                         </span>
                       </div>
                     </div>
