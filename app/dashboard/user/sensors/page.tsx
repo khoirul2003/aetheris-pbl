@@ -19,6 +19,14 @@ export default function SensorsPage() {
   const [liveData, setLiveData] = useState<{ [sensorId: string]: CustomLiveSensorData }>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Trik Hydration: Pastikan komponen sudah terpasang di browser
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Efek untuk menandai bahwa komponen sudah berjalan di client side
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // 1. Ambil data konseptual statis sensor dari Firestore
   useEffect(() => {
@@ -53,6 +61,25 @@ export default function SensorsPage() {
       unsubscribers.forEach((unsub) => unsub());
     };
   }, [sensors]);
+
+  // JIKA BELUM MOUNTED, KITA TAMPILKAN LOADING YANG SAMA DENGAN SSR
+  // Ini mencegah ketidakcocokan HTML antara Server dan Client
+  if (!isMounted) {
+    return (
+      <UserLayout 
+        title="Area & Sensor" 
+        description="Daftar perangkat monitoring gas dan kondisi real-time dapur Anda."
+        userEmail="khoirul@email.com"
+      >
+        <div className="flex h-[60vh] w-full items-center justify-center">
+          <div className="text-center space-y-3">
+            <RefreshCw className="animate-spin text-[#4D6344] mx-auto" size={28} />
+            <p className="text-[#5B636B] font-semibold text-xs tracking-wide">Menghubungkan ke Sensor...</p>
+          </div>
+        </div>
+      </UserLayout>
+    );
+  }
 
   return (
     <UserLayout 
