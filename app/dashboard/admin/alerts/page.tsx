@@ -1,276 +1,180 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import AdminLayout from "@/src/components/layout/AdminLayout";
 import { ClientAlertModel, AlertData } from "@/models/clientAlertModel";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, query } from "firebase/firestore";
-import { Search, FileSpreadsheet, FileText, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ArrowUpDown } from "lucide-react";
 
 export default function AdminAlertsPage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterLevel, setFilterLevel] = useState("ALL");
-  const [filterStatus, setFilterStatus] = useState("ALL");
-  const [filterDate, setFilterDate] = useState("");
-  
-  // State untuk Pagination
-  const [pageSize, setPageSize] = useState(10);
+  // Pagination State - Default diubah ke 30
+  const [pageSize, setPageSize] = useState(30);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Ambil struktur tipe data aseli dari model real-time proyek
+  // Sorting State
+  const [sortConfig, setSortConfig] = useState<{ key: "time" | "level" | "status"; direction: "asc" | "desc" } | null>(null);
+
+  // Core Data State
   const [alertsData, setAlertsData] = useState<AlertData[]>([]);
   const [usersMap, setUsersMap] = useState<{ [uid: string]: string }>({});
 
-  // 1. Ambil data peta nama restoran dari koleksi 'users' secara real-time
   useEffect(() => {
     const usersQuery = query(collection(db, "users"));
     const unsubscribeUsers = onSnapshot(usersQuery, (snapshot) => {
       const mapping: { [uid: string]: string } = {};
       snapshot.forEach((doc) => {
         const data = doc.data();
-        mapping[doc.id] = data.restaurantName || data.name || "Restoran Tanpa Nama";
+        mapping[doc.id] = data.restaurantName || data.name || "Unknown Restaurant";
       });
       setUsersMap(mapping);
     });
-
     return () => unsubscribeUsers();
   }, []);
 
-  // 2. Mengambil log alert secara global bypass khusus untuk akun Admin
   useEffect(() => {
     const unsubscribeAlerts = ClientAlertModel.subscribeToAlerts("ALL", (data: AlertData[]) => {
       setAlertsData(data);
     });
-    
     return () => unsubscribeAlerts();
   }, []);
 
-  // Konversi Timestamp aman tanpa explicit any
-  const formatAlertTime = (createdAt: { toDate?: () => Date } | Date | string | number | null | undefined) => {
-  if (!createdAt) return "-";
-  
-  // Deteksi jika merupakan objek Timestamp dari Firestore
-  const date = (createdAt && typeof createdAt === "object" && "toDate" in createdAt && typeof createdAt.toDate === "function")
-    ? createdAt.toDate()
-    : new Date(createdAt as string | number | Date);
-
-  return date.toISOString().replace('T', ' ').substring(0, 16);
-};
-
-  // Filter & Transformasi Data
-  const filteredAlerts = alertsData.filter((item) => {
-    const timeStr = formatAlertTime(item.createdAt);
-    const itemLevel = item.level === "danger" ? "BAHAYA" : "WASPADA";
-    const itemStatus = item.isResolved ? "TERTANGANI" : "PROSES";
+  const formatAlertTime = (createdAt: unknown) => {
+    if (!createdAt) return "-";
     
-    const restaurantName = usersMap[item.userId] || item.sensorName || "Memuat Mitra...";
-    const sensorName = item.sensorName || item.location || "Sensor Perangkat";
+    // Mengecek dengan aman apakah object tersebut memiliki fungsi "toDate" (ciri khas Firestore Timestamp)
+    const isFirestoreTimestamp = 
+      typeof createdAt === "object" && 
+      createdAt !== null && 
+      "toDate" in createdAt && 
+      typeof (createdAt as Record<string, unknown>).toDate === "function";
 
-    const matchesSearch = 
-      restaurantName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      sensorName.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesLevel = filterLevel === "ALL" || itemLevel === filterLevel;
-    const matchesStatus = filterStatus === "ALL" || itemStatus === filterStatus;
-    const matchesDate = !filterDate || timeStr.startsWith(filterDate);
+    const date = isFirestoreTimestamp
+      ? (createdAt as { toDate: () => Date }).toDate()
+      : new Date(createdAt as string | number | Date);
 
-    return matchesSearch && matchesLevel && matchesStatus && matchesDate;
-  }).map((item) => {
-    const timeStr = formatAlertTime(item.createdAt);
-    return {
-      id: item.userId ? `RES-${item.userId.substring(0, 4).toUpperCase()}` : "RES-000",
-      time: timeStr,
-      restaurant: usersMap[item.userId] || item.sensorName || "Restoran Mitra",
-      sensor: item.sensorName || item.location || "Sensor Utama",
-      level: item.level === "danger" ? "BAHAYA" : "WASPADA",
-      action: item.level === "danger" ? "Buzzer Aktif & Notifikasi SMS" : "Kirim Notifikasi Aplikasi",
-      status: item.isResolved ? "TERTANGANI" : "PROSES",
-    };
-  });
+    // FORMAT BARU: Thu, Jun 4, 2026 - 12:31 PM
+    const formattedDate = new Intl.DateTimeFormat('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    }).format(date);
 
-  // Logika Pagination
+    const formattedTime = new Intl.DateTimeFormat('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    }).format(date);
+
+    return `${formattedDate} - ${formattedTime}`;
+  };
+
+  // Transform and Sort Data
+  const tableData = useMemo(() => {
+    const formattedData = alertsData.map((item) => {
+      const timeStr = formatAlertTime(item.createdAt);
+      return {
+        id: item.userId ? `RES-${item.userId.substring(0, 4).toUpperCase()}` : "RES-000",
+        time: timeStr,
+        // Menyimpan nilai Date mentah untuk keperluan sorting yang akurat
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        rawDate: item.createdAt ? (typeof item.createdAt === "object" && "toDate" in item.createdAt ? (item.createdAt as any).toDate().getTime() : new Date(item.createdAt as string).getTime()) : 0,
+        restaurant: usersMap[item.userId] || item.sensorName || "Partner Restaurant",
+        sensor: item.sensorName || item.location || "Main Sensor",
+        level: item.level === "danger" ? "DANGER" : "WARNING",
+        action: item.level === "danger" ? "Buzzer Active & SMS Sent" : "App Notification Sent",
+        status: item.isResolved ? "RESOLVED" : "PROCESSING",
+      };
+    });
+
+    if (sortConfig !== null) {
+      formattedData.sort((a, b) => {
+        // PERBAIKAN: Jika yang disortir adalah waktu, gunakan rawDate (angka milidetik) agar urutannya benar (bukan urutan abjad A-Z)
+        if (sortConfig.key === "time") {
+          return sortConfig.direction === "asc" ? a.rawDate - b.rawDate : b.rawDate - a.rawDate;
+        }
+
+        const aValue = a[sortConfig.key];
+        const bValue = b[sortConfig.key];
+        if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return formattedData;
+  }, [alertsData, usersMap, sortConfig]);
+
+  const handleSort = (key: "time" | "level" | "status") => {
+    let direction: "asc" | "desc" = "asc";
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction });
+  };
+
   const indexOfLastRow = currentPage * pageSize;
   const indexOfFirstRow = indexOfLastRow - pageSize;
-  const currentRows = filteredAlerts.slice(indexOfFirstRow, indexOfLastRow);
-
-  const handleExportCSV = () => {
-    if (filteredAlerts.length === 0) {
-      alert("Tidak ada data untuk diexport!");
-      return;
-    }
-    const headers = ["ID Restoran", "Waktu", "Nama Restoran", "Nama Sensor", "Tingkat Bahaya", "Tindakan Sistem", "Status Penanganan"];
-    const rows = filteredAlerts.map(item => [
-      item.id,
-      item.time,
-      `"${item.restaurant}"`,
-      `"${item.sensor}"`,
-      item.level,
-      `"${item.action}"`,
-      item.status
-    ]);
-
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Aetheris_Riwayat_Alert.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const handleExportPDF = () => {
-    window.print();
-  };
-
-  const renderPaginationControls = () => (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-slate-50 border-b border-t border-slate-200 print:hidden text-slate-700 text-sm">
-      <div className="flex items-center gap-2">
-        <span>Tampilkan</span>
-        <select
-          value={pageSize}
-          onChange={(e) => {
-            setPageSize(Number(e.target.value));
-            setCurrentPage(1);
-          }}
-          className="bg-white border border-slate-300 rounded-lg px-2 py-1 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer transition-all"
-        >
-          <option value={10}>10</option>
-          <option value={20}>20</option>
-          <option value={50}>50</option>
-        </select>
-        <span>data per halaman</span>
-      </div>
-
-      <div className="flex items-center gap-4">
-        <span className="text-xs text-slate-500 font-medium">
-          Menampilkan {filteredAlerts.length === 0 ? 0 : indexOfFirstRow + 1} - {Math.min(indexOfLastRow, filteredAlerts.length)} dari {filteredAlerts.length} log
-        </span>
-        <div className="flex gap-1">
-          <button 
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage(prev => prev - 1)}
-            className="p-1.5 bg-white border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:hover:bg-white cursor-pointer transition-colors"
-          >
-            <ChevronLeft size={16} />
-          </button>
-          <button 
-            disabled={indexOfLastRow >= filteredAlerts.length}
-            onClick={() => setCurrentPage(prev => prev + 1)}
-            className="p-1.5 bg-white border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-100 disabled:opacity-50 disabled:hover:bg-white cursor-pointer transition-colors"
-          >
-            <ChevronRight size={16} />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  const currentRows = tableData.slice(indexOfFirstRow, indexOfLastRow);
 
   return (
-    <AdminLayout
-      title="Riwayat Alert"
-      description="Lihat dan tindak lanjuti seluruh alert terdeteksi."
-    >
+    <AdminLayout title="Alert History" description="View and monitor all detected system alerts.">
       <div className="flex w-full flex-col gap-5">
-
-          <section className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-6 print:hidden">
-            <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
-              <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                  <input 
-                    type="date" 
-                    value={filterDate}
-                    onChange={(e) => { setFilterDate(e.target.value); setCurrentPage(1); }}
-                    className="pl-9 pr-4 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer w-44 transition-colors"
-                  />
-                </div>
-
-                <select 
-                  value={filterLevel} 
-                  onChange={(e) => { setFilterLevel(e.target.value); setCurrentPage(1); }}
-                  className="bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer transition-colors"
-                >
-                  <option value="ALL">Semua Tingkat Bahaya</option>
-                  <option value="WASPADA">Waspada</option>
-                  <option value="BAHAYA">Bahaya</option>
-                </select>
-
-                <select 
-                  value={filterStatus} 
-                  onChange={(e) => { setFilterStatus(e.target.value); setCurrentPage(1); }}
-                  className="bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer transition-colors"
-                >
-                  <option value="ALL">Semua Status</option>
-                  <option value="PROSES">Dalam Proses</option>
-                  <option value="TERTANGANI">Tertangani</option>
-                </select>
-              </div>
-
-              <div className="relative w-full lg:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
-                <input 
-                  type="text" 
-                  placeholder="Cari restoran atau sensor..." 
-                  value={searchQuery}
-                  onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                  className="pl-9 pr-4 py-2 w-full bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-inner transition-all"
-                />
-              </div>
-            </div>
-          </section>
-
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print:border-none print:shadow-none">
-            {renderPaginationControls()}
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left table-auto">
-                <thead className="bg-slate-50 text-slate-500 text-xs uppercase font-medium tracking-wider border-b border-slate-200">
-                  <tr>
-                    <th className="px-6 py-4">ID Restoran</th>
-                    <th className="px-6 py-4">Waktu</th>
-                    <th className="px-6 py-4">Nama Restoran</th>
-                    <th className="px-6 py-4">Nama Sensor</th>
-                    <th className="px-6 py-4">Tingkat Bahaya</th>
-                    <th className="px-6 py-4">Tindakan Sistem</th>
-                    <th className="px-6 py-4">Status Penanganan</th>
+        <div className="rounded-2xl shadow-sm overflow-hidden" style={{ backgroundColor: "var(--card-bg)", borderWidth: 1, borderColor: "var(--card-border)" }}>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full text-left table-auto">
+              <thead className="text-xs uppercase font-medium tracking-wider" style={{ backgroundColor: "var(--table-head-bg)", color: "var(--card-text-muted)", borderBottomWidth: 1, borderBottomColor: "var(--table-border)" }}>
+                <tr>
+                  <th className="px-6 py-4">Restaurant ID</th>
+                  <th className="px-6 py-4 cursor-pointer hover:opacity-80" onClick={() => handleSort("time")}>
+                    <div className="flex items-center gap-1">Time <ArrowUpDown size={12} /></div>
+                  </th>
+                  <th className="px-6 py-4">Restaurant Name</th>
+                  <th className="px-6 py-4">Sensor Name</th>
+                  <th className="px-6 py-4 cursor-pointer hover:opacity-80" onClick={() => handleSort("level")}>
+                    <div className="flex items-center gap-1">Alert Level <ArrowUpDown size={12} /></div>
+                  </th>
+                  <th className="px-6 py-4">System Action</th>
+                  <th className="px-6 py-4 cursor-pointer hover:opacity-80" onClick={() => handleSort("status")}>
+                    <div className="flex items-center gap-1">Status <ArrowUpDown size={12} /></div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="text-sm divide-y" style={{ color: "var(--card-text)", borderColor: "var(--table-border)", backgroundColor: "var(--table-body-bg)" }}>
+                {currentRows.map((item, i) => (
+                  <tr key={i} className="hover:opacity-90">
+                    <td className="px-6 py-4 font-mono text-xs font-bold" style={{ color: "var(--card-title)" }}>{item.id}</td>
+                    <td className="px-6 py-4 whitespace-nowrap" style={{ color: "var(--card-text-muted)" }}>{item.time}</td>
+                    <td className="px-6 py-4 font-medium" style={{ color: "var(--card-title)" }}>{item.restaurant}</td>
+                    <td className="px-6 py-4" style={{ color: "var(--card-text)" }}>{item.sensor}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${item.level === "DANGER" ? "bg-rose-100 dark:bg-rose-500/15 text-rose-700 dark:text-rose-400" : "bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400"}`}>{item.level}</span>
+                    </td>
+                    <td className="px-6 py-4 text-xs" style={{ color: "var(--card-text-muted)" }}>{item.action}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${item.status === "RESOLVED" ? "bg-emerald-100 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-400" : "bg-blue-100 dark:bg-blue-500/15 text-blue-800 dark:text-blue-400"}`}>{item.status}</span>
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200 text-slate-700 text-sm">
-                  {currentRows.length > 0 ? (
-                    currentRows.map((item, i) => (
-                      <tr key={i} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="px-6 py-4 font-mono text-xs font-bold text-slate-700">{item.id}</td>
-                        <td className="px-6 py-4 text-slate-500">{item.time}</td>
-                        <td className="px-6 py-4 text-slate-900 font-medium">{item.restaurant}</td>
-                        <td className="px-6 py-4 text-slate-600">{item.sensor}</td>
-                        <td className="px-6 py-4">
-                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                            item.level === "BAHAYA" ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700"
-                          }`}>{item.level}</span>
-                        </td>
-                        <td className="px-6 py-4 text-xs text-slate-500">{item.action}</td>
-                        <td className="px-6 py-4">
-                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            item.status === "TERTANGANI" ? "bg-emerald-100 text-emerald-800" : "bg-blue-100 text-blue-800"
-                          }`}>{item.status}</span>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={7} className="px-6 py-10 text-center text-slate-400 text-xs">
-                        Tidak ditemukan riwayat log alert yang cocok dengan kriteria filter.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-            {renderPaginationControls()}
+          <div className="flex items-center justify-between p-4" style={{ backgroundColor: "var(--card-surface)", borderTopWidth: 1, borderTopColor: "var(--card-surface-border)" }}>
+            <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }} className="border rounded px-2 py-1 text-sm" style={{ backgroundColor: "var(--card-bg-solid)", borderColor: "var(--card-surface-border)", color: "var(--card-text)" }}>
+              <option value={10}>10</option>
+              <option value={30}>30</option>
+              <option value={50}>50</option>
+            </select>
+            <div className="flex gap-2">
+              <button disabled={currentPage === 1} onClick={() => setCurrentPage(prev => prev - 1)} className="p-1 border rounded disabled:opacity-50 cursor-pointer" style={{ borderColor: "var(--card-surface-border)", color: "var(--card-text)" }}><ChevronLeft size={16}/></button>
+              <button disabled={indexOfLastRow >= tableData.length} onClick={() => setCurrentPage(prev => prev + 1)} className="p-1 border rounded disabled:opacity-50 cursor-pointer" style={{ borderColor: "var(--card-surface-border)", color: "var(--card-text)" }}><ChevronRight size={16}/></button>
+            </div>
           </div>
         </div>
+      </div>
     </AdminLayout>
   );
 }

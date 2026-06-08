@@ -7,30 +7,28 @@ import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 
 import Sidebar from "./Sidebar";
-import UserHeader from "./UserHeader";
+import UserHeader from "./UserHeader"; // Sesuaikan nama import jika nama komponen Header Anda berbeda
 
 interface UserLayoutProps {
   title: string;
   description?: string;
   children: React.ReactNode;
   userEmail?: string | null;
+  role?: "admin" | "user"; 
 }
 
 export default function UserLayout({ 
   title, 
   description, 
   children,
-  userEmail
+  userEmail,
+  role = "user" 
 }: UserLayoutProps) {
   
   const router = useRouter();
-  
-  const [isAuthorized, setIsAuthorized] = useState(() => {
-    if (typeof window !== "undefined" && sessionStorage.getItem("aetheris_user_auth") === "true") {
-      return true;
-    }
-    return false;
-  });
+
+  // Set selalu false di awal agar hasil render Server dan Client sama persis
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
     if (typeof window !== "undefined") {
@@ -43,10 +41,21 @@ export default function UserLayout({
   const [isMobileOpen, setIsMobileOpen] = useState<boolean>(false);
   const [mounted, setMounted] = useState<boolean>(false);
 
+  // Optimistic Auth Caching & Mencegah Cascading Render
   useEffect(() => {
-    setMounted(true);
+    const timer = setTimeout(() => {
+      setMounted(true);
+    }, 0);
+
+    if (sessionStorage.getItem("aetheris_user_auth") === "true") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setIsAuthorized(true);
+    }
+
+    return () => clearTimeout(timer);
   }, []);
 
+  // FITUR SATPAM (AUTH GUARD) KHUSUS USER
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {
@@ -56,12 +65,19 @@ export default function UserLayout({
         try {
           const userDoc = await getDoc(doc(db, "users", user.uid));
           
-          if (userDoc.exists() && userDoc.data().role === "admin") {
+          if (userDoc.exists() && userDoc.data().role !== "admin") {
+            sessionStorage.setItem("aetheris_user_auth", "true");
+            setIsAuthorized((prev) => {
+              if (!prev) return true;
+              return prev;
+            });
+          } else if (userDoc.exists() && userDoc.data().role === "admin") {
+            // Jika dia admin tapi mencoba buka halaman user, tendang ke dasbor admin
             sessionStorage.removeItem("aetheris_user_auth");
             router.replace("/dashboard/admin"); 
           } else {
-            sessionStorage.setItem("aetheris_user_auth", "true");
-            if (!isAuthorized) setIsAuthorized(true); 
+            sessionStorage.removeItem("aetheris_user_auth");
+            router.replace("/login"); 
           }
         } catch (error) {
           console.error("Gagal memeriksa role:", error);
@@ -71,21 +87,25 @@ export default function UserLayout({
     });
 
     return () => unsubscribe();
-  }, [router, isAuthorized]);
+  }, [router]);
 
   return (
-    <div className="relative flex min-h-screen text-[#1A1F24] font-sans antialiased overflow-hidden">
+    <div className="relative flex min-h-screen text-[var(--foreground)] font-sans antialiased overflow-hidden transition-colors duration-300">
       
       {/* MESH GRADIENT BACKGROUND */}
-      <div className="fixed inset-0 z-[-1] bg-gradient-to-br from-[#F6F8F4] via-[#F0F4EC] to-[#E6ECE0]">
-        <div className="absolute top-[-15%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-gradient-to-br from-[#C4D0B7]/50 to-[#9EAF8C]/20 blur-[120px] mix-blend-multiply opacity-80 pointer-events-none" />
-        <div className="absolute bottom-[-15%] right-[-5%] w-[60vw] h-[60vw] rounded-full bg-gradient-to-tl from-[#B3C2A4]/50 to-[#D5DFCB]/20 blur-[120px] mix-blend-multiply opacity-80 pointer-events-none" />
-        <div className="absolute top-[20%] left-[20%] w-[40vw] h-[40vw] rounded-full bg-[#FFFFFF]/70 blur-[100px] pointer-events-none" />
+      <div 
+        className="fixed inset-0 z-[-1] transition-colors duration-500"
+        style={{ background: `linear-gradient(to bottom right, var(--mesh-from), var(--mesh-via), var(--mesh-to))` }}
+      >
+        <div className="absolute top-[-15%] left-[-10%] w-[50vw] h-[50vw] rounded-full blur-[120px] mix-blend-multiply opacity-80 pointer-events-none transition-colors duration-500" style={{ background: `linear-gradient(to bottom right, var(--mesh-blob-1-from), var(--mesh-blob-1-to))` }} />
+        <div className="absolute bottom-[-15%] right-[-5%] w-[60vw] h-[60vw] rounded-full blur-[120px] mix-blend-multiply opacity-80 pointer-events-none transition-colors duration-500" style={{ background: `linear-gradient(to top left, var(--mesh-blob-2-from), var(--mesh-blob-2-to))` }} />
+        <div className="absolute top-[20%] left-[20%] w-[40vw] h-[40vw] rounded-full blur-[100px] pointer-events-none transition-colors duration-500" style={{ backgroundColor: "var(--mesh-blob-3)" }} />
       </div>
 
+      {/* Sidebar Container */}
       <div className="z-40 relative shrink-0">
         <Sidebar 
-          role="user"
+          role={role} 
           userEmail={userEmail}
           isCollapsed={isCollapsed}
           setIsCollapsed={setIsCollapsed}
@@ -94,6 +114,7 @@ export default function UserLayout({
         />
       </div>
 
+      {/* Main Content Area */}
       <div className="flex flex-1 flex-col min-w-0 transition-all duration-300 z-10">
         <div className="px-4 md:px-6 pt-4 md:pt-6">
           <div className="w-full">
@@ -106,13 +127,13 @@ export default function UserLayout({
         </div>
 
         <main className="flex-1 px-4 md:px-6 py-6">
-          {/* Konten akan muncul secara mulus (fade-in) setelah otorisasi selesai */}
           <div 
             className={`w-full transition-opacity duration-500 ease-out ${
-              isAuthorized ? "opacity-100" : "opacity-0"
+              mounted && isAuthorized ? "opacity-100" : "opacity-0"
             }`}
           >
-            {isAuthorized && children}
+            {/* Bagian kunci perbaikan Hydration: Tidak ada render children sampai mounted & authorized */}
+            {mounted && isAuthorized ? children : null}
           </div>
         </main>
       </div>
