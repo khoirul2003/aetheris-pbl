@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Sidebar from "@/app/components/Sidebar";
-import Navbar from "@/app/components/Navbar";
+import Navbar from "@/src/components/layout/AdminHeader";
 import {
   ClientSubscriptionModel,
   UserSubscriptionLog,
@@ -73,7 +73,7 @@ export default function AdminBillingPage() {
       <Sidebar role="admin" />
 
       <div className="flex flex-col flex-grow">
-        <Navbar title="Langganan User" />
+        <Navbar title="Langganan User" onToggleMobileMenu={() => {}} />
 
         <main className="ml-0 md:ml-64 pt-24 px-8 pb-8 space-y-6">
           {expiringSubscriptions.length > 0 && (
