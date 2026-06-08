@@ -6,51 +6,37 @@ import AdminLayout from "@/src/components/layout/AdminLayout";
 import {
   ClientSubscriptionModel,
   SubscriptionPackage,
+  UserSubscriptionLog,
 } from "@/models/clientSubscriptionModel";
 import {
   Layers,
+  CreditCard,
+  Filter,
+  AlertCircle,
   Edit,
   Plus,
   Check,
   X,
+  Calendar,
   DollarSign,
   Zap,
   Percent,
   Trash2,
-  AlertCircle,
-  CreditCard,
-  Filter,
-  Calendar,
 } from "lucide-react";
 import { doc, deleteDoc, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
-// Tipe untuk Log Langganan User (Disesuaikan dari branch-baihaqi)
-interface UserSubscriptionLog {
-  id: string;
-  restaurantName: string;
-  packageName: string;
-  startDate: Timestamp | null;
-  endDate: Timestamp | null;
-  amount: number;
-  paymentStatus: "paid" | "pending" | "expired";
-}
-
-// Tipe ekstensi untuk paket yang memiliki properti discount
-type ExtendedPackage = SubscriptionPackage & { discount?: number };
-
 // Helper function to calculate final price with discount
 function getPackageFinalPrice(pkg: SubscriptionPackage | undefined) {
   if (!pkg) return 0;
-  const extendedPkg = pkg as ExtendedPackage;
-  const discountPercent = extendedPkg.discount || 0;
+  const discountPercent = (pkg as any).discount || 0;
   return pkg.price - (pkg.price * discountPercent / 100);
 }
 
 export default function AdminSubscriptionsManagementPage() {
   const [packages, setPackages] = useState<SubscriptionPackage[]>([]);
-  const [subLogs, setSubLogs] = useState<UserSubscriptionLog[]>([]); // State tambahan dari branch-baihaqi
-  const [logFilter, setLogFilter] = useState<string>("ALL");
+  const [subLogs, setSubLogs] = useState<UserSubscriptionLog[]>([]);
+  const [logFilter, setLogFilter] = useState("ALL");
 
   const [editingPack, setEditingPack] = useState<SubscriptionPackage | null>(null);
   const [packPrice, setPackPrice] = useState<number | string>("");
@@ -78,11 +64,8 @@ export default function AdminSubscriptionsManagementPage() {
 
   useEffect(() => {
     const unsubPacks = ClientSubscriptionModel.subscribeToPackages((data) => setPackages(data));
-    
-    // Fallback atau inisialisasi untuk subLogs jika model menyediakannya
-    // Jika ada real-time subscription untuk logs, pasang di sini.
-    
-    return () => { unsubPacks(); };
+    const unsubLogs = ClientSubscriptionModel.subscribeToAllUserSubscriptions((data) => setSubLogs(data));
+    return () => { unsubPacks(); unsubLogs(); };
   }, []);
 
   const handleUpdatePackage = async () => {
@@ -102,14 +85,9 @@ export default function AdminSubscriptionsManagementPage() {
   const handleDeletePackage = async (pkg: SubscriptionPackage) => {
     if (confirm(`WARNING: Are you sure you want to PERMANENTLY DELETE the "${pkg.name}" tier package?\n\nThis action cannot be undone!`)) {
       try {
-        interface ModelWithDelete {
-          deletePackage?: (id: string) => Promise<void>;
-        }
-        
-        const model = ClientSubscriptionModel as ModelWithDelete;
-        
-        if (typeof model.deletePackage === 'function') {
-          await model.deletePackage(pkg.id);
+        // Coba memanggil dari model jika ada, jika tidak ada fallback hapus via Firestore
+        if ('deletePackage' in ClientSubscriptionModel) {
+          await (ClientSubscriptionModel as any).deletePackage(pkg.id);
         } else {
           await deleteDoc(doc(db, "packages", pkg.id));
         }
@@ -129,16 +107,14 @@ export default function AdminSubscriptionsManagementPage() {
       const generatedId = newPackage.name.trim().toLowerCase().replace(/\s+/g, '-');
       const featuresArray = newPackage.features.split(",").map((f) => f.trim()).filter((f) => f.length > 0);
       
-      const payload = {
+      await ClientSubscriptionModel.savePackage(generatedId, {
         name: newPackage.name.trim().toUpperCase(), 
         price: Number(newPackage.price) || 0, 
         maxSensors: Number(newPackage.maxSensors) || 0,
         historyDurationDays: Number(newPackage.historyDurationDays) || 0, 
         features: featuresArray, 
         isActive: true,
-      } as Partial<SubscriptionPackage> & { discount?: number };
-
-      await ClientSubscriptionModel.savePackage(generatedId, payload);
+      });
       
       alert(`New tier package "${newPackage.name.toUpperCase()}" successfully registered!`);
       setShowAddForm(false);
@@ -176,7 +152,7 @@ export default function AdminSubscriptionsManagementPage() {
 
     if (confirm(`Apply ${discountPercent}% discount?\nThe new billing amount will be Rp ${newAmount.toLocaleString("en-US")}.`)) {
       try {
-        await (ClientSubscriptionModel as any).updateUserSubscription(log.id, { amount: newAmount });
+        await ClientSubscriptionModel.updateUserSubscription(log.id, { amount: newAmount });
         alert(`Discount successfully applied! New bill is Rp ${newAmount.toLocaleString("en-US")}.`);
       } catch (err) {
         console.error(err);
@@ -198,14 +174,14 @@ export default function AdminSubscriptionsManagementPage() {
   });
 
   return (
-    <AdminLayout title="Package & Billing Management" description="Manage subscription packages, limits, and pricing structures.">
+    <AdminLayout title="Package & Billing Management" description="Manage subscription packages, billing, and payment history.">
       <div className="space-y-8">
           {expiringLogs.length > 0 && (
-            <div className="p-4 rounded-2xl flex items-start gap-3.5 text-xs font-semibold shadow-sm" style={{ backgroundColor: "rgba(245, 158, 11, 0.1)", borderColor: "rgba(245, 158, 11, 0.2)", borderWidth: 1, color: "var(--card-title)" }}>
+            <div className="bg-amber-50 border border-amber-200 text-amber-900 p-4 rounded-2xl flex items-start gap-3.5 text-xs font-semibold shadow-sm">
               <div className="bg-amber-500 text-white p-2 rounded-xl shrink-0"><AlertCircle size={18} /></div>
               <div className="space-y-1">
-                <p className="font-bold text-sm text-amber-700 dark:text-amber-500">User Subscription Expiry Warning</p>
-                <p style={{ color: "var(--card-text)" }}>There are <span className="text-amber-700 dark:text-amber-500 font-bold">{expiringLogs.length} restaurant partners</span> whose feature license will expire in less than 7 days.</p>
+                <p className="font-bold text-sm text-amber-900">User Subscription Expiry Warning</p>
+                <p className="text-slate-600">There are <span className="text-amber-700 font-bold">{expiringLogs.length} restaurant partners</span> whose feature license will expire in less than 7 days.</p>
               </div>
             </div>
           )}
@@ -213,50 +189,322 @@ export default function AdminSubscriptionsManagementPage() {
           <section className="space-y-5">
             <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
               <div>
-                <h3 className="text-lg font-bold flex items-center gap-2" style={{ color: "var(--card-title)" }}>
-                  <Layers size={20} style={{ color: "var(--accent-primary)" }} /> Partnership Package Configuration
+                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <Layers size={20} className="text-[#4D6344]" /> Partnership Package Configuration
                 </h3>
-                <p className="text-xs mt-0.5" style={{ color: "var(--card-text-muted)" }}>Manage feature limits, automated sensor quotas, and platform commercial pricing schemes.</p>
+                <p className="text-slate-500 text-xs mt-0.5">Manage feature limits, automated sensor quotas, and platform commercial pricing schemes.</p>
               </div>
-              <button onClick={() => setShowAddForm(!showAddForm)} className="text-white px-4 py-2.5 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all shadow-sm cursor-pointer border-none hover:opacity-80" style={{ backgroundColor: "var(--accent-primary)" }}>
+              <button onClick={() => setShowAddForm(!showAddForm)} className="bg-[#4D6344] hover:bg-[#3B4D34] text-white px-4 py-2.5 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all shadow-sm cursor-pointer">
                 <Plus size={14} /> Add New Tier
               </button>
             </div>
 
             {showAddForm && (
-              <div className="p-6 rounded-2xl shadow-md grid grid-cols-1 md:grid-cols-3 gap-5 animate-in fade-in zoom-in-95 duration-200" style={{ backgroundColor: "var(--card-bg-solid)", borderWidth: 1, borderColor: "var(--card-surface-border)" }}>
-                <div className="md:col-span-3 pb-2 flex justify-between items-center" style={{ borderBottomWidth: 1, borderBottomColor: "var(--card-surface-border)" }}>
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-md grid grid-cols-1 md:grid-cols-3 gap-5 animate-in fade-in zoom-in-95 duration-200">
+                <div className="md:col-span-3 border-b border-slate-100 pb-2 flex justify-between items-center">
                   <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-lg" style={{ backgroundColor: "var(--accent-primary-hover)", color: "var(--accent-primary)" }}><Zap size={14} /></div>
-                    <span className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--accent-primary)" }}>New Subscription Tier Registration Form</span>
+                    <div className="bg-[#EAF2EB] p-1.5 rounded-lg text-[#4D6344]"><Zap size={14} /></div>
+                    <span className="text-xs font-bold text-[#4D6344] uppercase tracking-wider">New Subscription Tier Registration Form</span>
                   </div>
-                  <button type="button" onClick={() => setShowAddForm(false)} className="cursor-pointer p-1 rounded-lg hover:opacity-80 border-none bg-transparent" style={{ color: "var(--card-text-muted)" }}><X size={16} /></button>
+                  <button type="button" onClick={() => setShowAddForm(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer p-1 rounded-lg hover:bg-slate-50"><X size={16} /></button>
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider block mb-1.5" style={{ color: "var(--card-text-faint)" }}>Package Tier Name</label>
+                  <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1.5">Package Tier Name</label>
                   <input
                     type="text" required placeholder="e.g. Enterprise" value={newPackage.name}
                     onChange={(e) => setNewPackage({ ...newPackage, name: e.target.value })}
-                    className="border focus:ring-2 px-4 py-2.5 rounded-xl text-xs w-full font-bold outline-none transition-all shadow-inner" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-surface-border)", color: "var(--card-text)", "--tw-ring-color": "var(--accent-primary)" } as React.CSSProperties}
+                    className="border border-slate-200 focus:ring-2 focus:ring-[#4D6344]/20 focus:border-[#4D6344] px-4 py-2.5 rounded-xl text-xs w-full bg-slate-50 font-bold outline-none transition-all"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider block mb-1.5" style={{ color: "var(--card-text-faint)" }}>Normal Price (IDR)</label>
+                  <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1.5">Normal Price (IDR)</label>
                   <div className="relative flex items-center">
-                    <DollarSign size={12} className="absolute left-3" style={{ color: "var(--card-text-muted)" }} />
+                    <DollarSign size={12} className="absolute left-3 text-slate-400" />
                     <input
                       type="number" required placeholder="0" value={newPackage.price}
                       onChange={(e) => setNewPackage({ ...newPackage, price: e.target.value === "" ? "" : Number(e.target.value) })}
-                      className="border focus:ring-2 pl-8 pr-3 py-2.5 rounded-xl text-xs w-full font-mono outline-none transition-all shadow-inner [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-surface-border)", color: "var(--card-text)", "--tw-ring-color": "var(--accent-primary)" } as React.CSSProperties}
+                      className="border border-slate-200 focus:ring-2 focus:ring-[#4D6344]/20 focus:border-[#4D6344] pl-8 pr-3 py-2.5 rounded-xl text-xs w-full font-mono bg-slate-50 outline-none transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider block mb-1.5" style={{ color: "var(--card-text-faint)" }}>Discount Percentage (%)</label>
+                  <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1.5">Discount Percentage (%)</label>
                   <div className="relative flex items-center">
-                    <Percent size={12} className="absolute left-3 text-rose-500" />
+                    <Percent size={12} className="absolute left-3 text-rose-400" />
                     <input
-                      type
+                      type="number" min="0" max="100" required placeholder="0" value={newPackage.discount}
+                      onChange={(e) => setNewPackage({ ...newPackage, discount: e.target.value === "" ? "" : Number(e.target.value) })}
+                      className="border border-rose-200 focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 pl-8 pr-3 py-2.5 rounded-xl text-xs w-full font-mono bg-rose-50/50 outline-none transition-all text-rose-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1.5">Maximum Device Quota</label>
+                  <input 
+                    type="number" required placeholder="0" value={newPackage.maxSensors} 
+                    onChange={(e) => setNewPackage({ ...newPackage, maxSensors: e.target.value === "" ? "" : Number(e.target.value) })}
+                    className="border border-slate-200 focus:ring-2 focus:ring-[#4D6344]/20 focus:border-[#4D6344] px-4 py-2.5 rounded-xl text-xs w-full font-mono bg-slate-50 font-bold text-slate-700 outline-none transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1.5">Data History Duration (Days)</label>
+                  <input
+                    type="number" required placeholder="0" value={newPackage.historyDurationDays}
+                    onChange={(e) => setNewPackage({ ...newPackage, historyDurationDays: e.target.value === "" ? "" : Number(e.target.value) })}
+                    className="border border-slate-200 p-2.5 rounded-xl text-xs w-full font-mono bg-slate-50 outline-none focus:ring-2 focus:ring-[#4D6344]/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                </div>
+                <div className="md:col-span-1">
+                  <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1.5">Features List (Comma separated)</label>
+                  <input
+                    type="text" placeholder="SMS Alert, Premium Chart" value={newPackage.features}
+                    onChange={(e) => setNewPackage({ ...newPackage, features: e.target.value })}
+                    className="border border-slate-200 p-2.5 rounded-xl text-xs w-full bg-slate-50 outline-none focus:ring-2 focus:ring-[#4D6344]/20"
+                  />
+                </div>
+
+                <div className="md:col-span-3 flex justify-end gap-2 pt-3 border-t border-slate-100">
+                  <button type="button" onClick={() => setShowAddForm(false)} className="px-4 py-2 text-xs bg-slate-100 text-slate-600 rounded-xl font-bold hover:bg-slate-200 cursor-pointer">Cancel</button>
+                  <button type="submit" onClick={handleCreatePackage} className="px-4 py-2 text-xs bg-[#4D6344] text-white rounded-xl font-bold shadow-sm hover:bg-[#3B4D34] cursor-pointer">Register Package</button>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {packages.map((pkg) => {
+                const isEditing = editingPack?.id === pkg.id;
+                const pkgDiscount = (pkg as any).discount || 0; 
+                const hasDiscount = pkgDiscount > 0;
+                const finalPrice = getPackageFinalPrice(pkg);
+
+                return (
+                  <div key={pkg.id} className={`bg-white rounded-2xl border transition-all duration-300 p-6 shadow-sm flex flex-col justify-between space-y-5 hover:shadow-md relative overflow-hidden ${isEditing ? "border-[#4D6344] shadow-md ring-4 ring-[#4D6344]/5" : "border-slate-200"}`}>
+                    {pkg.isActive && !isEditing && (
+                      <div className="absolute top-0 right-0 w-16 h-16 pointer-events-none overflow-hidden">
+                        <div className="absolute transform rotate-45 bg-[#4D6344] text-white text-[8px] font-bold text-center py-0.5 w-24 top-2 -right-6 shadow-sm">
+                          ACTIVE
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-bold text-slate-900 text-base">{pkg.name}</h4>
+                          <p className="text-[11px] text-slate-400 font-medium mt-0.5">ID: <span className="font-mono text-slate-500">{pkg.id}</span></p>
+                        </div>
+                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full border ${pkg.isActive ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-slate-50 text-slate-400 border-slate-100"}`}>
+                          {pkg.isActive ? "OPERATIONAL" : "INACTIVE"}
+                        </span>
+                      </div>
+
+                      <div className="bg-slate-50 p-3.5 rounded-xl grid grid-cols-2 gap-4 text-xs font-medium text-slate-600">
+                        <div>
+                          <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">Max Quota</span>
+                          {isEditing ? (
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <input 
+                                type="number" 
+                                placeholder="0"
+                                value={packMaxSensors} 
+                                onChange={(e) => setPackMaxSensors(e.target.value === "" ? "" : Number(e.target.value))} 
+                                className="w-14 px-2 py-1 bg-white border border-slate-300 rounded focus:border-[#4D6344] focus:ring-1 focus:ring-[#4D6344] outline-none font-bold text-slate-900 transition-all text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              />
+                              <span className="text-slate-500">Devices</span>
+                            </div>
+                          ) : (
+                            <p className="text-slate-900 font-bold mt-0.5">{pkg.maxSensors} Devices</p>
+                          )}
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">History Log Period</span>
+                          {/* EDIT MODE: Input untuk History Log Period */}
+                          {isEditing ? (
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <input 
+                                type="number" 
+                                placeholder="0"
+                                value={packHistoryDurationDays} 
+                                onChange={(e) => setPackHistoryDurationDays(e.target.value === "" ? "" : Number(e.target.value))} 
+                                className="w-14 px-2 py-1 bg-white border border-slate-300 rounded focus:border-[#4D6344] focus:ring-1 focus:ring-[#4D6344] outline-none font-bold text-slate-900 transition-all text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              />
+                              <span className="text-slate-500">Days Log</span>
+                            </div>
+                          ) : (
+                            <p className="text-slate-900 font-bold mt-0.5">{pkg.historyDurationDays} Days Log</p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="pt-1">
+                        {isEditing ? (
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Normal Price (Rp)</span>
+                              <input 
+                                type="number" 
+                                placeholder="0"
+                                value={packPrice} 
+                                onChange={(e) => setPackPrice(e.target.value === "" ? "" : Number(e.target.value))} 
+                                className="w-28 text-right bg-slate-50 border border-slate-300 rounded px-2 py-1 focus:border-[#4D6344] outline-none text-sm font-mono font-bold text-slate-900 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              />
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-rose-500">Discount (%)</span>
+                              <div className="flex items-center gap-1">
+                                <input 
+                                  type="number" min="0" max="100"
+                                  placeholder="0"
+                                  value={packDiscount} 
+                                  onChange={(e) => setPackDiscount(e.target.value === "" ? "" : Number(e.target.value))} 
+                                  className="w-16 text-right bg-rose-50 border border-rose-200 rounded px-2 py-1 focus:border-rose-500 outline-none text-sm font-mono font-bold text-rose-600 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                />
+                                <span className="text-xs font-bold text-rose-500">%</span>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col">
+                            {hasDiscount && (
+                              <p className="text-sm font-mono font-bold text-slate-400 line-through decoration-rose-500/50 mb-0.5 flex items-center gap-2">
+                                Rp {pkg.price.toLocaleString("en-US")}
+                                <span className="no-underline bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded text-[10px] font-bold">-{pkgDiscount}%</span>
+                              </p>
+                            )}
+                            <p className="text-2xl font-mono font-black text-slate-900 flex items-baseline gap-1">
+                              Rp {finalPrice.toLocaleString("en-US")} <span className="text-xs font-normal text-slate-400 font-sans">/ month</span>
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {pkg.features && pkg.features.length > 0 && (
+                        <div className="space-y-1.5 pt-1">
+                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Tier Main Features:</span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {pkg.features.map((feat, idx) => (
+                              <span key={idx} className="bg-[#EAF2EB] text-[#4D6344] border border-[#4D6344]/20 px-2 py-0.5 rounded-lg text-[10px] font-semibold flex items-center gap-1">
+                                <Check size={10} strokeWidth={3} className="text-[#4D6344]" /> {feat}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex gap-2 pt-2 border-t border-slate-100 mt-2">
+                      {isEditing ? (
+                        <>
+                          <button type="button" onClick={() => setEditingPack(null)} className="flex-1 bg-slate-100 border border-slate-200 text-slate-600 hover:bg-slate-200 text-xs font-bold py-2.5 rounded-xl flex items-center justify-center transition-colors cursor-pointer mt-2">
+                            Cancel
+                          </button>
+                          <button type="button" onClick={handleUpdatePackage} className="flex-1 bg-[#4D6344] text-white hover:bg-[#3B4D34] text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1 transition-colors cursor-pointer shadow-sm mt-2">
+                            <Check size={14} /> Save Specs
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button type="button" onClick={() => { 
+                            setEditingPack(pkg); 
+                            setPackPrice(pkg.price); 
+                            setPackDiscount((pkg as any).discount || 0); 
+                            setPackMaxSensors(pkg.maxSensors); 
+                            setPackHistoryDurationDays(pkg.historyDurationDays); // Bind nilai awal
+                          }} className="flex-1 bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer mt-2">
+                            <Edit size={13} /> Edit Specs
+                          </button>
+                          <button type="button" onClick={() => handleTogglePackActive(pkg)} className={`flex-1 text-xs font-bold py-2.5 rounded-xl border transition-colors cursor-pointer mt-2 ${pkg.isActive ? "bg-rose-50 text-rose-600 border-rose-200 hover:bg-rose-100/60" : "bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100/60"}`}>
+                            {pkg.isActive ? "Deactivate" : "Activate"}
+                          </button>
+                          {/* TOMBOL DELETE PACKAGE */}
+                          <button type="button" onClick={() => handleDeletePackage(pkg)} title="Hapus Paket" className="px-3 bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-bold py-2.5 rounded-xl flex items-center justify-center transition-colors cursor-pointer mt-2 shadow-sm">
+                            <Trash2 size={16} />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="space-y-4">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-slate-200 pb-3">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-1.5">
+                  <CreditCard size={18} className="text-[#4D6344]" /> Transaction Log & Subscription Billing Status
+                </h3>
+                <p className="text-slate-500 text-xs mt-0.5">Record list of all active packages and commercial billing history of all users.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Filter size={14} className="text-[#4D6344]" />
+                <select
+                  value={logFilter} onChange={(e) => setLogFilter(e.target.value)}
+                  className="bg-white border border-slate-200 p-2 rounded-xl text-xs font-semibold shadow-sm outline-none focus:ring-2 focus:ring-[#4D6344]/20 cursor-pointer"
+                >
+                  <option value="ALL">All Partner Payments</option>
+                  <option value="paid">✅ Active / Paid</option>
+                  <option value="pending">⏳ Pending Payment</option>
+                  <option value="expired">❌ Expired</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left table-auto">
+                  <thead className="bg-slate-50 text-slate-400 text-xs font-bold uppercase tracking-wider border-b border-slate-200">
+                    <tr>
+                      <th className="px-6 py-4">Restaurant Name</th>
+                      <th className="px-6 py-4">Tier Package</th>
+                      <th className="px-6 py-4">Validity Period</th>
+                      <th className="px-6 py-4">Billing Amount</th>
+                      <th className="px-6 py-4">Transaction Status</th>
+                      <th className="px-6 py-4 text-center">Authority Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-slate-700 text-xs">
+                    {filteredLogs.map((log) => {
+                      const startStr = log.startDate ? log.startDate.toDate().toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" }) : "-";
+                      const endStr = log.endDate ? log.endDate.toDate().toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" }) : "-";
+                      return (
+                        <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="px-6 py-4 font-bold text-slate-900">{log.restaurantName}</td>
+                          <td className="px-6 py-4"><span className="bg-slate-100 text-slate-700 font-bold px-2 py-0.5 rounded text-[10px] uppercase tracking-wide font-mono">{log.packageName}</span></td>
+                          <td className="px-6 py-4 text-slate-500 font-medium"><div className="flex items-center gap-1.5"><Calendar size={12} className="text-slate-400 shrink-0" /><span>{startStr} to <span className="font-bold text-slate-700">{endStr}</span></span></div></td>
+                          <td className="px-6 py-4 font-mono font-bold text-slate-900">Rp {log.amount.toLocaleString("en-US")}</td>
+                          <td className="px-6 py-4">
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${log.paymentStatus === "paid" ? "bg-emerald-50 text-emerald-700" : log.paymentStatus === "pending" ? "bg-amber-50 text-amber-700" : "bg-rose-50 text-rose-700"}`}>
+                              {log.paymentStatus === "paid" ? "PAID / ACTIVE" : log.paymentStatus === "pending" ? "PENDING" : "EXPIRED"}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 flex flex-wrap gap-2 justify-center items-center">
+                            <button type="button" onClick={() => handleManualExtend(log)} className="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold px-2.5 py-1 rounded-lg text-[10px] transition-all cursor-pointer shadow-sm">Manual Extend</button>
+                            <button type="button" onClick={() => { const pack = prompt("Enter new package name (basic / pro):", "pro"); if (pack) alert(`Tier transfer session for ${log.restaurantName} to ${pack} tier was successful.`); }} className="bg-[#EAF2EB] hover:bg-[#C2D1C0] text-[#4D6344] font-bold px-2.5 py-1 rounded-lg text-[10px] transition-all cursor-pointer">
+                              Change Tier
+                            </button>
+                            <button type="button" onClick={() => handleGiveDiscount(log)} className="bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-600 font-bold px-2.5 py-1 rounded-lg text-[10px] transition-all cursor-pointer shadow-sm">
+                              Give Discount
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {filteredLogs.length === 0 && (
+                      <tr><td colSpan={6} className="text-center text-slate-400 py-12 text-xs font-medium">No user subscription billing history found.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+      </div>
+    </AdminLayout>
+  );
+}
