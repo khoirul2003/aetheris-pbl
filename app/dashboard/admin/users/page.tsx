@@ -136,16 +136,6 @@ export default function AdminUsersPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
               <input type="text" placeholder="Search name, email, ID..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full h-11 rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-4 text-sm outline-none focus:border-[#4D6344] focus:ring-2 focus:ring-[#4D6344]/20 transition-all" />
             </div>
-            <select value={packageFilter} onChange={(e) => setPackageFilter(e.target.value)} className="rounded-xl h-11 border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-[#4D6344] focus:ring-2 focus:ring-[#4D6344]/20 cursor-pointer">
-              <option value="">All Packages</option>
-              {packages.map((pkg) => <option key={pkg.id} value={pkg.id}>{pkg.name}</option>)}
-            </select>
-            {/* FIXED: Removed 'as any' and used proper typing */}
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as "" | "active" | "inactive")} className="rounded-xl h-11 border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-[#4D6344] focus:ring-2 focus:ring-[#4D6344]/20 cursor-pointer">
-              <option value="">All Statuses</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
