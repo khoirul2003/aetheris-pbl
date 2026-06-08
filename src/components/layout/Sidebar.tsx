@@ -10,6 +10,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { signOut } from "firebase/auth";
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import ThemeToggle from "@/src/components/ThemeToggle";
 
 interface SidebarProps {
   role?: "admin" | "user";
@@ -91,24 +92,24 @@ export default function Sidebar({
     const collapsed = isMobile ? false : isCollapsed;
 
     return (
-      <div className="flex h-full w-full flex-col bg-[#F0F2EB] text-[#1A1F24] border-r border-slate-200/60 relative select-none">
+      <div className="flex h-full w-full flex-col text-[var(--sidebar-text)] border-r border-[var(--sidebar-border)] relative select-none transition-colors duration-300" style={{ backgroundColor: "var(--sidebar-bg)" }}>
         
         {/* 1. HEADER LOGO */}
-        <div className={`flex items-center border-b border-slate-200/60 min-h-16.25 transition-all duration-300 ease-in-out ${collapsed ? "justify-center px-0" : "justify-between px-6"}`}>
+        <div className={`flex items-center border-b border-[var(--sidebar-border)] min-h-16.25 transition-all duration-300 ease-in-out ${collapsed ? "justify-center px-0" : "justify-between px-6"}`}>
           <div className="flex items-center">
             <div className="relative shrink-0 flex items-center justify-center w-10 h-10">
               <Image src="/logo.png" alt="Aetheris Logo" width={34} height={34} className="object-contain" priority />
             </div>
             <h1 className={`flex items-center text-lg font-bold tracking-tight overflow-hidden whitespace-nowrap transition-all duration-300 ease-in-out ${collapsed ? "max-w-0 opacity-0 ml-0" : "max-w-50 opacity-100 ml-2.5"}`}>
-              <span className="text-[#1A1F24]">Aetheris</span>
-              <span className="text-[10px] bg-[#EAF2EB] text-[#4D6344] px-1.5 py-0.5 rounded ml-1.5 uppercase font-bold shrink-0 shadow-sm">
+              <span className="text-[var(--sidebar-text)]">Aetheris</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded ml-1.5 uppercase font-bold shrink-0 shadow-sm" style={{ backgroundColor: "var(--sidebar-badge-bg)", color: "var(--sidebar-badge-text)" }}>
                 {role}
               </span>
             </h1>
           </div>
 
           {!collapsed && (
-            <button type="button" onClick={() => setIsMobileOpen(false)} className="md:hidden shrink-0 p-1 rounded-lg text-slate-500 hover:bg-[#E5E8DE] hover:text-slate-800 transition-colors border-none cursor-pointer">
+            <button type="button" onClick={() => setIsMobileOpen(false)} className="md:hidden shrink-0 p-1 rounded-lg text-[var(--sidebar-text-muted)] hover:bg-[var(--sidebar-hover)] hover:text-[var(--sidebar-text)] transition-colors border-none cursor-pointer">
               <X size={18} />
             </button>
           )}
@@ -117,7 +118,8 @@ export default function Sidebar({
         <button
           type="button"
           onClick={handleToggleCollapse}
-          className="hidden md:flex absolute -right-3.5 top-5 h-7 w-7 items-center justify-center rounded-full border border-slate-200/60 bg-white text-slate-500 shadow-sm hover:bg-slate-50 hover:text-slate-800 transition-all z-50 cursor-pointer"
+          className="hidden md:flex absolute -right-3.5 top-5 h-7 w-7 items-center justify-center rounded-full border border-[var(--sidebar-border)] text-[var(--sidebar-text-muted)] shadow-sm hover:text-[var(--sidebar-text)] transition-all z-50 cursor-pointer"
+          style={{ backgroundColor: "var(--sidebar-collapse-bg)" }}
         >
           {collapsed ? <ChevronRight size={14} strokeWidth={2.5} /> : <ChevronLeft size={14} strokeWidth={2.5} />}
         </button>
@@ -135,8 +137,13 @@ export default function Sidebar({
                 className={`group relative flex items-center rounded-xl transition-all duration-300 h-11 cursor-pointer border-none
                   ${collapsed ? "w-11 px-0 mx-auto justify-center" : "w-full px-4 justify-start"}
                   ${active 
-                    ? "bg-[#4D6344] text-white shadow-md shadow-[#4D6344]/10" 
-                    : "text-[#5B636B] hover:bg-[#E3E7DC] hover:text-[#1A1F24] font-medium bg-transparent"}`}
+                    ? "text-[var(--sidebar-active-text)] shadow-md" 
+                    : "text-[var(--sidebar-text-muted)] hover:text-[var(--sidebar-text)] font-medium bg-transparent"}`}
+                style={active 
+                  ? { backgroundColor: "var(--sidebar-active-bg)", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)" } 
+                  : undefined}
+                onMouseEnter={(e) => { if (!active) e.currentTarget.style.backgroundColor = "var(--sidebar-hover)"; }}
+                onMouseLeave={(e) => { if (!active) e.currentTarget.style.backgroundColor = "transparent"; }}
               >
                 <Icon size={18} className="shrink-0" strokeWidth={active ? 2.5 : 2} /> 
                 <span className={`overflow-hidden whitespace-nowrap transition-all duration-300 ease-in-out text-left ${collapsed ? "max-w-0 opacity-0 ml-0" : "max-w-50 opacity-100 ml-3"}`}>
@@ -152,18 +159,22 @@ export default function Sidebar({
           })}
         </nav>
 
-        {/* 3. FOOTER (PROFIL & LOGOUT) */}
-        <div className="border-t border-slate-200/60 mt-auto bg-[#E8EBE1]">
+        {/* 3. FOOTER (THEME TOGGLE, PROFIL & LOGOUT) */}
+        <div className="border-t border-[var(--sidebar-border)] mt-auto transition-colors duration-300" style={{ backgroundColor: "var(--sidebar-footer-bg)" }}>
           <div className="py-4 flex flex-col gap-3 px-3">
+            
+            {/* Dark/Light Mode Toggle */}
+            <ThemeToggle isCollapsed={collapsed} />
+
             <div className={`flex items-center h-10 transition-all duration-300 ease-in-out ${collapsed ? "justify-center" : "px-1"}`}>
-              <div className="w-10 h-10 rounded-full bg-white border border-[#D1D7C7] text-[#4D6344] flex items-center justify-center text-xs font-bold shrink-0 shadow-sm">
+              <div className="w-10 h-10 rounded-full border text-[var(--sidebar-badge-text)] flex items-center justify-center text-xs font-bold shrink-0 shadow-sm" style={{ backgroundColor: "var(--sidebar-avatar-bg)", borderColor: "var(--sidebar-avatar-border)" }}>
                 {role === "admin" ? "AD" : "PR"}
               </div>
               <div className={`overflow-hidden whitespace-nowrap transition-all duration-300 ease-in-out text-left ${collapsed ? "max-w-0 opacity-0 ml-0" : "max-w-45 opacity-100 ml-3"}`}>
-                <p className="text-sm font-bold text-[#1A1F24] leading-tight truncate">
+                <p className="text-sm font-bold text-[var(--sidebar-text)] leading-tight truncate">
                   {role === "admin" ? "Administrator" : "Partner Restaurant"}
                 </p>
-                <p className="text-[11px] text-[#5B636B] truncate mt-0.5 font-medium">
+                <p className="text-[11px] text-[var(--sidebar-text-muted)] truncate mt-0.5 font-medium">
                   {userEmail || (role === "admin" ? "Platform Control" : "Pro Plan")}
                 </p>
               </div>
@@ -173,8 +184,9 @@ export default function Sidebar({
               type="button"
               onClick={handleLogout}
               disabled={isLoggingOut}
-              className={`group relative flex items-center rounded-xl text-[#5B636B] hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-all duration-300 ease-in-out h-10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed
-                ${collapsed ? "w-10 px-0 mx-auto justify-center bg-transparent border-none" : "w-full justify-start px-3 border border-[#D1D7C7] bg-[#F0F2EB] shadow-xs"}`}
+              className={`group relative flex items-center rounded-xl text-[var(--sidebar-text-muted)] hover:bg-red-50 hover:text-red-600 hover:border-red-100 dark:hover:bg-red-900/20 dark:hover:text-red-400 dark:hover:border-red-800/30 transition-all duration-300 ease-in-out h-10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed
+                ${collapsed ? "w-10 px-0 mx-auto justify-center bg-transparent border-none" : "w-full justify-start px-3 border shadow-xs"}`}
+              style={collapsed ? undefined : { backgroundColor: "var(--logout-bg)", borderColor: "var(--logout-border)" }}
             >
               {isLoggingOut && collapsed ? (
                 <Loader2 size={16} className="shrink-0 animate-spin text-red-500" />
@@ -221,13 +233,13 @@ export default function Sidebar({
       </aside>
 
       {/* MOBILE SIDEBAR */}
-      <aside className={`md:hidden fixed flex-col inset-y-0 left-0 z-50 w-65 bg-[#F0F2EB] h-screen transition-transform duration-300 ease-in-out shadow-2xl ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}`}>
+      <aside className={`md:hidden fixed flex-col inset-y-0 left-0 z-50 w-65 h-screen transition-transform duration-300 ease-in-out shadow-2xl ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}`} style={{ backgroundColor: "var(--sidebar-bg)" }}>
         {renderSidebarContent(true)}
       </aside>
       
       {/* MOBILE BACKDROP OVERLAY */}
       {isMobileOpen && (
-        <div onClick={() => setIsMobileOpen(false)} className="md:hidden fixed inset-0 z-45 bg-[#1A1F24]/50 backdrop-blur-sm transition-opacity duration-300" />
+        <div onClick={() => setIsMobileOpen(false)} className="md:hidden fixed inset-0 z-45 backdrop-blur-sm transition-opacity duration-300" style={{ backgroundColor: "var(--mobile-overlay)" }} />
       )}
     </>
   );
