@@ -42,8 +42,14 @@ export default function AdminAnalyticsPage() {
 
     // Kita butuh data user lengkap untuk melihat tanggal dibuat (createdAt)
     const fetchFullUsersData = async () => {
-      const usersData = await ClientProfileModel.getAllProfiles(); 
-      setAllUsers(usersData);
+      const profileFetcher = (ClientProfileModel as any).getAllUsers ?? (ClientProfileModel as any).getAllProfiles;
+      if (typeof profileFetcher === "function") {
+        const usersData = await profileFetcher();
+        setAllUsers(usersData || []);
+      } else {
+        console.warn("ClientProfileModel: tidak ditemukan getAllUsers/getAllProfiles");
+        setAllUsers([]);
+      }
     };
     fetchFullUsersData();
 
