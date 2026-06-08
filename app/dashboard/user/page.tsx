@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import UserLayout from "@/src/components/layout/UserLayout"; // Menggunakan layout User yang baru
+import UserLayout from "@/src/components/layout/UserLayout"; 
 import { auth, db } from "@/lib/firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
 import {
@@ -78,12 +78,12 @@ export default function UserDashboard() {
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      setLoadingAuth(false);
+      loadingAuth && setLoadingAuth(false);
     });
     return () => unsubscribeAuth();
-  }, []);
+  }, [loadingAuth]);
 
-  // 2. Connect All Components to Database 100% Dynamically
+  // 2. Connect All Components to Database 100% Dynamically (Updated for Hadoop Pipeline)
   useEffect(() => {
     if (loadingAuth || !user) return;
 
@@ -94,6 +94,7 @@ export default function UserDashboard() {
       collection(db, "sensors"),
       where("userId", "==", currentUserId),
     );
+
     const unsubscribeSensors = onSnapshot(
       sensorsQ,
       (snapshot) => {
@@ -107,11 +108,11 @@ export default function UserDashboard() {
 
         if (unsubscribeSummary) unsubscribeSummary();
 
+        // FIX: Menyesuaikan struktur data global per hari hasil upload Hadoop Big Data script
         const summaryQ = query(
           collection(db, "dailySummaries"),
-          where("userId", "==", currentUserId),
-          orderBy("date", "asc"),
-          limit(7),
+          orderBy("date", "desc"),
+          limit(7)
         );
 
         unsubscribeSummary = onSnapshot(summaryQ, (summarySnapshot) => {
@@ -121,12 +122,14 @@ export default function UserDashboard() {
             const data = doc.data();
             const rawDate = data.date ? data.date.split("-") : [];
             const formattedDate =
-              rawDate.length === 3 ? `${rawDate[1]}/${rawDate[2]}` : data.date; // Changed to MM/DD format
+              rawDate.length === 3 ? `${rawDate[1]}/${rawDate[2]}` : data.date; 
 
             const chartRow: Record<string, string | number> = {
               time: formattedDate,
+              rawDateStr: data.date || "", 
             };
 
+            // Memetakan map ID dari database (e.g. sensor_002) ke nama sensor grafik secara dinamis
             sensorList.forEach((sensor) => {
               chartRow[sensor.name] = data.avgGasPerSensor?.[sensor.id] || 0;
             });
@@ -135,7 +138,11 @@ export default function UserDashboard() {
           });
 
           if (history.length > 0) {
-            setChartHistory(history);
+            // Urutkan kronologis data dari tanggal terlama ke terbaru (Kiri ke Kanan)
+            const chronologicalHistory = history.sort((a, b) => 
+              String(a.rawDateStr).localeCompare(String(b.rawDateStr))
+            );
+            setChartHistory(chronologicalHistory);
           }
         });
       },
@@ -151,6 +158,7 @@ export default function UserDashboard() {
       orderBy("createdAt", "desc"),
       limit(5),
     );
+
     const unsubscribeAlerts = onSnapshot(alertsQ, (snapshot) => {
       const logs: AlertLog[] = [];
       let unresolvedCount = 0;
@@ -210,7 +218,7 @@ export default function UserDashboard() {
           [sensor.id]: data,
         }));
 
-        setStats((prev: typeof stats) => ({
+        setStats((prev) => ({
           ...prev,
           lastCheck: timeString,
         }));
@@ -350,268 +358,4 @@ export default function UserDashboard() {
             </p>
           </div>
 
-          <div className="p-4 md:p-5 rounded-2xl shadow-sm" style={{ backgroundColor: "var(--card-bg-solid)", borderWidth: 1, borderColor: "var(--card-surface-border)" }}>
-            <p className="text-[10px] md:text-[11px] font-bold mb-1 uppercase tracking-wider" style={{ color: "var(--card-text-muted)" }}>
-              Last Checked
-            </p>
-            <h2 className="text-base md:text-xl font-black mb-0.5" style={{ color: "var(--card-title)" }}>
-              {stats.lastCheck}
-            </h2>
-            <p className="text-[10px] md:text-xs font-medium" style={{ color: "var(--card-text-muted)" }}>
-              Real-time Sync
-            </p>
-          </div>
-        </div>
-
-        {/* MIDDLE LAYOUT SECTION */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* ALL AREAS STATUS TABLE */}
-          <div className="p-4 md:p-6 rounded-2xl shadow-sm flex flex-col h-full" style={{ backgroundColor: "var(--card-bg-solid)", borderWidth: 1, borderColor: "var(--card-surface-border)" }}>
-            <h3 className="text-xs font-bold tracking-wider uppercase mb-4 flex items-center gap-2" style={{ color: "var(--card-text-muted)" }}>
-              <LayoutDashboard size={14} /> All Areas
-              Status
-            </h3>
-            <div className="space-y-0 flex-grow divide-y" style={{ borderColor: "var(--card-surface-border)" }}>
-              {dynamicSensors.length === 0 ? (
-                <p className="text-xs py-6 text-center font-medium" style={{ color: "var(--card-text-muted)" }}>
-                  No sensors found.
-                </p>
-              ) : (
-                dynamicSensors.map((sensor) => {
-                  const live = liveSensors[sensor.id];
-                  const isWarning =
-                    live?.status === "warning" || live?.status === "danger";
-
-                  return (
-                    <div
-                      key={sensor.id}
-                      className="flex items-center justify-between py-3.5 first:pt-0 last:pb-0 gap-2"
-                    >
-                      <div className="flex items-center gap-3 md:gap-4 min-w-0">
-                        <div
-                          className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                            isWarning
-                              ? "bg-red-50 dark:bg-red-500/10 text-red-500"
-                              : "bg-[#E9F2E4] dark:bg-[#4A6741]/15 text-[#4A6741] dark:text-[#8fac7e]"
-                          }`}
-                        >
-                          {isWarning ? (
-                            <AlertTriangle size={16} />
-                          ) : (
-                            <Check size={16} strokeWidth={3} />
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-bold text-xs truncate" style={{ color: "var(--card-title)" }}>
-                            {sensor.name}
-                          </p>
-                          <p className="text-[11px] md:text-xs font-medium truncate" style={{ color: "var(--card-text-muted)" }}>
-                            {sensor.location}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <span
-                          className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                            live?.status === "danger"
-                              ? "bg-red-100 dark:bg-red-500/15 text-red-700 dark:text-red-400"
-                              : live?.status === "warning"
-                                ? "bg-[#FDF0E1] dark:bg-amber-500/10 text-[#A05E1A] dark:text-amber-400"
-                                : "bg-[#E9F2E4] dark:bg-[#4A6741]/15 text-[#4A6741] dark:text-[#8fac7e]"
-                          }`}
-                        >
-                          {live
-                            ? live.status === "safe"
-                              ? "Safe"
-                              : live.status === "warning"
-                                ? "Warning"
-                                : "Danger"
-                            : "Offline"}
-                        </span>
-                        <p className="font-mono text-[11px] md:text-xs font-bold mt-1" style={{ color: "var(--card-text)" }}>
-                          {live ? `${live.gas} PPM` : "-"}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-
-          {/* KITCHEN ZONE MAP MATRIX */}
-          <div className="p-4 md:p-6 rounded-2xl shadow-sm flex flex-col h-full" style={{ backgroundColor: "var(--card-bg-solid)", borderWidth: 1, borderColor: "var(--card-surface-border)" }}>
-            <h3 className="text-xs font-bold tracking-wider uppercase mb-4 flex items-center gap-2" style={{ color: "var(--card-text-muted)" }}>
-              <Cpu size={14} /> Kitchen Zone Map
-            </h3>
-            <div className="p-3 md:p-4 rounded-xl grid grid-cols-2 gap-3 md:gap-4 flex-grow items-center" style={{ backgroundColor: "var(--card-surface)", borderWidth: 1, borderColor: "var(--card-surface-border)" }}>
-              {dynamicSensors.map((sensor) => {
-                const live = liveSensors[sensor.id];
-                const isWarning =
-                  live?.status === "warning" || live?.status === "danger";
-
-                return (
-                  <div
-                    key={sensor.id}
-                    className={`p-3 md:p-4 rounded-xl border flex flex-col justify-between h-24 shadow-sm ${
-                      isWarning
-                        ? "border-red-200 dark:border-red-500/30 bg-red-50/30 dark:bg-red-500/5"
-                        : ""
-                    }`}
-                    style={isWarning ? undefined : { backgroundColor: "var(--card-bg-solid)", borderColor: "var(--card-surface-border)" }}
-                  >
-                    <p className="font-bold text-[11px] md:text-xs line-clamp-2 leading-tight" style={{ color: "var(--card-title)" }}>
-                      {sensor.name}
-                    </p>
-                    <div className="flex items-center justify-between gap-1 mt-2">
-                      <span className="text-[11px] md:text-xs font-bold font-mono shrink-0" style={{ color: "var(--card-text)" }}>
-                        {live ? `${live.temperature}°C` : "-"}
-                      </span>
-                      <div className="flex items-center gap-1 min-w-0">
-                        <div
-                          className={`w-1.5 h-1.5 rounded-full shrink-0 ${
-                            live?.status === "danger"
-                              ? "bg-red-500 animate-ping"
-                              : live?.status === "warning"
-                                ? "bg-amber-500"
-                                : "bg-emerald-500"
-                          }`}
-                        />
-                        <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-wider truncate" style={{ color: "var(--card-text-muted)" }}>
-                          {live
-                            ? live.status === "safe"
-                              ? "Safe"
-                              : live.status === "warning"
-                                ? "Warning"
-                                : "Danger"
-                            : "Offline"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* CHARTS & REALTIME LOGS SECTION */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-          {/* WEEKLY CHART TREND */}
-          <div className="p-4 md:p-6 rounded-2xl shadow-sm flex flex-col w-full h-full overflow-hidden" style={{ backgroundColor: "var(--card-bg-solid)", borderWidth: 1, borderColor: "var(--card-surface-border)" }}>
-            <h3 className="text-xs font-black tracking-wider uppercase mb-4 flex items-center gap-2" style={{ color: "var(--card-text-muted)" }}>
-              <TrendingUp size={14} /> Weekly Average
-              Gas Trend
-            </h3>
-            <div className="h-[260px] w-full text-[10px] md:text-[11px] flex-grow">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={chartHistory}
-                  margin={{ top: 10, right: 10, left: -30, bottom: 0 }}
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    vertical={false}
-                    stroke="var(--chart-axis)"
-                  />
-                  <XAxis
-                    dataKey="time"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: "var(--card-text-faint)", fontWeight: "bold" }}
-                  />
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: "var(--card-text-faint)", fontWeight: "bold" }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: "12px",
-                      border: "none",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
-                      backgroundColor: "var(--card-bg-solid)",
-                      color: "var(--card-text)",
-                    }}
-                  />
-                  <Legend
-                    iconType="circle"
-                    wrapperStyle={{
-                      fontSize: "10px",
-                      fontWeight: "bold",
-                      paddingTop: "10px",
-                      color: "var(--card-text-muted)",
-                    }}
-                  />
-                  {dynamicSensors.map((sensor, index) => (
-                    <Line
-                      key={sensor.id}
-                      name={sensor.name}
-                      type="monotone"
-                      dataKey={sensor.name}
-                      stroke={LINE_COLORS[index % LINE_COLORS.length]}
-                      strokeWidth={2.5}
-                      dot={false}
-                    />
-                  ))}
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* ALERTS ACTIVITY LOG HISTORY */}
-          <div className="p-4 md:p-6 rounded-2xl shadow-sm flex flex-col h-full" style={{ backgroundColor: "var(--card-bg-solid)", borderWidth: 1, borderColor: "var(--card-surface-border)" }}>
-            <h3 className="text-xs font-black tracking-wider uppercase mb-4 flex items-center gap-2" style={{ color: "var(--card-text-muted)" }}>
-              <BellRing size={14} /> Alert Activity
-              Log History
-            </h3>
-            <div className="space-y-3 overflow-y-auto pr-1 flex-grow custom-scrollbar max-h-[260px]">
-              {latestAlerts.length === 0 ? (
-                <div className="text-center py-20 text-xs font-medium" style={{ color: "var(--card-text-muted)" }}>
-                  Kitchen condition is sterile. No history of danger.
-                </div>
-              ) : (
-                latestAlerts.map((alert) => (
-                  <div
-                    key={alert.id}
-                    className="flex gap-3 py-2.5 last:border-0 items-start"
-                    style={{ borderBottom: "1px solid var(--card-surface-border)" }}
-                  >
-                    <div
-                      className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
-                        alert.level === "danger"
-                          ? "bg-red-50 dark:bg-red-500/10 text-red-500"
-                          : "bg-[#FDF0E1] dark:bg-amber-500/10 text-[#C67023] dark:text-amber-400"
-                      }`}
-                    >
-                      <AlertTriangle size={14} />
-                    </div>
-                    <div className="w-full min-w-0">
-                      <p className="text-xs font-bold leading-tight mb-1 line-clamp-2" style={{ color: "var(--card-title)" }}>
-                        {alert.message}
-                      </p>
-                      <div className="flex justify-between items-center text-[10px] md:text-[11px] font-bold" style={{ color: "var(--card-text-muted)" }}>
-                        <span>{alert.timeStr}</span>
-                        <span
-                          className={
-                            alert.isResolved
-                              ? "text-[#4A6741] dark:text-[#8fac7e]"
-                              : "text-[#A05E1A] dark:text-amber-400"
-                          }
-                        >
-                          {alert.isResolved
-                            ? "✓ Resolved"
-                            : "• Needs Attention"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </UserLayout>
-  );
-}
+          <div className="p-4 md:p-5 rounded-2xl shadow-sm" style={{ backgroundColor: "var
