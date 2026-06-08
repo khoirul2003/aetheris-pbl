@@ -78,7 +78,9 @@ export default function UserDashboard() {
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      loadingAuth && setLoadingAuth(false);
+       if (loadingAuth) {
+          setLoadingAuth(false);
+        }
     });
     return () => unsubscribeAuth();
   }, [loadingAuth]);

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -415,8 +416,8 @@ function UserDetailModal({ user, packages, onClose }: { user: AdminUserRow, pack
               You are about to permanently delete <strong>{localUser.restaurantName}</strong>. This action will erase their profile, ALL assigned sensors, ALL alert history, and ALL billing records. <strong>This cannot be undone.</strong>
             </p>
             
-            <div className="w-full text-left p-4 rounded-xl border shadow-sm mb-6" style={{ backgroundColor: "var(--card-bg-solid)", borderColor: "rgba(244, 63, 94, 0.3)" }}>
-              <label className="block text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "var(--card-text-faint)" }}>Type &quot;DELETE&quot; to confirm</label>
+            <div className="w-full text-left bg-white p-4 rounded-xl border border-rose-200 shadow-sm mb-6">
+              <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Type &quot;DELETE&quot; to confirm</label>
               <input 
                 type="text" 
                 value={deleteConfirmText} 

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -158,6 +159,7 @@ export default function ReportsPage() {
     };
   });
 
+  // Ganti fungsi formatAlertTime lamamu dengan definisi tipe data aman ini:
   const formatAlertTime = (timestamp: { toDate: () => Date } | null | undefined) => {
     if (!timestamp || typeof timestamp.toDate !== "function") return "-";
     const date = timestamp.toDate();

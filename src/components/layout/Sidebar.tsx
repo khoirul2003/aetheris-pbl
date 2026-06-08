@@ -31,10 +31,11 @@ export default function Sidebar({
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
-    // Membungkus setIsMounted dengan setTimeout untuk menghindari cascading render
-    const timer = setTimeout(() => {
-      setIsMounted(true);
-    }, 0);
+  const timer = setTimeout(() => {
+    setIsMounted(true);
+  }, 0);
+  return () => clearTimeout(timer);
+}, []);
 
     // Sekalian memuat halaman login di latar belakang agar proses logout terasa instan
     router.prefetch("/login");

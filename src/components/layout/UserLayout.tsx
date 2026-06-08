@@ -43,17 +43,11 @@ export default function UserLayout({
 
   // Optimistic Auth Caching & Mencegah Cascading Render
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setMounted(true);
-    }, 0);
-
-    if (sessionStorage.getItem("aetheris_user_auth") === "true") {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setIsAuthorized(true);
-    }
-
-    return () => clearTimeout(timer);
-  }, []);
+  const timer = setTimeout(() => {
+    setMounted(true);
+  }, 0);
+  return () => clearTimeout(timer);
+}, []);
 
   // FITUR SATPAM (AUTH GUARD) KHUSUS USER
   useEffect(() => {

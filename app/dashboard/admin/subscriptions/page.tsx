@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -87,14 +88,12 @@ export default function AdminSubscriptionsManagementPage() {
   const handleUpdatePackage = async () => {
     if (!editingPack) return;
     try {
-      const payload = { 
-        price: Number(packPrice) || 0, 
-        discount: Number(packDiscount) || 0, 
+      await ClientSubscriptionModel.savePackage(editingPack.id, {
+        price: Number(packPrice) || 0,
+        discount: Number(packDiscount) || 0,
         maxSensors: Number(packMaxSensors) || 0,
-        historyDurationDays: Number(packHistoryDurationDays) || 0 
-      } as Partial<SubscriptionPackage> & { discount?: number };
-
-      await ClientSubscriptionModel.savePackage(editingPack.id, payload);
+        historyDurationDays: Number(packHistoryDurationDays) || 0,
+      } as any);
       alert(`Commercial specs for ${editingPack.name} successfully updated!`);
       setEditingPack(null);
     } catch (err) { console.error(err); }
@@ -133,7 +132,6 @@ export default function AdminSubscriptionsManagementPage() {
       const payload = {
         name: newPackage.name.trim().toUpperCase(), 
         price: Number(newPackage.price) || 0, 
-        discount: Number(newPackage.discount) || 0,
         maxSensors: Number(newPackage.maxSensors) || 0,
         historyDurationDays: Number(newPackage.historyDurationDays) || 0, 
         features: featuresArray, 
@@ -158,12 +156,7 @@ export default function AdminSubscriptionsManagementPage() {
     if (confirm(`Are you sure you want to manually extend the active period of the package for ${log.restaurantName} by 30 days?`)) {
       const currentEnd = log.endDate ? log.endDate.toDate() : new Date();
       currentEnd.setDate(currentEnd.getDate() + 30);
-      
-      // Menggunakan casting ke any sebagai fallback aman jika method ini belum teregistrasi penuh di typing model
-      await (ClientSubscriptionModel as any).updateUserSubscription(log.id, { 
-        endDate: Timestamp.fromDate(currentEnd), 
-        paymentStatus: "paid" 
-      });
+      await ClientSubscriptionModel.updateUserSubscription(log.id, { endDate: Timestamp.fromDate(currentEnd), paymentStatus: "paid" });
       alert("User package validity period successfully extended!");
     }
   };

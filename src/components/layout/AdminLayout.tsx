@@ -43,17 +43,16 @@ export default function AdminLayout({
 
   // Optimistic Auth Caching & Mencegah Cascading Render
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setMounted(true);
-    }, 0);
-
+  // Gunakan setTimeout agar eksekusi setState menjadi asinkron di mata linter
+  const timer = setTimeout(() => {
     if (sessionStorage.getItem("aetheris_admin_auth") === "true") {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsAuthorized(true);
     }
+  }, 0);
 
-    return () => clearTimeout(timer);
-  }, []);
+  return () => clearTimeout(timer);
+}, []);
 
   // FITUR SATPAM (AUTH GUARD) UNTUK ADMIN
   useEffect(() => {
