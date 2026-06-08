@@ -358,4 +358,259 @@ export default function UserDashboard() {
             </p>
           </div>
 
-          <div className="p-4 md:p-5 rounded-2xl shadow-sm" style={{ backgroundColor: "var
+          <div className="bg-white border border-slate-200 p-4 md:p-5 rounded-2xl shadow-sm">
+            <p className="text-slate-600 text-[10px] md:text-[11px] font-bold mb-1 uppercase tracking-wider">
+              Last Checked
+            </p>
+            <h2 className="text-base md:text-xl font-black text-slate-800 mb-0.5">
+              {stats.lastCheck}
+            </h2>
+            <p className="text-slate-500 text-[10px] md:text-xs font-medium">
+              Real-time Sync
+            </p>
+          </div>
+        </div>
+
+        {/* MIDDLE LAYOUT SECTION */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* ALL AREAS STATUS TABLE */}
+          <div className="bg-white border border-slate-200 p-4 md:p-6 rounded-2xl shadow-sm flex flex-col h-full">
+            <h3 className="text-xs font-bold text-slate-600 tracking-wider uppercase mb-4 flex items-center gap-2">
+              <LayoutDashboard size={14} className="text-slate-600" /> All Areas Status
+            </h3>
+            <div className="space-y-0 flex-grow divide-y divide-slate-100">
+              {dynamicSensors.length === 0 ? (
+                <p className="text-xs text-slate-500 py-6 text-center font-medium">
+                  No sensors found.
+                </p>
+              ) : (
+                dynamicSensors.map((sensor) => {
+                  const live = liveSensors[sensor.id];
+                  const isWarning =
+                    live?.status === "warning" || live?.status === "danger";
+
+                  return (
+                    <div
+                      key={sensor.id}
+                      className="flex items-center justify-between py-3.5 first:pt-0 last:pb-0 gap-2"
+                    >
+                      <div className="flex items-center gap-3 md:gap-4 min-w-0">
+                        <div
+                          className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                            isWarning
+                              ? "bg-red-50 text-red-500"
+                              : "bg-[#E9F2E4] text-[#4A6741]"
+                          }`}
+                        >
+                          {isWarning ? (
+                            <AlertTriangle size={16} />
+                          ) : (
+                            <Check size={16} strokeWidth={3} />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-bold text-slate-900 text-xs truncate">
+                            {sensor.name}
+                          </p>
+                          <p className="text-[11px] md:text-xs text-slate-500 font-medium truncate">
+                            {sensor.location}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span
+                          className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                            live?.status === "danger"
+                              ? "bg-red-100 text-red-700"
+                              : live?.status === "warning"
+                                ? "bg-[#FDF0E1] text-[#A05E1A]"
+                                : "bg-[#E9F2E4] text-[#4A6741]"
+                          }`}
+                        >
+                          {live
+                            ? live.status === "safe"
+                              ? "Safe"
+                              : live.status === "warning"
+                                ? "Warning"
+                                : "Danger"
+                            : "Offline"}
+                        </span>
+                        <p className="font-mono text-[11px] md:text-xs text-slate-600 font-bold mt-1">
+                          {live ? `${live.gas} PPM` : "-"}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+          {/* KITCHEN ZONE MAP MATRIX */}
+          <div className="bg-white border border-slate-200 p-4 md:p-6 rounded-2xl shadow-sm flex flex-col h-full">
+            <h3 className="text-xs font-bold text-slate-600 tracking-wider uppercase mb-4 flex items-center gap-2">
+              <Cpu size={14} className="text-slate-600" /> Kitchen Zone Map
+            </h3>
+            <div className="bg-slate-50/60 p-3 md:p-4 rounded-xl border border-slate-100 grid grid-cols-2 gap-3 md:gap-4 flex-grow items-center">
+              {dynamicSensors.map((sensor) => {
+                const live = liveSensors[sensor.id];
+                const isWarning =
+                  live?.status === "warning" || live?.status === "danger";
+
+                return (
+                  <div
+                    key={sensor.id}
+                    className={`p-3 md:p-4 rounded-xl border flex flex-col justify-between h-24 transition-all bg-white shadow-sm ${
+                      isWarning
+                        ? "border-red-200 bg-red-50/30"
+                        : "border-slate-100"
+                    }`}
+                  >
+                    <p className="font-bold text-[11px] md:text-xs text-slate-800 line-clamp-2 leading-tight">
+                      {sensor.name}
+                    </p>
+                    <div className="flex items-center justify-between gap-1 mt-2">
+                      <span className="text-[11px] md:text-xs text-slate-600 font-bold font-mono shrink-0">
+                        {live ? `${live.temperature}°C` : "-"}
+                      </span>
+                      <div className="flex items-center gap-1 min-w-0">
+                        <div
+                          className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                            live?.status === "danger"
+                              ? "bg-red-500 animate-ping"
+                              : live?.status === "warning"
+                                ? "bg-amber-500"
+                                : "bg-emerald-500"
+                          }`}
+                        />
+                        <span className="text-[9px] md:text-[10px] font-bold uppercase text-slate-500 tracking-wider truncate">
+                          {live
+                            ? live.status === "safe"
+                              ? "Safe"
+                              : live.status === "warning"
+                                ? "Warning"
+                                : "Danger"
+                            : "Offline"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* CHARTS & REALTIME LOGS SECTION */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+          {/* WEEKLY CHART TREND */}
+          <div className="bg-white border border-slate-200 p-4 md:p-6 rounded-2xl shadow-sm flex flex-col w-full h-full overflow-hidden">
+            <h3 className="text-xs font-black text-slate-600 tracking-wider uppercase mb-4 flex items-center gap-2">
+              <TrendingUp size={14} className="text-slate-600" /> Weekly Average Gas Trend
+            </h3>
+            <div className="h-[260px] w-full text-[10px] md:text-[11px] flex-grow">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={chartHistory}
+                  margin={{ top: 10, right: 10, left: -30, bottom: 0 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    vertical={false}
+                    stroke="#f1f5f9"
+                  />
+                  <XAxis
+                    dataKey="time"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: "#94a3b8", fontWeight: "bold" }}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: "#94a3b8", fontWeight: "bold" }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: "12px",
+                      border: "none",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                    }}
+                  />
+                  <Legend
+                    iconType="circle"
+                    wrapperStyle={{
+                      fontSize: "10px",
+                      fontWeight: "bold",
+                      paddingTop: "10px",
+                    }}
+                  />
+                  {dynamicSensors.map((sensor, index) => (
+                    <Line
+                      key={sensor.id}
+                      name={sensor.name}
+                      type="monotone"
+                      dataKey={sensor.name}
+                      stroke={LINE_COLORS[index % LINE_COLORS.length]}
+                      strokeWidth={2.5}
+                      dot={false}
+                    />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* ALERTS ACTIVITY LOG HISTORY */}
+          <div className="bg-white border border-slate-200 p-4 md:p-6 rounded-2xl shadow-sm flex flex-col h-full">
+            <h3 className="text-xs font-black text-slate-600 tracking-wider uppercase mb-4 flex items-center gap-2">
+              <BellRing size={14} className="text-slate-600" /> Alert Activity Log History
+            </h3>
+            <div className="space-y-3 overflow-y-auto pr-1 flex-grow custom-scrollbar max-h-[260px]">
+              {latestAlerts.length === 0 ? (
+                <div className="text-center py-20 text-xs text-slate-500 font-medium">
+                  Kitchen condition is sterile. No history of danger.
+                </div>
+              ) : (
+                latestAlerts.map((alert) => (
+                  <div
+                    key={alert.id}
+                    className="flex gap-3 py-2.5 border-b border-slate-50 last:border-0 items-start"
+                  >
+                    <div
+                      className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
+                        alert.level === "danger"
+                          ? "bg-red-50 text-red-500"
+                          : "bg-[#FDF0E1] text-[#C67023]"
+                      }`}
+                    >
+                      <AlertTriangle size={14} />
+                    </div>
+                    <div className="w-full min-w-0">
+                      <p className="text-xs font-bold text-slate-800 leading-tight mb-1 line-clamp-2">
+                        {alert.message}
+                      </p>
+                      <div className="flex justify-between items-center text-[10px] md:text-[11px] text-slate-500 font-bold">
+                        <span>{alert.timeStr}</span>
+                        <span
+                          className={
+                            alert.isResolved
+                              ? "text-[#4A6741]"
+                              : "text-[#A05E1A]"
+                          }
+                        >
+                          {alert.isResolved ? "✓ Resolved" : "• Needs Attention"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </UserLayout>
+  );
+}
+
