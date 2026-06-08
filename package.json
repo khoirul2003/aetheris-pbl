@@ -4,14 +4,19 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "build": "next build",
     "next:dev": "next dev",
     "watcher": "npx ts-node scripts/alertWatcher.ts",
     "dev": "concurrently -n \"NEXT,WATCHER\" -c \"blue,magenta\" \"npm run next:dev\" \"npm run watcher\"",
-    "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
   "dependencies": {
+    "@opennextjs/cloudflare": "^1.19.11",
     "firebase": "^12.13.0",
     "firebase-admin": "^13.10.0",
     "html2canvas": "^1.4.1",
@@ -31,6 +36,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wrangler": "^4.98.0"
   }
 }
