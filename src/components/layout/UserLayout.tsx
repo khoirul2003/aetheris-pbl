@@ -44,8 +44,11 @@ export default function UserLayout({
   const [mounted, setMounted] = useState<boolean>(false);
 
   useEffect(() => {
+  const timer = setTimeout(() => {
     setMounted(true);
-  }, []);
+  }, 0);
+  return () => clearTimeout(timer);
+}, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {

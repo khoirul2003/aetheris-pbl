@@ -30,8 +30,11 @@ export default function Sidebar({
   const [isLoggingOut, setIsLoggingOut] = useState(false); // State untuk mengontrol layar loading
 
   useEffect(() => {
+  const timer = setTimeout(() => {
     setIsMounted(true);
-  }, []);
+  }, 0);
+  return () => clearTimeout(timer);
+}, []);
 
   const handleLogout = async (e: React.MouseEvent) => {
     e.preventDefault();

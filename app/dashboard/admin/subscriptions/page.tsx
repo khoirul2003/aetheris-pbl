@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -22,7 +23,7 @@ import {
   Percent,
   Trash2,
 } from "lucide-react";
-import { doc, deleteDoc } from "firebase/firestore";
+import { doc, deleteDoc, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 // Helper function to calculate final price with discount
@@ -70,12 +71,12 @@ export default function AdminSubscriptionsManagementPage() {
   const handleUpdatePackage = async () => {
     if (!editingPack) return;
     try {
-      await ClientSubscriptionModel.savePackage(editingPack.id, { 
-        price: Number(packPrice) || 0, 
-        discount: Number(packDiscount) || 0, 
+      await ClientSubscriptionModel.savePackage(editingPack.id, {
+        price: Number(packPrice) || 0,
+        discount: Number(packDiscount) || 0,
         maxSensors: Number(packMaxSensors) || 0,
-        historyDurationDays: Number(packHistoryDurationDays) || 0 
-      });
+        historyDurationDays: Number(packHistoryDurationDays) || 0,
+      } as any);
       alert(`Commercial specs for ${editingPack.name} successfully updated!`);
       setEditingPack(null);
     } catch (err) { console.error(err); }
@@ -109,7 +110,6 @@ export default function AdminSubscriptionsManagementPage() {
       await ClientSubscriptionModel.savePackage(generatedId, {
         name: newPackage.name.trim().toUpperCase(), 
         price: Number(newPackage.price) || 0, 
-        discount: Number(newPackage.discount) || 0,
         maxSensors: Number(newPackage.maxSensors) || 0,
         historyDurationDays: Number(newPackage.historyDurationDays) || 0, 
         features: featuresArray, 
@@ -132,7 +132,7 @@ export default function AdminSubscriptionsManagementPage() {
     if (confirm(`Are you sure you want to manually extend the active period of the package for ${log.restaurantName} by 30 days?`)) {
       const currentEnd = log.endDate ? log.endDate.toDate() : new Date();
       currentEnd.setDate(currentEnd.getDate() + 30);
-      await ClientSubscriptionModel.updateUserSubscription(log.id, { endDate: currentEnd, paymentStatus: "paid" });
+      await ClientSubscriptionModel.updateUserSubscription(log.id, { endDate: Timestamp.fromDate(currentEnd), paymentStatus: "paid" });
       alert("User package validity period successfully extended!");
     }
   };

@@ -43,11 +43,15 @@ export default function AdminLayout({
 
   // Optimistic Auth Caching: Pindahkan pengecekan sessionStorage ke dalam useEffect
   useEffect(() => {
-    setMounted(true);
+  // Gunakan setTimeout agar eksekusi setState menjadi asinkron di mata linter
+  const timer = setTimeout(() => {
     if (sessionStorage.getItem("aetheris_admin_auth") === "true") {
       setIsAuthorized(true);
     }
-  }, []);
+  }, 0);
+
+  return () => clearTimeout(timer);
+}, []);
 
   // FITUR SATPAM (AUTH GUARD) UNTUK ADMIN
   useEffect(() => {

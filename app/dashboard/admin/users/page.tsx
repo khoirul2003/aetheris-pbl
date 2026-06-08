@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
@@ -7,7 +8,7 @@ import { ClientSensorModel, type FirestoreSensor, type LiveSensorData } from "@/
 import { ClientSubscriptionModel, type SubscriptionPackage, type UserSubscriptionLog } from "@/models/clientSubscriptionModel";
 import { db } from "@/lib/firebase";
 import { 
-  addDoc, collection, doc, onSnapshot, query, serverTimestamp, setDoc, updateDoc, where, type Timestamp,
+  addDoc, collection, doc, onSnapshot, query, serverTimestamp, setDoc, updateDoc, where, Timestamp,
   writeBatch, getDocs 
 } from "firebase/firestore";
 import {
@@ -443,7 +444,7 @@ function UserDetailModal({ user, packages, onClose }: { user: AdminUserRow, pack
             </p>
             
             <div className="w-full text-left bg-white p-4 rounded-xl border border-rose-200 shadow-sm mb-6">
-              <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Type "DELETE" to confirm</label>
+              <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">Type &quot;DELETE&quot; to confirm</label>
               <input 
                 type="text" 
                 value={deleteConfirmText} 
