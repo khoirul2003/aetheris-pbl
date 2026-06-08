@@ -47,15 +47,15 @@ export default function AdminActivityLogPage() {
         timeStr = timestamp.toISOString().replace('T', ' ').substring(0, 16);
       }
       
-      const currentRestaurantName = usersMap[item.userId] || item.restaurantName || "Sektor Mitra";
+      const currentRestaurantName = usersMap[item.userId] || item.restaurantName || "Partner Sector";
 
       return {
         id: `LOG-0${idx++}`,
         time: timeStr,
-        actor: item.level === "danger" ? "Sistem" : "Admin",
-        action: item.level === "danger" ? "Threshold Diubah" : "Firmware Diupdate",
+        actor: item.level === "danger" ? "System" : "Admin",
+        action: item.level === "danger" ? "Threshold Changed" : "Firmware Updated",
         target: currentRestaurantName,
-        desc: item.message || "Pemicu otomatisasi deteksi sensor gas mitigasi bahaya",
+        desc: item.message || "Automated trigger for hazardous gas sensor detection",
       };
     });
   }, [rawAlerts, usersMap]);
@@ -83,7 +83,7 @@ export default function AdminActivityLogPage() {
   const renderPaginationControls = () => (
     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 text-sm" style={{ backgroundColor: "var(--card-surface)", borderTopWidth: 1, borderBottomWidth: 1, borderColor: "var(--card-surface-border)", color: "var(--card-text)" }}>
       <div className="flex items-center gap-2">
-        <span>Tampilkan</span>
+        <span>Show</span>
         <select
           value={pageSize}
           onChange={(e) => {
@@ -97,12 +97,12 @@ export default function AdminActivityLogPage() {
           <option value={20}>20</option>
           <option value={50}>50</option>
         </select>
-        <span>data per halaman</span>
+        <span>entries per page</span>
       </div>
 
       <div className="flex items-center gap-4">
         <span className="text-xs font-medium" style={{ color: "var(--card-text-muted)" }}>
-          Menampilkan {filteredLogs.length === 0 ? 0 : indexOfFirstRow + 1} - {Math.min(indexOfLastRow, filteredLogs.length)} dari {filteredLogs.length} log
+          Showing {filteredLogs.length === 0 ? 0 : indexOfFirstRow + 1} - {Math.min(indexOfLastRow, filteredLogs.length)} of {filteredLogs.length} logs
         </span>
         <div className="flex gap-1">
           <button 
@@ -128,8 +128,8 @@ export default function AdminActivityLogPage() {
 
   return (
     <AdminLayout
-      title="Log Aktivitas Sistem"
-      description="Daftar rekaman seluruh aktivitas krusial sistem otomatis serta tindakan penyesuaian administrator."
+      title="System Activity Log"
+      description="Record of all crucial automated system activities and administrative adjustment actions."
     >
       <div className="space-y-6">
 
@@ -153,12 +153,12 @@ export default function AdminActivityLogPage() {
                   className="rounded-xl text-xs font-medium px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer transition-colors"
                   style={{ backgroundColor: "var(--card-bg-solid)", borderWidth: 1, borderColor: "var(--card-surface-border)", color: "var(--card-text)" }}
                 >
-                  <option value="ALL">Semua Jenis Aksi</option>
-                  <option value="Sensor Didaftarkan">Sensor Didaftarkan</option>
-                  <option value="User Dinonaktifkan">User Dinonaktifkan</option>
-                  <option value="Threshold Diubah">Threshold Diubah</option>
-                  <option value="Paket Diganti">Paket Diganti</option>
-                  <option value="Firmware Diupdate">Firmware Diupdate</option>
+                  <option value="ALL">All Action Types</option>
+                  <option value="Sensor Registered">Sensor Registered</option>
+                  <option value="User Deactivated">User Deactivated</option>
+                  <option value="Threshold Changed">Threshold Changed</option>
+                  <option value="Package Changed">Package Changed</option>
+                  <option value="Firmware Updated">Firmware Updated</option>
                 </select>
 
                 <select 
@@ -167,9 +167,9 @@ export default function AdminActivityLogPage() {
                   className="rounded-xl text-xs font-medium px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer transition-colors"
                   style={{ backgroundColor: "var(--card-bg-solid)", borderWidth: 1, borderColor: "var(--card-surface-border)", color: "var(--card-text)" }}
                 >
-                  <option value="ALL">Semua Pelaku</option>
-                  <option value="Admin">Admin / Sistem Utama</option>
-                  <option value="Sistem">Sistem Otomatis</option>
+                  <option value="ALL">All Actors</option>
+                  <option value="Admin">Admin / Main System</option>
+                  <option value="System">Automated System</option>
                 </select>
               </div>
 
@@ -177,7 +177,7 @@ export default function AdminActivityLogPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2" size={15} style={{ color: "var(--card-text-faint)" }} />
                 <input 
                   type="text" 
-                  placeholder="Cari target atau keterangan..." 
+                  placeholder="Search target or description..." 
                   value={searchQuery}
                   onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                   className="pl-9 pr-4 py-2 w-full rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-inner transition-all"
@@ -190,7 +190,7 @@ export default function AdminActivityLogPage() {
           <div className="rounded-2xl shadow-sm overflow-hidden" style={{ backgroundColor: "var(--card-bg)", borderWidth: 1, borderColor: "var(--card-border)" }}>
             <div className="p-4 flex items-center gap-2.5 text-xs font-medium" style={{ backgroundColor: "rgba(245, 158, 11, 0.1)", borderBottomWidth: 1, borderColor: "var(--card-surface-border)", color: "var(--card-title)" }}>
               <Info size={15} className="text-amber-600 dark:text-amber-400 shrink-0" />
-              <span>Catatan audit log bersifat <strong>Read-Only</strong>. Data ini disimpan permanen dan tidak dapat diedit atau dihapus demi pemenuhan validitas keamanan data platform.</span>
+              <span>Audit log records are <strong>Read-Only</strong>. This data is stored permanently and cannot be edited or deleted to fulfill platform data security validity.</span>
             </div>
 
             {renderPaginationControls()}
@@ -199,12 +199,12 @@ export default function AdminActivityLogPage() {
               <table className="w-full text-left table-auto">
                 <thead className="text-xs uppercase font-medium tracking-wider" style={{ backgroundColor: "var(--table-head-bg)", color: "var(--card-text-muted)", borderBottomWidth: 1, borderBottomColor: "var(--table-border)" }}>
                   <tr>
-                    <th className="px-6 py-4">ID Log</th>
-                    <th className="px-6 py-4">Waktu</th>
-                    <th className="px-6 py-4">Pelaku</th>
-                    <th className="px-6 py-4">Aksi / Operasi</th>
-                    <th className="px-6 py-4">Target Obyek</th>
-                    <th className="px-6 py-4">Keterangan Detail</th>
+                    <th className="px-6 py-4">Log ID</th>
+                    <th className="px-6 py-4">Time</th>
+                    <th className="px-6 py-4">Actor</th>
+                    <th className="px-6 py-4">Action / Operation</th>
+                    <th className="px-6 py-4">Target Object</th>
+                    <th className="px-6 py-4">Details</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y text-sm" style={{ backgroundColor: "var(--table-body-bg)", color: "var(--card-text)", borderColor: "var(--table-border)" }}>
@@ -215,7 +215,7 @@ export default function AdminActivityLogPage() {
                         <td className="px-6 py-4 whitespace-nowrap" style={{ color: "var(--card-text-muted)" }}>{log.time}</td>
                         <td>
                           <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                            log.actor === "Sistem" ? "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300" : "bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400"
+                            log.actor === "System" ? "bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300" : "bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400"
                           }`}>{log.actor}</span>
                         </td>
                         <td className="px-6 py-4 font-medium" style={{ color: "var(--card-title)" }}>{log.action}</td>
@@ -226,7 +226,7 @@ export default function AdminActivityLogPage() {
                   ) : (
                     <tr>
                       <td colSpan={6} className="px-6 py-10 text-center text-xs" style={{ color: "var(--card-text-muted)" }}>
-                        Tidak ditemukan rekaman aktivitas sistem yang cocok dengan kriteria penapisan filter.
+                        No system activity records found matching the filter criteria.
                       </td>
                     </tr>
                   )}

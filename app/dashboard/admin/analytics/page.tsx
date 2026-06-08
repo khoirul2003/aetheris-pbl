@@ -65,7 +65,7 @@ export default function AdminAnalyticsPage() {
       const frequencies: { [key: string]: number } = {};
       
       snapshotData.forEach((item) => {
-        const name = usersMap[item.userId] || item.restaurantName || "Restoran Tanpa Nama";
+        const name = usersMap[item.userId] || item.restaurantName || "Unnamed Restaurant";
         frequencies[name] = (frequencies[name] || 0) + 1;
       });
 
@@ -104,14 +104,14 @@ export default function AdminAnalyticsPage() {
       { label: "Feb", revenueRaw: 0, usersRaw: 0, valRev: "Rp 0", valUsr: "+0" },
       { label: "Mar", revenueRaw: 0, usersRaw: 0, valRev: "Rp 0", valUsr: "+0" },
       { label: "Apr", revenueRaw: 0, usersRaw: 0, valRev: "Rp 0", valUsr: "+0" },
-      { label: "Mei", revenueRaw: 0, usersRaw: 0, valRev: "Rp 0", valUsr: "+0" },
+      { label: "May", revenueRaw: 0, usersRaw: 0, valRev: "Rp 0", valUsr: "+0" },
       { label: "Jun", revenueRaw: 0, usersRaw: 0, valRev: "Rp 0", valUsr: "+0" },
       { label: "Jul", revenueRaw: 0, usersRaw: 0, valRev: "Rp 0", valUsr: "+0" },
-      { label: "Agu", revenueRaw: 0, usersRaw: 0, valRev: "Rp 0", valUsr: "+0" },
+      { label: "Aug", revenueRaw: 0, usersRaw: 0, valRev: "Rp 0", valUsr: "+0" },
       { label: "Sep", revenueRaw: 0, usersRaw: 0, valRev: "Rp 0", valUsr: "+0" },
-      { label: "Okt", revenueRaw: 0, usersRaw: 0, valRev: "Rp 0", valUsr: "+0" },
+      { label: "Oct", revenueRaw: 0, usersRaw: 0, valRev: "Rp 0", valUsr: "+0" },
       { label: "Nov", revenueRaw: 0, usersRaw: 0, valRev: "Rp 0", valUsr: "+0" },
-      { label: "Des", revenueRaw: 0, usersRaw: 0, valRev: "Rp 0", valUsr: "+0" },
+      { label: "Dec", revenueRaw: 0, usersRaw: 0, valRev: "Rp 0", valUsr: "+0" },
     ];
 
     // Proses Data Pertumbuhan Pengguna (Berdasarkan field 'createdAt')
@@ -185,12 +185,12 @@ export default function AdminAnalyticsPage() {
 
   return (
     <AdminLayout
-      title="Laporan & Analitik Platform"
-      description="Analisis data performa, pertumbuhan user, pendapatan, serta metrik kerusakan alat."
+      title="Platform Reports & Analytics"
+      description="Analysis of performance data, user growth, revenue, and device failure metrics."
     >
       <div className="space-y-6">
         <header className="flex justify-between items-center mb-8 pb-5 print:mb-4 print:pb-2" style={{ borderBottomWidth: 1, borderBottomColor: "var(--card-surface-border)" }}>
-          <div className="hidden print:block text-right text-xs font-mono" style={{ color: "var(--card-text-faint)" }}>Aetheris Analytics Report // Generated: {new Date().toLocaleDateString('id-ID')}</div>
+          <div className="hidden print:block text-right text-xs font-mono" style={{ color: "var(--card-text-faint)" }}>Aetheris Analytics Report // Generated: {new Date().toLocaleDateString('en-US')}</div>
           <div className="flex gap-2.5 print:hidden ml-auto">
             <button onClick={handleExportPDF} className="group flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all shadow-sm cursor-pointer hover:opacity-80" style={{ backgroundColor: "var(--card-bg-solid)", borderWidth: 1, borderColor: "var(--accent-primary-border)", color: "var(--accent-primary)" }}>
               <FileText size={15} className="transition-transform group-hover:scale-110" /> <span className="font-bold text-xs">Export PDF Report</span>
@@ -200,18 +200,18 @@ export default function AdminAnalyticsPage() {
 
           <div className="p-5 rounded-2xl shadow-sm mb-6 print:hidden space-y-4" style={{ backgroundColor: "var(--card-bg-solid)", borderWidth: 1, borderColor: "var(--card-surface-border)" }}>
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full">
-              <div className="flex items-center gap-2 font-medium text-xs uppercase tracking-wider shrink-0" style={{ color: "var(--card-title)" }}><Filter size={15} style={{ color: "var(--accent-primary)" }} /><span>Rentang Waktu Laporan:</span></div>
+              <div className="flex items-center gap-2 font-medium text-xs uppercase tracking-wider shrink-0" style={{ color: "var(--card-title)" }}><Filter size={15} style={{ color: "var(--accent-primary)" }} /><span>Report Time Range:</span></div>
               <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                 <select value={timeRange} onChange={(e) => setTimeRange(e.target.value)} className="rounded-xl text-xs font-medium px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer transition-colors" style={{ backgroundColor: "var(--card-bg-solid)", borderColor: "var(--card-surface-border)", borderWidth: 1, color: "var(--card-text)" }}>
-                  <option value="semua_bulan">Tahun Ini (12 Bulan)</option>
-                  <option value="bulan_ini">Bulan Ini Saja</option>
-                  <option value="3_bulan">3 Bulan Terakhir</option>
-                  <option value="custom">📅 Rentang Custom Tanggal</option>
+                  <option value="semua_bulan">This Year (12 Months)</option>
+                  <option value="bulan_ini">This Month Only</option>
+                  <option value="3_bulan">Last 3 Months</option>
+                  <option value="custom">📅 Custom Date Range</option>
                 </select>
                 {timeRange === "custom" && (
                   <div className="flex items-center gap-2 animate-in fade-in zoom-in-95 duration-150">
                     <input type="date" value={customStartDate} onChange={(e) => setCustomStartDate(e.target.value)} className="rounded-xl text-xs font-medium px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer" style={{ backgroundColor: "var(--card-bg-solid)", borderColor: "var(--card-surface-border)", borderWidth: 1, color: "var(--card-text)" }} />
-                    <span className="text-xs font-medium" style={{ color: "var(--card-text-muted)" }}>s/d</span>
+                    <span className="text-xs font-medium" style={{ color: "var(--card-text-muted)" }}>to</span>
                     <input type="date" value={customEndDate} onChange={(e) => setCustomEndDate(e.target.value)} className="rounded-xl text-xs font-medium px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer" style={{ backgroundColor: "var(--card-bg-solid)", borderColor: "var(--card-surface-border)", borderWidth: 1, color: "var(--card-text)" }} />
                   </div>
                 )}
@@ -223,12 +223,12 @@ export default function AdminAnalyticsPage() {
             <div className="p-6 rounded-2xl shadow-sm lg:col-span-2 flex flex-col justify-between" style={{ backgroundColor: "var(--card-bg)", borderWidth: 1, borderColor: "var(--card-border)" }}>
               <div className="flex justify-between items-center mb-6">
                 <div>
-                  <h4 className="font-bold text-sm" style={{ color: "var(--card-title)" }}>Tren Pertumbuhan User & Pendapatan Bulanan</h4>
-                  <p className="text-xs mt-0.5" style={{ color: "var(--card-text-faint)" }}>Dihitung otomatis (Live) dari database log pendaftaran & pembayaran.</p>
+                  <h4 className="font-bold text-sm" style={{ color: "var(--card-title)" }}>Monthly User Growth & Revenue Trend</h4>
+                  <p className="text-xs mt-0.5" style={{ color: "var(--card-text-faint)" }}>Calculated automatically (Live) from registration & payment log database.</p>
                 </div>
                 <div className="flex gap-4 print:hidden text-xs font-medium">
-                  <span className="flex items-center gap-1.5" style={{ color: "var(--card-text)" }}><div className="w-2.5 h-2.5 rounded bg-blue-500 dark:bg-blue-600" /> Pendapatan Total</span>
-                  <span className="flex items-center gap-1.5" style={{ color: "var(--card-text)" }}><div className="w-2.5 h-2.5 rounded bg-emerald-500 dark:bg-emerald-600" /> User Mendaftar</span>
+                  <span className="flex items-center gap-1.5" style={{ color: "var(--card-text)" }}><div className="w-2.5 h-2.5 rounded bg-blue-500 dark:bg-blue-600" /> Total Revenue</span>
+                  <span className="flex items-center gap-1.5" style={{ color: "var(--card-text)" }}><div className="w-2.5 h-2.5 rounded bg-emerald-500 dark:bg-emerald-600" /> Registered Users</span>
                 </div>
               </div>
               
@@ -254,47 +254,47 @@ export default function AdminAnalyticsPage() {
 
             <div className="p-6 rounded-2xl shadow-sm flex flex-col justify-between" style={{ backgroundColor: "var(--card-bg)", borderWidth: 1, borderColor: "var(--card-border)" }}>
               <div>
-                <h4 className="font-bold text-sm" style={{ color: "var(--card-title)" }}>Rasio Frekuensi Alert</h4>
-                <p className="text-xs mt-0.5" style={{ color: "var(--card-text-faint)" }}>Komparasi data insiden kebocoran gas terhitung di database.</p>
+                <h4 className="font-bold text-sm" style={{ color: "var(--card-title)" }}>Alert Frequency Ratio</h4>
+                <p className="text-xs mt-0.5" style={{ color: "var(--card-text-faint)" }}>Comparison of gas leak incident data recorded in the database.</p>
               </div>
               <div className="space-y-4 my-auto pt-4">
                 {incidentStats.length > 0 ? incidentStats.map((item, i) => (
                   <div key={i} className="space-y-1">
-                    <div className="flex justify-between text-xs font-medium"><span className="truncate max-w-[140px]" style={{ color: "var(--card-text)" }}>{item.name}</span><span className="font-mono font-bold" style={{ color: "var(--card-title)" }}>{item.count} Alert</span></div>
+                    <div className="flex justify-between text-xs font-medium"><span className="truncate max-w-[140px]" style={{ color: "var(--card-text)" }}>{item.name}</span><span className="font-mono font-bold" style={{ color: "var(--card-title)" }}>{item.count} Alerts</span></div>
                     <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: "var(--chart-bg)" }}><div style={{ width: `${item.percent}%` }} className={`${item.color} h-full rounded-full`} /></div>
                   </div>
-                )) : <p className="text-center text-xs py-6" style={{ color: "var(--card-text-muted)" }}>Belum ditemukan data log alert.</p>}
+                )) : <p className="text-center text-xs py-6" style={{ color: "var(--card-text-muted)" }}>No alert log data found.</p>}
               </div>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="rounded-2xl shadow-sm overflow-hidden" style={{ backgroundColor: "var(--card-bg)", borderWidth: 1, borderColor: "var(--card-border)" }}>
-              <div className="p-4 flex items-center gap-2" style={{ backgroundColor: "var(--card-surface)", borderBottomWidth: 1, borderBottomColor: "var(--card-surface-border)" }}><BarChart3 size={15} className="text-rose-500 dark:text-rose-400" /><h4 className="font-bold text-xs uppercase tracking-wider" style={{ color: "var(--card-title)" }}>Restoran Paling Sering Alert Bahaya</h4></div>
+              <div className="p-4 flex items-center gap-2" style={{ backgroundColor: "var(--card-surface)", borderBottomWidth: 1, borderBottomColor: "var(--card-surface-border)" }}><BarChart3 size={15} className="text-rose-500 dark:text-rose-400" /><h4 className="font-bold text-xs uppercase tracking-wider" style={{ color: "var(--card-title)" }}>Restaurants With Most Danger Alerts</h4></div>
               <table className="w-full text-left table-auto">
                 <thead className="text-[11px] uppercase font-medium" style={{ backgroundColor: "var(--table-head-bg)", color: "var(--card-text-muted)", borderBottomWidth: 1, borderBottomColor: "var(--table-border)" }}>
-                  <tr><th className="px-5 py-3">ID Baris</th><th className="px-5 py-3">Nama Mitra Restoran</th><th className="px-5 py-3 text-right">Frekuensi Insiden</th></tr>
+                  <tr><th className="px-5 py-3">Row ID</th><th className="px-5 py-3">Partner Restaurant Name</th><th className="px-5 py-3 text-right">Incident Frequency</th></tr>
                 </thead>
                 <tbody className="divide-y text-sm" style={{ backgroundColor: "var(--table-body-bg)", color: "var(--card-text)", borderColor: "var(--table-border)" }}>
                   {incidentStats.length > 0 ? incidentStats.slice(0, 3).map((item, idx) => (
                     <tr key={idx} className="hover:opacity-90 transition-colors">
                       <td className="px-5 py-3.5 font-mono text-xs font-bold" style={{ color: "var(--card-text)" }}>RES-00{idx + 1}</td>
                       <td className="px-5 py-3.5 font-medium" style={{ color: "var(--card-title)" }}>{item.name}</td>
-                      <td className="px-5 py-3.5 text-right font-mono font-bold bg-rose-50/30 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400">{item.count} Kali Alert</td>
+                      <td className="px-5 py-3.5 text-right font-mono font-bold bg-rose-50/30 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400">{item.count} Alerts</td>
                     </tr>
-                  )) : <tr><td colSpan={3} className="text-center py-10 text-xs" style={{ color: "var(--card-text-muted)" }}>Tidak ditemukan riwayat log kebocoran.</td></tr>}
+                  )) : <tr><td colSpan={3} className="text-center py-10 text-xs" style={{ color: "var(--card-text-muted)" }}>No leak log history found.</td></tr>}
                 </tbody>
               </table>
             </div>
 
             <div className="rounded-2xl shadow-sm overflow-hidden" style={{ backgroundColor: "var(--card-bg)", borderWidth: 1, borderColor: "var(--card-border)" }}>
-              <div className="p-4 flex items-center gap-2" style={{ backgroundColor: "var(--card-surface)", borderBottomWidth: 1, borderBottomColor: "var(--card-surface-border)" }}><BarChart3 size={15} style={{ color: "var(--card-text-muted)" }} /><h4 className="font-bold text-xs uppercase tracking-wider" style={{ color: "var(--card-title)" }}>Perangkat Sensor Paling Sering Offline</h4></div>
+              <div className="p-4 flex items-center gap-2" style={{ backgroundColor: "var(--card-surface)", borderBottomWidth: 1, borderBottomColor: "var(--card-surface-border)" }}><BarChart3 size={15} style={{ color: "var(--card-text-muted)" }} /><h4 className="font-bold text-xs uppercase tracking-wider" style={{ color: "var(--card-title)" }}>Most Frequently Offline Sensors</h4></div>
               <table className="w-full text-left table-auto">
                 <thead className="text-[11px] uppercase font-medium" style={{ backgroundColor: "var(--table-head-bg)", color: "var(--card-text-muted)", borderBottomWidth: 1, borderBottomColor: "var(--table-border)" }}>
-                  <tr><th className="px-5 py-3">ID Sensor</th><th className="px-5 py-3">Nama Perangkat Sensor</th><th className="px-5 py-3 text-right">Durasi Terputus</th></tr>
+                  <tr><th className="px-5 py-3">Sensor ID</th><th className="px-5 py-3">Sensor Device Name</th><th className="px-5 py-3 text-right">Offline Duration</th></tr>
                 </thead>
                 <tbody className="divide-y text-sm" style={{ backgroundColor: "var(--table-body-bg)", color: "var(--card-text)", borderColor: "var(--table-border)" }}>
-                  <tr><td colSpan={3} className="px-5 py-10 text-center text-xs" style={{ color: "var(--card-text-muted)" }}>Tidak ditemukan perangkat sensor berstatus offline.</td></tr>
+                  <tr><td colSpan={3} className="px-5 py-10 text-center text-xs" style={{ color: "var(--card-text-muted)" }}>No sensors currently offline found.</td></tr>
                 </tbody>
               </table>
             </div>

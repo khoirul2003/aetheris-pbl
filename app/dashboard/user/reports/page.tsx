@@ -16,7 +16,7 @@ export default function ReportsPage() {
   const [summaries, setSummaries] = useState<DailySummary[]>([]);
   const [alerts, setAlerts] = useState<AlertData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("Minggu ini");
+  const [activeTab, setActiveTab] = useState("This week");
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
@@ -48,7 +48,7 @@ export default function ReportsPage() {
           }
         });
       } catch (error) {
-        console.error("Gagal memuat data laporan:", error);
+        console.error("Failed to load report data:", error);
         if (isMounted) setLoading(false);
       }
     }
@@ -82,7 +82,7 @@ export default function ReportsPage() {
     for (const [sensor, count] of Object.entries(counts)) {
       if (count > maxCount) {
         maxCount = count;
-        mostFrequent = sensor === "sensor_001" ? "Kompor Utama" : sensor === "sensor_002" ? "Kompor Kanan" : sensor;
+        mostFrequent = sensor === "sensor_001" ? "Main Stove" : sensor === "sensor_002" ? "Right Stove" : sensor;
       }
     }
     return mostFrequent;
@@ -100,7 +100,7 @@ export default function ReportsPage() {
 
     return {
       name: nameStr,
-      "Tingkat Risiko Gas": maxGasValue,
+      "Gas Risk Level": maxGasValue,
     };
   });
 
@@ -113,27 +113,27 @@ export default function ReportsPage() {
                     date.getMonth() === today.getMonth() &&
                     date.getFullYear() === today.getFullYear();
 
-    const timeString = date.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }).replace(".", ":");
+    const timeString = date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
     
     if (isToday) {
-      return `Hari ini, ${timeString}`;
+      return `Today, ${timeString}`;
     } else {
-      const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+      const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
       return `${days[date.getDay()]}, ${timeString}`;
     }
   };
 
   return (
     <UserLayout 
-      title="Laporan & Analitik" 
-      description="Unduh rekapitulasi data sensor dan riwayat insiden dapur Anda untuk laporan evaluasi."
+      title="Reports & Analytics" 
+      description="Download your kitchen sensor data summary and incident history for evaluation reports."
       userEmail="khoirul@email.com"
     >
       {loading ? (
         <div className="flex h-[60vh] w-full items-center justify-center print:hidden">
           <div className="text-center space-y-3">
             <RefreshCw className="animate-spin mx-auto" size={28} style={{ color: "var(--accent-primary)" }} />
-            <p className="font-semibold text-xs tracking-wide" style={{ color: "var(--card-text-muted)" }}>Mengompilasi ringkasan rekapitulasi...</p>
+            <p className="font-semibold text-xs tracking-wide" style={{ color: "var(--card-text-muted)" }}>Compiling summary recapitulation...</p>
           </div>
         </div>
       ) : (
@@ -142,7 +142,7 @@ export default function ReportsPage() {
           {/* HEADER CONTROLS */}
           <div className="flex flex-row justify-between items-center gap-4 print:hidden">
             <div className="flex border p-1.5 rounded-2xl shadow-sm" style={{ backgroundColor: "var(--card-bg-solid)", borderColor: "var(--card-surface-border)" }}>
-              {["Minggu ini", "Bulan ini", "3 bulan"].map((tab) => (
+              {["This week", "This month", "3 months"].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -162,8 +162,8 @@ export default function ReportsPage() {
               style={{ backgroundColor: "var(--card-title)", color: "var(--card-bg)" }}
             >
               <Download size={14} />
-              <span className="hidden sm:inline">Unduh Laporan PDF</span>
-              <span className="sm:hidden">Unduh</span>
+              <span className="hidden sm:inline">Download PDF Report</span>
+              <span className="sm:hidden">Download</span>
             </button>
           </div>
 
@@ -173,7 +173,7 @@ export default function ReportsPage() {
             {/* Header Tambahan Khusus: Hanya Muncul di Lembar Cetak PDF Fisik */}
             <div className="hidden print:block mb-6 border-b-2 pb-4 text-center sm:text-left" style={{ borderColor: "var(--card-surface-border)" }}>
               <h1 className="text-xl font-black tracking-tight" style={{ color: "var(--card-title)" }}>AETHERIS KITCHEN MONITORING SYSTEM</h1>
-              <p className="text-xs font-bold mt-1" style={{ color: "var(--card-text-muted)" }}>Laporan Rekapitulasi Gas & Log Aktivitas Dapur — Kategori: {activeTab}</p>
+              <p className="text-xs font-bold mt-1" style={{ color: "var(--card-text-muted)" }}>Gas Summary & Kitchen Activity Log Report — Category: {activeTab}</p>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -184,11 +184,11 @@ export default function ReportsPage() {
                   <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--accent-primary-hover)", color: "var(--accent-primary)" }}>
                     <TrendingUp size={16} />
                   </div>
-                  <h3 className="text-[11px] md:text-xs font-black uppercase tracking-widest" style={{ color: "var(--card-text-muted)" }}>Tren Tingkat Kebocoran Gas Dapur</h3>
+                  <h3 className="text-[11px] md:text-xs font-black uppercase tracking-widest" style={{ color: "var(--card-text-muted)" }}>Kitchen Gas Leak Level Trend</h3>
                 </div>
                 <div className="h-[280px] md:h-[300px] w-full text-[10px] md:text-xs">
                   {chartData.length === 0 ? (
-                    <div className="h-full flex items-center justify-center font-medium" style={{ color: "var(--card-text-faint)" }}>Tidak ada data tren mingguan.</div>
+                    <div className="h-full flex items-center justify-center font-medium" style={{ color: "var(--card-text-faint)" }}>No weekly trend data available.</div>
                   ) : (
                     <ResponsiveContainer width="100%" height="100%">
                       <AreaChart data={chartData} margin={{ top: 10, right: 5, left: -25, bottom: 0 }}>
@@ -205,11 +205,11 @@ export default function ReportsPage() {
                           cursor={{ stroke: '#4D6344', strokeWidth: 1, strokeDasharray: '4 4' }}
                           contentStyle={{borderRadius: '16px', border: '1px solid var(--card-surface-border)', backgroundColor: 'var(--card-bg-solid)', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}
                           itemStyle={{ color: "var(--card-title)" }}
-                          formatter={(value) => [`${value} PPM`, "Kadar Gas Tertinggi"]}
+                          formatter={(value) => [`${value} PPM`, "Highest Gas Level"]}
                         />
                         <Area 
                           type="monotone" 
-                          dataKey="Tingkat Risiko Gas" 
+                          dataKey="Gas Risk Level" 
                           stroke="#4D6344" 
                           strokeWidth={3}
                           fillOpacity={1} 
@@ -224,17 +224,17 @@ export default function ReportsPage() {
               {/* KARTU METRIK AGREGASI INTELLIGENT RINGKASAN */}
               <div className="border rounded-3xl p-6 shadow-xs flex flex-col justify-between" style={{ backgroundColor: "var(--card-bg-solid)", borderColor: "var(--card-surface-border)" }}>
                 <div>
-                  <h3 className="text-[11px] font-black uppercase tracking-widest mb-6" style={{ color: "var(--card-text-faint)" }}>Statistik {activeTab}</h3>
+                  <h3 className="text-[11px] font-black uppercase tracking-widest mb-6" style={{ color: "var(--card-text-faint)" }}>Statistics {activeTab}</h3>
                   <div className="space-y-3">
-                    <StatItem label="Total deteksi alarm" value={`${totalAlertsSum} Kali`} />
-                    <StatItem label="Insiden level kritis" value={`${totalDangerSum} Kali`} isDanger={totalDangerSum > 0} />
-                    <StatItem label="Sektor tersering pemicu" value={getMostProblematicArea()} />
-                    <StatItem label="Suhu rata-rata area" value={summaries.length > 0 ? `${Math.round(summaries.reduce((a,c) => a + (c.avgTemperature || 0), 0) / summaries.length)}°C` : "-"} />
-                    <StatItem label="Status penanganan otomatis" value="100% Terintegrasi" />
+                    <StatItem label="Total alarm detections" value={`${totalAlertsSum} Times`} />
+                    <StatItem label="Critical level incidents" value={`${totalDangerSum} Times`} isDanger={totalDangerSum > 0} />
+                    <StatItem label="Most frequent trigger sector" value={getMostProblematicArea()} />
+                    <StatItem label="Average area temperature" value={summaries.length > 0 ? `${Math.round(summaries.reduce((a,c) => a + (c.avgTemperature || 0), 0) / summaries.length)}°C` : "-"} />
+                    <StatItem label="Auto-handling status" value="100% Integrated" />
                   </div>
                 </div>
                 <div className="text-[10px] font-bold mt-6 pt-4 border-t uppercase tracking-widest text-center lg:text-left" style={{ borderColor: "var(--card-surface-border)", color: "var(--card-text-faint)" }}>
-                  * Sinkronisasi berkala sistem
+                  * Periodic system synchronization
                 </div>
               </div>
             </div>
@@ -245,16 +245,16 @@ export default function ReportsPage() {
                 <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "rgba(59, 130, 246, 0.1)", color: "rgb(59, 130, 246)" }}>
                   <FileText size={16} />
                 </div>
-                <h3 className="text-[11px] md:text-xs font-black uppercase tracking-widest" style={{ color: "var(--card-text-muted)" }}>Riwayat Deteksi Terkini</h3>
+                <h3 className="text-[11px] md:text-xs font-black uppercase tracking-widest" style={{ color: "var(--card-text-muted)" }}>Recent Detection History</h3>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="text-[10px] font-bold uppercase tracking-widest border-b" style={{ backgroundColor: "var(--table-head-bg)", color: "var(--card-text-faint)", borderColor: "var(--card-surface-border)" }}>
-                      <th className="py-4 px-6">Waktu</th>
-                      <th className="py-4 px-6">Sektor / Lokasi</th>
-                      <th className="py-4 px-6">Tingkat</th>
-                      <th className="py-4 px-6 hidden sm:table-cell">Aksi Hardware</th>
+                      <th className="py-4 px-6">Time</th>
+                      <th className="py-4 px-6">Sector / Location</th>
+                      <th className="py-4 px-6">Level</th>
+                      <th className="py-4 px-6 hidden sm:table-cell">Hardware Action</th>
                       <th className="py-4 px-6 text-center">Status</th>
                     </tr>
                   </thead>
@@ -262,7 +262,7 @@ export default function ReportsPage() {
                     {alerts.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="py-16 text-center font-medium" style={{ color: "var(--card-text-faint)" }}>
-                          Belum ada data log aktivitas terekam.
+                          No activity log data recorded yet.
                         </td>
                       </tr>
                     ) : (
@@ -280,11 +280,11 @@ export default function ReportsPage() {
                               <span className={`inline-block px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest ${
                                 isDanger ? 'bg-red-50 dark:bg-rose-500/10 text-red-600 dark:text-rose-400 border border-red-100 dark:border-rose-500/20' : 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-500/20'
                               }`}>
-                                {isDanger ? 'Bahaya' : 'Waspada'}
+                                {isDanger ? 'Danger' : 'Warning'}
                               </span>
                             </td>
                             <td className="py-4 px-6 hidden sm:table-cell max-w-[180px] truncate" style={{ color: "var(--card-text)" }}>
-                              {isDanger ? 'Exhaust Fan + WhatsApp' : 'Notifikasi WhatsApp'}
+                              {isDanger ? 'Exhaust Fan + WhatsApp' : 'WhatsApp Notification'}
                             </td>
                             <td className="py-4 px-6 text-center">
                               <span className={`inline-block px-3 py-1 rounded-lg font-black uppercase text-[9px] tracking-widest border ${
@@ -292,7 +292,7 @@ export default function ReportsPage() {
                                   ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-500/20' 
                                   : 'bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-100 dark:border-orange-500/20'
                               }`}>
-                                {alert.isResolved ? 'Selesai' : 'Perlu perhatian'}
+                                {alert.isResolved ? 'Resolved' : 'Needs attention'}
                               </span>
                             </td>
                           </tr>

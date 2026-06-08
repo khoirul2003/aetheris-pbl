@@ -196,7 +196,7 @@ export default function Sidebar({
               )}
               
               <span className={`overflow-hidden whitespace-nowrap transition-all duration-300 ease-in-out text-xs font-semibold ${collapsed ? "max-w-0 opacity-0 ml-0" : "max-w-37.5 opacity-100 ml-2"}`}>
-                {isLoggingOut ? "Sedang Logout..." : "Log Out"}
+                {isLoggingOut ? "Logging Out..." : "Log Out"}
               </span>
 
               {collapsed && !isLoggingOut && (
@@ -218,10 +218,10 @@ export default function Sidebar({
         <div className="fixed inset-0 z-9999 bg-[#111612]/80 backdrop-blur-md flex flex-col items-center justify-center transition-all duration-500 ease-in-out animate-in fade-in">
           <Loader2 size={48} className="text-[#A3E635] animate-spin mb-5 drop-shadow-md" />
           <h2 className="text-white text-lg font-bold tracking-widest uppercase animate-pulse drop-shadow-md">
-            Mengakhiri Sesi...
+            Ending Session...
           </h2>
           <p className="text-[#C4D0B7] text-xs font-medium mt-2">
-            Mengamankan akses gateway Anda
+            Securing your gateway access
           </p>
         </div>
       )}

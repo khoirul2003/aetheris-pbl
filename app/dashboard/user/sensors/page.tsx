@@ -28,7 +28,7 @@ export default function SensorsPage() {
       setUserId(user ? user.uid : null);
       if (!user) {
         setLoading(false);
-        setError("Anda belum login.");
+        setError("You are not logged in.");
       }
     });
     return () => unsubscribeAuth();
@@ -44,8 +44,8 @@ export default function SensorsPage() {
         const fetchedSensors = await ClientSensorModel.getSensorsByUserId(userId as string);
         setSensors(fetchedSensors);
       } catch (err) {
-        console.error("Gagal memuat profil koleksi sensor:", err);
-        setError("Gagal memuat konfigurasi area & sensor.");
+        console.error("Failed to load sensor collection profile:", err);
+        setError("Failed to load area & sensor configuration.");
       } finally {
         setLoading(false);
       }
@@ -73,15 +73,15 @@ export default function SensorsPage() {
 
   return (
     <UserLayout 
-      title="Area & Sensor" 
-      description="Daftar perangkat monitoring gas dan kondisi real-time dapur Anda."
+      title="Areas & Sensors" 
+      description="List of gas monitoring devices and your kitchen's real-time condition."
       userEmail={currentUser?.email || ""}
     >
       {loading ? (
         <div className="flex h-[60vh] w-full items-center justify-center">
           <div className="text-center space-y-3">
             <RefreshCw className="animate-spin mx-auto" size={28} style={{ color: "var(--accent-primary)" }} />
-            <p className="font-semibold text-xs tracking-wide" style={{ color: "var(--card-text-muted)" }}>Menghubungkan ke Sensor...</p>
+            <p className="font-semibold text-xs tracking-wide" style={{ color: "var(--card-text-muted)" }}>Connecting to Sensors...</p>
           </div>
         </div>
       ) : error ? (
@@ -94,8 +94,8 @@ export default function SensorsPage() {
           {/* HEADER JUDUL AREA - Indikator Live Monitoring */}
           <div className="flex flex-row items-center justify-between gap-3 border p-4 rounded-2xl shadow-sm" style={{ backgroundColor: "var(--card-bg-solid)", borderColor: "var(--card-surface-border)" }}>
             <div>
-              <h2 className="text-sm font-black tracking-tight uppercase" style={{ color: "var(--card-title)" }}>Status Semua Area</h2>
-              <p className="text-xs mt-0.5" style={{ color: "var(--card-text-muted)" }}>Telemetri sensor terus diperbarui secara instan.</p>
+              <h2 className="text-sm font-black tracking-tight uppercase" style={{ color: "var(--card-title)" }}>All Areas Status</h2>
+              <p className="text-xs mt-0.5" style={{ color: "var(--card-text-muted)" }}>Sensor telemetry is constantly updated instantly.</p>
             </div>
             <div className="flex items-center gap-2 px-3 py-1.5 border rounded-full shrink-0 shadow-inner" style={{ backgroundColor: "var(--accent-primary-hover)", borderColor: "var(--accent-primary-border)" }}>
               <Radio size={14} className="animate-pulse" style={{ color: "var(--accent-primary)" }} />
@@ -105,7 +105,7 @@ export default function SensorsPage() {
 
           {sensors.length === 0 ? (
             <div className="border p-12 rounded-3xl text-center shadow-xs" style={{ backgroundColor: "var(--card-bg-solid)", borderColor: "var(--card-surface-border)" }}>
-              <p className="font-semibold" style={{ color: "var(--card-text-muted)" }}>Belum ada area atau sensor yang terdaftar untuk akun ini.</p>
+              <p className="font-semibold" style={{ color: "var(--card-text-muted)" }}>No areas or sensors registered for this account yet.</p>
             </div>
           ) : (
             /* GRID MONITORING KARTU SENSOR */
@@ -154,14 +154,14 @@ export default function SensorsPage() {
                           color: "white"
                         }}
                       >
-                        {status === "safe" ? "Aman" : status === "warning" ? "Waspada" : status === "danger" ? "Bahaya" : "Mati"}
+                        {status === "safe" ? "Safe" : status === "warning" ? "Warning" : status === "danger" ? "Danger" : "Offline"}
                       </span>
                     </div>
 
                     {/* BARIS TENGAH: DETAIL PARAMETER TELEMETRI SENSOR */}
                     <div className="space-y-2.5 p-4 rounded-2xl border mb-5 flex-grow flex flex-col justify-center shadow-inner" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-surface-border)" }}>
                       <div className="flex justify-between items-center text-xs md:text-sm">
-                        <span className="font-bold uppercase tracking-wider text-[10px]" style={{ color: "var(--card-text-muted)" }}>Kadar Gas Total:</span>
+                        <span className="font-bold uppercase tracking-wider text-[10px]" style={{ color: "var(--card-text-muted)" }}>Total Gas Level:</span>
                         <span className={`font-mono font-black ${isWarningOrDanger ? "text-red-600 dark:text-rose-400 text-sm md:text-base" : ""}`} style={!isWarningOrDanger ? { color: "var(--card-title)" } : {}}>
                           {isDeviceOnline ? `${currentLive?.gas} PPM` : "-"}
                         </span>
@@ -169,7 +169,7 @@ export default function SensorsPage() {
 
                       {/* STATUS LPG LEVEL */}
                       <div className="flex justify-between items-center text-xs md:text-sm border-t pt-2" style={{ borderColor: "var(--card-surface-border)" }}>
-                        <span className="font-bold uppercase tracking-wider text-[10px]" style={{ color: "var(--card-text-muted)" }}>Status Kebocoran LPG:</span>
+                        <span className="font-bold uppercase tracking-wider text-[10px]" style={{ color: "var(--card-text-muted)" }}>LPG Leak Status:</span>
                         <span className={`font-black uppercase text-xs ${isDeviceOnline && currentLive?.lpgLevel !== "LOW" ? "text-amber-600 dark:text-amber-400" : ""}`} style={!(isDeviceOnline && currentLive?.lpgLevel !== "LOW") ? { color: "var(--card-text)" } : {}}>
                           {isDeviceOnline ? (currentLive?.lpgLevel || "LOW") : "-"}
                         </span>
@@ -177,21 +177,21 @@ export default function SensorsPage() {
 
                       {/* STATUS SMOKE LEVEL */}
                       <div className="flex justify-between items-center text-xs md:text-sm border-t pt-2" style={{ borderColor: "var(--card-surface-border)" }}>
-                        <span className="font-bold uppercase tracking-wider text-[10px]" style={{ color: "var(--card-text-muted)" }}>Kondisi Kepekatan Asap:</span>
+                        <span className="font-bold uppercase tracking-wider text-[10px]" style={{ color: "var(--card-text-muted)" }}>Smoke Density Condition:</span>
                         <span className={`font-black uppercase text-xs ${isDeviceOnline && currentLive?.smokeLevel !== "CLEAR" ? "text-red-600 dark:text-rose-400" : ""}`} style={!(isDeviceOnline && currentLive?.smokeLevel !== "CLEAR") ? { color: "var(--card-text)" } : {}}>
                           {isDeviceOnline ? (currentLive?.smokeLevel || "CLEAR") : "-"}
                         </span>
                       </div>
                       
                       <div className="flex justify-between items-center text-xs md:text-sm border-t pt-2" style={{ borderColor: "var(--card-surface-border)" }}>
-                        <span className="font-bold uppercase tracking-wider text-[10px]" style={{ color: "var(--card-text-muted)" }}>Suhu Ruangan:</span>
+                        <span className="font-bold uppercase tracking-wider text-[10px]" style={{ color: "var(--card-text-muted)" }}>Room Temperature:</span>
                         <span className="font-mono font-bold" style={{ color: "var(--card-title)" }}>
                           {isDeviceOnline ? `${currentLive?.temperature} °C` : "-"}
                         </span>
                       </div>
 
                       <div className="flex justify-between items-center text-xs md:text-sm border-t pt-2" style={{ borderColor: "var(--card-surface-border)" }}>
-                        <span className="font-bold uppercase tracking-wider text-[10px]" style={{ color: "var(--card-text-muted)" }}>Kelembapan:</span>
+                        <span className="font-bold uppercase tracking-wider text-[10px]" style={{ color: "var(--card-text-muted)" }}>Humidity:</span>
                         <span className="font-mono font-bold" style={{ color: "var(--card-title)" }}>
                           {isDeviceOnline ? `${currentLive?.humidity} %` : "-"}
                         </span>
@@ -201,7 +201,7 @@ export default function SensorsPage() {
                     {/* BARIS BAWAH: METRICS THRESHOLD & ONLINE STATUS */}
                     <div className="pt-4 border-t flex items-center justify-between text-[9px] md:text-[10px] font-bold tracking-widest gap-1" style={{ borderColor: "var(--card-surface-border)", color: "var(--card-text-faint)" }}>
                       <div className="truncate uppercase">
-                        <span>Batas Aman: &lt; {sensor.thresholds?.warning || 200} PPM</span>
+                        <span>Safe Limit: &lt; {sensor.thresholds?.warning || 200} PPM</span>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0 px-2 py-1 rounded-md border" style={{ backgroundColor: "var(--card-surface)", borderColor: "var(--card-surface-border)" }}>
                         <div className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full ${isDeviceOnline ? "bg-emerald-500" : "bg-slate-300 dark:bg-slate-600"}`} />

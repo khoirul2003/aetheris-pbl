@@ -15,7 +15,7 @@ interface ToastNotification {
 }
 
 export default function AdminSettingsPage() {
-  const [currentAdmin, setCurrentAdmin] = useState({ name: "Memuat nama...", email: "Memuat email..." });
+  const [currentAdmin, setCurrentAdmin] = useState({ name: "Loading name...", email: "Loading email..." });
   const [notifyOnDanger, setNotifyOnDanger] = useState(true);
   const [defaultThreshold, setDefaultThreshold] = useState(400);
   const [adminList, setAdminList] = useState<AdminUser[]>([]);
@@ -38,7 +38,7 @@ export default function AdminSettingsPage() {
 
   const handleModalPasswordBlur = () => {
     if (newAdmin.password && newAdmin.password.length < 6) {
-      setModalPasswordError("Password harus minimal 6 karakter!");
+      setModalPasswordError("Password must be at least 6 characters!");
     } else {
       setModalPasswordError("");
     }
@@ -57,7 +57,7 @@ export default function AdminSettingsPage() {
         }
       } catch (err) {
         console.error(err);
-        showToast("Gagal memuat konfigurasi dari database", "error");
+        showToast("Failed to load configuration from database", "error");
       }
     }
     loadConfig();
@@ -80,7 +80,7 @@ export default function AdminSettingsPage() {
             });
           }
         } catch (e) {
-          console.error("Gagal sinkronisasi data sesi login aktif admin:", e);
+          console.error("Failed to synchronize active admin login session data:", e);
         }
       }
     });
@@ -100,10 +100,10 @@ export default function AdminSettingsPage() {
       };
 
       await ClientProfileModel.saveSystemConfig(updatePayload);
-      showToast("Konfigurasi parameter sistem platform berhasil diperbarui!");
+      showToast("Platform system configuration successfully updated!");
     } catch (err) {
       console.error(err);
-      showToast("Gagal menyimpan konfigurasi", "error");
+      showToast("Failed to save configuration", "error");
     }
   };
 
@@ -117,13 +117,13 @@ export default function AdminSettingsPage() {
 
   const handleDeleteAdmin = async (id: string, name: string, e: React.MouseEvent) => {
     e.stopPropagation(); 
-    if (confirm(`Apakah Anda yakin ingin menghapus akun admin ${name}?`)) {
+    if (confirm(`Are you sure you want to delete the admin account ${name}?`)) {
       try {
         await ClientProfileModel.deleteAdmin(id);
-        showToast("Akun admin " + name + " berhasil dihapus!");
+        showToast("Admin account " + name + " successfully deleted!");
       } catch (err) {
         console.error(err);
-        showToast("Gagal menghapus akun admin", "error");
+        showToast("Failed to delete admin account", "error");
       }
     }
   };
@@ -131,14 +131,14 @@ export default function AdminSettingsPage() {
   const handleAddAdminSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newAdmin.name || !newAdmin.email) {
-      showToast("Nama dan Email wajib diisi!", "error");
+      showToast("Name and Email are required!", "error");
       return;
     }
 
     try {
       if (editingAdminId) {
         if (newAdmin.password && newAdmin.password.length < 6) {
-          setModalPasswordError("Password harus minimal 6 karakter!");
+          setModalPasswordError("Password must be at least 6 characters!");
           return;
         }
 
@@ -151,10 +151,10 @@ export default function AdminSettingsPage() {
         }
 
         await ClientProfileModel.updateAdmin(editingAdminId, updateData);
-        showToast("Data admin " + newAdmin.name + " berhasil diperbarui!");
+        showToast("Admin data " + newAdmin.name + " successfully updated!");
       } else {
         if (!newAdmin.password || newAdmin.password.length < 6) {
-          setModalPasswordError("Password harus minimal 6 karakter!");
+          setModalPasswordError("Password must be at least 6 characters!");
           return;
         }
 
@@ -165,7 +165,7 @@ export default function AdminSettingsPage() {
           isActive: false 
         });
 
-        showToast("Akun admin untuk " + newAdmin.name + " berhasil didaftarkan!");
+        showToast("Admin account for " + newAdmin.name + " successfully registered!");
       }
 
       setNewAdmin({ name: "", email: "", password: "" });
@@ -174,14 +174,14 @@ export default function AdminSettingsPage() {
       setIsModalOpen(false);
     } catch (err) {
       console.error(err);
-      showToast("Gagal memproses pendaftaran ke database", "error");
+      showToast("Failed to process registration to database", "error");
     }
   };
 
   return (
     <AdminLayout
-      title="Pengaturan Admin"
-      description="Kelola informasi kredensial profil, preferensi threshold platform, dan hak akses rekan admin."
+      title="Admin Settings"
+      description="Manage profile credentials, platform threshold preferences, and admin colleague access rights."
     >
       <div className="fixed top-6 right-6 z-[200] flex flex-col gap-3 max-w-sm w-full pointer-events-none print:hidden">
         {toasts.map((toast) => (
@@ -199,16 +199,16 @@ export default function AdminSettingsPage() {
               <div className="p-6 rounded-2xl shadow-sm space-y-5" style={{ backgroundColor: "var(--card-bg-solid)", borderWidth: 1, borderColor: "var(--card-surface-border)" }}>
                 <div className="flex items-center gap-2 pb-3" style={{ borderBottomWidth: 1, borderBottomColor: "var(--card-surface-border)", color: "var(--card-title)" }}>
                   <Shield size={18} style={{ color: "var(--accent-primary)" }} />
-                  <h4 className="font-bold text-sm">Profil Akun Terbuka</h4>
+                  <h4 className="font-bold text-sm">Active Account Profile</h4>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-2 px-1">
                   <div className="space-y-1">
-                    <span className="block text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--card-text-faint)" }}>Nama Administrator Aktif</span>
+                    <span className="block text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--card-text-faint)" }}>Active Administrator Name</span>
                     <p className="text-sm font-semibold font-sans" style={{ color: "var(--card-title)" }}>{currentAdmin.name}</p>
                   </div>
                   <div className="space-y-1">
-                    <span className="block text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--card-text-faint)" }}>Alamat Email Sesi Login</span>
+                    <span className="block text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--card-text-faint)" }}>Login Session Email Address</span>
                     <p className="text-sm font-semibold font-mono" style={{ color: "var(--card-text-muted)" }}>{currentAdmin.email}</p>
                   </div>
                 </div>
@@ -217,20 +217,20 @@ export default function AdminSettingsPage() {
               <div className="p-6 rounded-2xl shadow-sm space-y-5" style={{ backgroundColor: "var(--card-bg-solid)", borderWidth: 1, borderColor: "var(--card-surface-border)" }}>
                 <div className="flex items-center gap-2 pb-3" style={{ borderBottomWidth: 1, borderBottomColor: "var(--card-surface-border)", color: "var(--card-title)" }}>
                   <BellRing size={18} style={{ color: "var(--accent-primary)" }} />
-                  <h4 className="font-bold text-sm">Ambivalensi & Parameter Sistem</h4>
+                  <h4 className="font-bold text-sm">System Parameters & Notifications</h4>
                 </div>
                 <div>
-                  <label className="block text-xs font-bold mb-1" style={{ color: "var(--card-title)" }}>Threshold Kebocoran Default Baru (PPM)</label>
+                  <label className="block text-xs font-bold mb-1" style={{ color: "var(--card-title)" }}>New Default Leakage Threshold (PPM)</label>
                   <div className="flex items-center gap-3">
                     <input type="number" value={defaultThreshold} onChange={(e) => setDefaultThreshold(Number(e.target.value))} className="w-32 border rounded-xl p-2.5 text-sm font-mono font-medium focus:outline-none focus:ring-2 shadow-inner transition-colors" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-surface-border)", color: "var(--card-text)" }} />
                     <span className="text-xs font-bold" style={{ color: "var(--card-title)" }}>PPM (Parts Per Million)</span>
                   </div>
-                  <p className="text-[11px] mt-1.5" style={{ color: "var(--card-text-muted)" }}>Dipakai otomatis sebagai batas deteksi awal ketika perangkat sensor baru didaftarkan ke sistem mitra.</p>
+                  <p className="text-[11px] mt-1.5" style={{ color: "var(--card-text-muted)" }}>Automatically used as the initial detection limit when a new sensor device is registered to the partner system.</p>
                 </div>
                 <div className="flex items-center justify-between pt-3" style={{ borderTopWidth: 1, borderTopColor: "var(--card-surface-border)" }}>
                   <div>
-                    <p className="text-sm font-bold" style={{ color: "var(--card-title)" }}>Kirim Notifikasi Alert ke Sistem Admin</p>
-                    <p className="text-xs" style={{ color: "var(--card-text-muted)" }}>Dapatkan peringatan real-time instan jika ada salah satu mitra berstatus BAHAYA.</p>
+                    <p className="text-sm font-bold" style={{ color: "var(--card-title)" }}>Send Alert Notifications to Admin System</p>
+                    <p className="text-xs" style={{ color: "var(--card-text-muted)" }}>Get instant real-time alerts if any partner is in DANGER status.</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" checked={notifyOnDanger} onChange={(e) => setNotifyOnDanger(e.target.checked)} className="sr-only peer" />
@@ -240,14 +240,14 @@ export default function AdminSettingsPage() {
               </div>
 
               <button type="submit" className="w-full text-white font-medium py-3 rounded-xl transition-all shadow-sm text-sm flex items-center justify-center gap-2 cursor-pointer border-none" style={{ backgroundColor: "var(--accent-primary)" }}>
-                <Save size={16} /> Simpan Konfigurasi Parameter Sistem
+                <Save size={16} /> Save System Configuration
               </button>
             </form>
 
             <div className="p-6 rounded-2xl shadow-sm h-fit space-y-4" style={{ backgroundColor: "var(--card-bg)", borderWidth: 1, borderColor: "var(--card-border)" }}>
               <div className="pb-2" style={{ borderBottomWidth: 1, borderBottomColor: "var(--card-surface-border)" }}>
-                <h4 className="font-bold text-sm" style={{ color: "var(--card-title)" }}>Manajemen Akun Admin</h4>
-                <p className="text-[11px]" style={{ color: "var(--card-text-muted)" }}>Daftar otoritas tim admin. Status aktif sinkron otomatis dengan login perangkat.</p>
+                <h4 className="font-bold text-sm" style={{ color: "var(--card-title)" }}>Admin Account Management</h4>
+                <p className="text-[11px]" style={{ color: "var(--card-text-muted)" }}>Admin team authority list. Active status syncs automatically with device login.</p>
               </div>
               
               <div className="space-y-3">
@@ -265,18 +265,18 @@ export default function AdminSettingsPage() {
                       <div className="flex items-center gap-3 shrink-0" onClick={(e) => e.stopPropagation()}>
                         <span className={`text-[10px] font-bold tracking-wider px-2 py-1 rounded transition-all ${
                           admin.isActive ? 'bg-emerald-100/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700'
-                        }`}>{admin.isActive ? "AKTIF" : "TIDAK AKTIF"}</span>
-                        <button onClick={(e) => handleDeleteAdmin(admin.id, admin.name, e)} className="p-1 rounded transition-colors border-none bg-transparent cursor-pointer hover:text-rose-500" style={{ color: "var(--card-text-muted)" }} title="Hapus Akun Admin"><Trash2 size={14} /></button>
+                        }`}>{admin.isActive ? "ACTIVE" : "INACTIVE"}</span>
+                        <button onClick={(e) => handleDeleteAdmin(admin.id, admin.name, e)} className="p-1 rounded transition-colors border-none bg-transparent cursor-pointer hover:text-rose-500" style={{ color: "var(--card-text-muted)" }} title="Delete Admin Account"><Trash2 size={14} /></button>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <p className="text-center text-xs py-6 font-medium" style={{ color: "var(--card-text-faint)" }}>Belum ada akun admin terdaftar.</p>
+                  <p className="text-center text-xs py-6 font-medium" style={{ color: "var(--card-text-faint)" }}>No admin accounts registered yet.</p>
                 )}
               </div>
               
               <button type="button" onClick={() => { setEditingAdminId(null); setNewAdmin({ name: "", email: "", password: "" }); setModalPasswordError(""); setShowModalPassword(false); setIsModalOpen(true); }} className="w-full border-2 border-dashed font-medium text-xs py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer hover:opacity-80" style={{ borderColor: "var(--card-surface-border)", color: "var(--card-text)", backgroundColor: "transparent" }}>
-                <UserPlus size={14} /> + Tambah Admin Baru
+                <UserPlus size={14} /> + Add New Admin
               </button>
           </div>
         </div>
@@ -286,25 +286,25 @@ export default function AdminSettingsPage() {
         <div className="fixed inset-0 bg-slate-900/60 dark:bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 transition-all animate-fade-in">
           <div className="rounded-2xl border shadow-xl max-w-md w-full overflow-hidden" style={{ backgroundColor: "var(--card-bg-solid)", borderColor: "var(--card-border)" }}>
             <div className="p-5 flex justify-between items-center" style={{ borderBottomWidth: 1, borderBottomColor: "var(--card-surface-border)", backgroundColor: "var(--card-surface)" }}>
-              <div className="flex items-center gap-2" style={{ color: "var(--card-title)" }}><UserPlus size={18} style={{ color: "var(--accent-primary)" }} /><h3 className="font-bold text-sm">{editingAdminId ? "Ubah Data Akun Admin" : "Tambah Akun Admin Baru"}</h3></div>
+              <div className="flex items-center gap-2" style={{ color: "var(--card-title)" }}><UserPlus size={18} style={{ color: "var(--accent-primary)" }} /><h3 className="font-bold text-sm">{editingAdminId ? "Edit Admin Account Data" : "Add New Admin Account"}</h3></div>
               <button type="button" onClick={() => setIsModalOpen(false)} className="p-1 rounded-lg transition-colors cursor-pointer border-none bg-transparent hover:opacity-80" style={{ color: "var(--card-text-muted)" }}><X size={16} /></button>
             </div>
 
             <form onSubmit={handleAddAdminSubmit} className="p-5 space-y-4">
               <div>
-                <label className="block text-xs font-bold mb-1" style={{ color: "var(--card-title)" }}>Nama Lengkap</label>
-                <input type="text" placeholder="Contoh: John Doe" value={newAdmin.name} onChange={(e) => setNewAdmin({ ...newAdmin, name: e.target.value })} className="w-full border rounded-xl p-2.5 text-xs font-medium focus:outline-none focus:ring-2 transition-all shadow-inner" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-surface-border)", color: "var(--card-text)" }} />
+                <label className="block text-xs font-bold mb-1" style={{ color: "var(--card-title)" }}>Full Name</label>
+                <input type="text" placeholder="Example: John Doe" value={newAdmin.name} onChange={(e) => setNewAdmin({ ...newAdmin, name: e.target.value })} className="w-full border rounded-xl p-2.5 text-xs font-medium focus:outline-none focus:ring-2 transition-all shadow-inner" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-surface-border)", color: "var(--card-text)" }} />
               </div>
               <div>
-                <label className="block text-xs font-bold mb-1" style={{ color: "var(--card-title)" }}>Email Otoritas</label>
-                <input type="email" placeholder="Contoh: john@aetheris.com" value={newAdmin.email} onChange={(e) => setNewAdmin({ ...newAdmin, email: e.target.value })} className="w-full border rounded-xl p-2.5 text-xs font-medium focus:outline-none focus:ring-2 transition-all shadow-inner" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-surface-border)", color: "var(--card-text)" }} />
+                <label className="block text-xs font-bold mb-1" style={{ color: "var(--card-title)" }}>Authority Email</label>
+                <input type="email" placeholder="Example: john@aetheris.com" value={newAdmin.email} onChange={(e) => setNewAdmin({ ...newAdmin, email: e.target.value })} className="w-full border rounded-xl p-2.5 text-xs font-medium focus:outline-none focus:ring-2 transition-all shadow-inner" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-surface-border)", color: "var(--card-text)" }} />
               </div>
               <div>
-                <label className="block text-xs font-bold mb-1" style={{ color: "var(--card-title)" }}>{editingAdminId ? "Password Baru (Kosongkan jika tetap)" : "Password Akses Awal"}</label>
+                <label className="block text-xs font-bold mb-1" style={{ color: "var(--card-title)" }}>{editingAdminId ? "New Password (Leave blank to keep current)" : "Initial Access Password"}</label>
                 <div className="relative flex items-center">
                   <input 
                     type="text" 
-                    placeholder="•••••••• (Min. 6 karakter)"
+                    placeholder="•••••••• (Min. 6 characters)"
                     value={newAdmin.password}
                     onChange={(e) => {
                       setNewAdmin({ ...newAdmin, password: e.target.value });
@@ -322,8 +322,8 @@ export default function AdminSettingsPage() {
               </div>
 
               <div className="flex gap-2 pt-2 justify-end mt-4" style={{ borderTopWidth: 1, borderTopColor: "var(--card-surface-border)" }}>
-                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 font-bold text-xs rounded-xl transition-all cursor-pointer border-none hover:opacity-80" style={{ backgroundColor: "var(--card-surface)", color: "var(--card-text)" }}>Batal</button>
-                <button type="submit" disabled={!!modalPasswordError} className={`px-4 py-2 text-white font-bold text-xs rounded-xl transition-all shadow-sm border-none ${modalPasswordError ? "opacity-50 cursor-not-allowed shadow-none" : "cursor-pointer hover:opacity-80"}`} style={{ backgroundColor: modalPasswordError ? "var(--card-text-faint)" : "var(--accent-primary)" }}>{editingAdminId ? "Simpan Perubahan" : "Daftarkan Admin"}</button>
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 font-bold text-xs rounded-xl transition-all cursor-pointer border-none hover:opacity-80" style={{ backgroundColor: "var(--card-surface)", color: "var(--card-text)" }}>Cancel</button>
+                <button type="submit" disabled={!!modalPasswordError} className={`px-4 py-2 text-white font-bold text-xs rounded-xl transition-all shadow-sm border-none ${modalPasswordError ? "opacity-50 cursor-not-allowed shadow-none" : "cursor-pointer hover:opacity-80"}`} style={{ backgroundColor: modalPasswordError ? "var(--card-text-faint)" : "var(--accent-primary)" }}>{editingAdminId ? "Save Changes" : "Register Admin"}</button>
               </div>
             </form>
           </div>

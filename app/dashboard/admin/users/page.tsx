@@ -230,7 +230,7 @@ function AddUserModal({ packages, onClose }: { packages: SubscriptionPackage[], 
 
   const createUser = async () => {
     if (!form.email || !form.password) {
-      alert("Email dan Password wajib diisi untuk login.");
+      alert("Email and Password are required for login.");
       return;
     }
     
@@ -269,8 +269,8 @@ function AddUserModal({ packages, onClose }: { packages: SubscriptionPackage[], 
 
       onClose();
     } catch (error: any) {
-      console.error("Gagal membuat user:", error);
-      alert("Gagal menambahkan user baru: " + (error.message || ""));
+      console.error("Failed to create user:", error);
+      alert("Failed to add new user: " + (error.message || ""));
     } finally {
       setSaving(false);
     }

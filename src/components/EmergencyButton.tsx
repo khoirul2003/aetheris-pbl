@@ -4,7 +4,7 @@ import { AlertTriangle } from "lucide-react";
 
 export default function EmergencyButton() {
   const handleShutdown = () => {
-    if (confirm("⚠️ PERINGATAN: Apakah Anda yakin ingin melakukan Emergency Shutdown pada seluruh sistem?")) {
+    if (confirm("⚠️ WARNING: Are you sure you want to perform an Emergency Shutdown on the entire system?")) {
       // Masukkan logika shutdown Anda di sini
       console.log("System shutting down...");
     }

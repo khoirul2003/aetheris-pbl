@@ -441,7 +441,7 @@ export default function AdminSubscriptionsManagementPage() {
                           <button type="button" onClick={() => handleTogglePackActive(pkg)} className={`flex-1 text-xs font-bold py-2.5 rounded-xl border transition-colors cursor-pointer mt-2 ${pkg.isActive ? "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-500/20 hover:bg-rose-100/60" : "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20 hover:bg-emerald-100/60"}`}>
                             {pkg.isActive ? "Deactivate" : "Activate"}
                           </button>
-                          <button type="button" onClick={() => handleDeletePackage(pkg)} title="Hapus Paket" className="px-3 border border-rose-200 dark:border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs font-bold py-2.5 rounded-xl flex items-center justify-center transition-colors cursor-pointer mt-2 shadow-sm hover:opacity-80" style={{ backgroundColor: "var(--card-bg)" }}>
+                          <button type="button" onClick={() => handleDeletePackage(pkg)} title="Delete Package" className="px-3 border border-rose-200 dark:border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs font-bold py-2.5 rounded-xl flex items-center justify-center transition-colors cursor-pointer mt-2 shadow-sm hover:opacity-80" style={{ backgroundColor: "var(--card-bg)" }}>
                             <Trash2 size={16} />
                           </button>
                         </>

@@ -60,11 +60,11 @@ export default function LoginPage() {
         }, 500);
 
       } else {
-        setError("Akses ditolak. Role tidak terdaftar.");
+        setError("Access denied. Role is not registered.");
         setLoading(false);
       }
     } catch {
-      setError("Email atau password yang Anda masukkan salah.");
+      setError("The email or password you entered is incorrect.");
       setLoading(false);
     }
   };
@@ -97,7 +97,7 @@ export default function LoginPage() {
             className="text-[11px] font-bold flex items-center gap-1.5 transition-colors bg-transparent border-none cursor-pointer p-0 disabled:opacity-50 hover:opacity-80"
             style={{ color: "var(--accent-primary)" }}
           >
-            ← Kembali ke Beranda
+            ← Back to Home
           </button>
         </div>
 
@@ -143,7 +143,7 @@ export default function LoginPage() {
                     type="email"
                     className="block w-full pl-10 pr-4 py-3 border rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 transition-all shadow-inner"
                     style={{ backgroundColor: "var(--card-bg-solid)", borderColor: "var(--card-surface-border)", color: "var(--card-title)", "--tw-ring-color": "var(--accent-primary)" } as React.CSSProperties}
-                    placeholder="nama@restoran.com"
+                    placeholder="name@restaurant.com"
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     disabled={isNavigating}
@@ -153,7 +153,7 @@ export default function LoginPage() {
 
               <div className="relative">
                 <label className="text-[10px] font-black uppercase tracking-widest ml-1" style={{ color: "var(--card-text-faint)" }}>
-                  Kata Sandi
+                  Password
                 </label>
                 <div className="mt-2 relative">
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none" style={{ color: "var(--card-text-muted)" }}>
