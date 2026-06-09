@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Menu } from "lucide-react";
+import { Search, Menu, User } from "lucide-react";
 
 interface AdminHeaderProps {
   title: string;
@@ -78,7 +78,7 @@ export default function AdminHeader({
             className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 dark:border-slate-600 bg-[#1A1F24] dark:bg-[#238636] text-white text-[11px] font-bold shadow-xs hover:bg-[#333C45] dark:hover:bg-[#2ea043] hover:scale-105 active:scale-95 transition-all cursor-pointer"
             title="Admin Profile"
           >
-            AD
+            <User size={16} />
           </button>
         </div>
 

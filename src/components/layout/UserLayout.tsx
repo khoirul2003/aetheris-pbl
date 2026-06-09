@@ -40,7 +40,16 @@ export default function UserLayout({
 
   const [isMobileOpen, setIsMobileOpen] = useState<boolean>(false);
   const [mounted, setMounted] = useState<boolean>(false);
-  const [userName, setUserName] = useState<string | null>(null);
+  
+  // Cache data pengguna di sessionStorage untuk mencegah kedipan (flicker) saat pindah halaman
+  const [userName, setUserName] = useState<string | null>(() => {
+    if (typeof window !== "undefined") return sessionStorage.getItem("aetheris_user_name") || null;
+    return null;
+  });
+  const [activeUserEmail, setActiveUserEmail] = useState<string | null>(() => {
+    if (typeof window !== "undefined") return sessionStorage.getItem("aetheris_user_email") || null;
+    return null;
+  });
 
   // Optimistic Auth Caching & Mencegah Cascading Render
   useEffect(() => {
@@ -61,13 +70,21 @@ export default function UserLayout({
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {
         sessionStorage.removeItem("aetheris_user_auth");
+        sessionStorage.removeItem("aetheris_user_name");
+        sessionStorage.removeItem("aetheris_user_email");
         router.replace("/login");
       } else {
         try {
+          setActiveUserEmail(user.email);
+          if (user.email) sessionStorage.setItem("aetheris_user_email", user.email);
+          
           const userDoc = await getDoc(doc(db, "users", user.uid));
           
           if (userDoc.exists() && userDoc.data().role !== "admin") {
-            setUserName(userDoc.data().restaurantName || null);
+            const rName = userDoc.data().restaurantName || null;
+            setUserName(rName);
+            if (rName) sessionStorage.setItem("aetheris_user_name", rName);
+            
             sessionStorage.setItem("aetheris_user_auth", "true");
             setIsAuthorized((prev) => {
               if (!prev) return true;

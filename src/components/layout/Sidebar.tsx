@@ -3,7 +3,7 @@
 import { 
   Home, MapPin, Bell, BarChart2, Users, Settings, 
   LogOut, ShieldAlert, History, Radio, CreditCard, 
-  ChevronLeft, ChevronRight, X, Loader2
+  ChevronLeft, ChevronRight, X, Loader2, User
 } from "lucide-react";
 import { auth } from "@/lib/firebase";
 import { useRouter, usePathname } from "next/navigation";
@@ -169,7 +169,7 @@ export default function Sidebar({
 
             <div className={`flex items-center h-10 transition-all duration-300 ease-in-out ${collapsed ? "justify-center" : "px-1"}`}>
               <div className="w-10 h-10 rounded-full border text-[var(--sidebar-badge-text)] flex items-center justify-center text-xs font-bold shrink-0 shadow-sm" style={{ backgroundColor: "var(--sidebar-avatar-bg)", borderColor: "var(--sidebar-avatar-border)" }}>
-                {role === "admin" ? "AD" : "PR"}
+                <User size={16} />
               </div>
               <div className={`overflow-hidden whitespace-nowrap transition-all duration-300 ease-in-out text-left ${collapsed ? "max-w-0 opacity-0 ml-0" : "max-w-45 opacity-100 ml-3"}`}>
                 <p className="text-sm font-bold text-[var(--sidebar-text)] leading-tight truncate">

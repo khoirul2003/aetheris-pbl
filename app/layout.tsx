@@ -2,6 +2,7 @@ import { Plus_Jakarta_Sans } from 'next/font/google';
 import "./globals.css";
 import ThemeProvider from "@/src/components/ThemeProvider";
 import { Toaster } from "sonner";
+import RefreshButton from "@/src/components/ui/RefreshButton";
 // Memuat Plus Jakarta Sans dengan variasi weight lengkap untuk standar SaaS
 const plusJakartaSans = Plus_Jakarta_Sans({ 
   subsets: ['latin'],
@@ -45,6 +46,7 @@ export default function RootLayout({
         <ThemeProvider>
           {children}
           <Toaster position="top-right" richColors />
+          <RefreshButton />
         </ThemeProvider>
       </body>
     </html>

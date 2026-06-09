@@ -1,0 +1,16 @@
+{
+  "name": "Aetheris Dashboard",
+  "short_name": "Aetheris",
+  "description": "IoT Gas and Temperature Monitoring System",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#121417",
+  "theme_color": "#0EA5E9",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "192x192",
+      "type": "image/x-icon"
+    }
+  ]
+}

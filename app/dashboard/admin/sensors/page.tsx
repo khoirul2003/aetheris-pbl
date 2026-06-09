@@ -5,6 +5,13 @@ import AdminLayout from "@/src/components/layout/AdminLayout";
 import { db } from "@/lib/firebase";
 import { collection, query, orderBy, onSnapshot, where, getDocs, doc, updateDoc, setDoc } from "firebase/firestore";
 import { MoreHorizontal, Plus, X, Loader2 } from "lucide-react";
+import { ClientSensorModel, LiveSensorData } from "@/models/clientSensorModel";
+
+interface CustomLiveSensorData extends LiveSensorData {
+  lpgLevel?: string;
+  smokeLevel?: string;
+  lastUpdate?: number;
+}
 
 // Struktur Tipe Data untuk Keamanan TypeScript
 interface SensorData {
@@ -43,6 +50,7 @@ export default function AdminSensorsPage() {
   const [selected, setSelected] = useState<SensorData | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailAlerts, setDetailAlerts] = useState<AlertData[]>([]);
+  const [liveData, setLiveData] = useState<{ [sensorId: string]: CustomLiveSensorData }>({});
 
   // State for Add Sensor Modal
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -112,10 +120,32 @@ export default function AdminSensorsPage() {
     return () => unsub();
   }, []);
 
+  // Subscribe to RTDB for live data
+  useEffect(() => {
+    if (sensors.length === 0) return;
+
+    const unsubscribers = sensors.map((sensor) => {
+      return ClientSensorModel.subscribeToLiveStatus(sensor.id, (data) => {
+        setLiveData((prev) => ({
+          ...prev,
+          [sensor.id]: data as CustomLiveSensorData,
+        }));
+      });
+    });
+
+    return () => {
+      unsubscribers.forEach((unsub) => unsub());
+    };
+  }, [sensors]);
+
   const filtered = sensors.filter(s => {
+    const currentLive = liveData[s.id];
+    const isOnline = currentLive ? !!currentLive.isOnline : !!s.isOnline;
+    const condition = currentLive ? (currentLive.status || "safe") : (s.condition || "safe");
+
     const matchesSearch = search === "" || s.name?.toLowerCase().includes(search.toLowerCase()) || s.id?.toLowerCase().includes(search.toLowerCase());
-    const matchesConn = connFilter === "" || (connFilter === "online" ? s.isOnline : !s.isOnline);
-    const matchesCond = condFilter === "" || (s.condition || "safe") === condFilter;
+    const matchesConn = connFilter === "" || (connFilter === "online" ? isOnline : !isOnline);
+    const matchesCond = condFilter === "" || condition === condFilter;
     const matchesOwner = ownerFilter === "" || (s.userId === ownerFilter);
     return matchesSearch && matchesConn && matchesCond && matchesOwner;
   });
@@ -228,19 +258,25 @@ export default function AdminSensorsPage() {
                 ) : filtered.length === 0 ? (
                   <tr><td colSpan={8} className="px-6 py-8 text-center font-medium" style={{ color: "var(--card-text-muted)" }}>No matching results.</td></tr>
                 ) : (
-                  filtered.map(s => (
+                  filtered.map(s => {
+                    const currentLive = liveData[s.id];
+                    const isOnline = currentLive ? !!currentLive.isOnline : !!s.isOnline;
+                    const gasValue = currentLive ? currentLive.gas : s.gas;
+                    const lastUpdate = currentLive?.lastUpdate ? new Date(currentLive.lastUpdate).toLocaleString('en-US') : (s.lastSeen ? new Date(s.lastSeen.seconds * 1000).toLocaleString('en-US') : '-');
+
+                    return (
                     <tr key={s.id} className="hover:opacity-90 transition-colors">
                       <td className="px-6 py-4 font-bold" style={{ color: "var(--card-title)" }}>{s.name || s.id}</td>
                       <td className="px-6 py-4 font-medium" style={{ color: "var(--card-text-muted)" }}>{s.location || '-'}</td>
                       <td className="px-6 py-4 font-medium" style={{ color: "var(--card-title)" }}>{s.userId ? (owners[s.userId] || s.userId) : '-'}</td>
                       <td className="px-6 py-4">
-                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${s.isOnline ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'}`}>
-                          {s.isOnline ? 'ONLINE' : 'OFFLINE'}
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${isOnline ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700'}`}>
+                          {isOnline ? 'ONLINE' : 'OFFLINE'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 font-medium">{s.gas ?? '-'} PPM</td>
+                      <td className="px-6 py-4 font-medium">{gasValue ?? '-'} PPM</td>
                       <td className="px-6 py-4 font-mono" style={{ color: "var(--card-text-muted)" }}>{s.firmwareVersion || '-'}</td>
-                      <td className="px-6 py-4 font-medium" style={{ color: "var(--card-text-muted)" }}>{s.lastSeen ? new Date(s.lastSeen.seconds * 1000).toLocaleString('en-US') : '-'}</td>
+                      <td className="px-6 py-4 font-medium" style={{ color: "var(--card-text-muted)" }}>{lastUpdate}</td>
                       <td className="px-6 py-4 text-right">
                         
                         <div className="inline-flex items-center gap-2">
@@ -265,7 +301,8 @@ export default function AdminSensorsPage() {
 
                       </td>
                     </tr>
-                  ))
+                    );
+                  })
                 )}
               </tbody>
             </table>
