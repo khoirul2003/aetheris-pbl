@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import AdminLayout from "@/src/components/layout/AdminLayout";
-import { db } from "@/lib/firebase";
+import { db, getRtdb } from "@/lib/firebase";
 import { collection, query, orderBy, onSnapshot, where, getDocs, doc, updateDoc, setDoc } from "firebase/firestore";
-import { MoreHorizontal, Plus, X, Loader2 } from "lucide-react";
+import { ref, set } from "firebase/database";
+import { MoreHorizontal, Plus, X, Loader2, PowerOff } from "lucide-react";
 import { ClientSensorModel, LiveSensorData } from "@/models/clientSensorModel";
 
 interface CustomLiveSensorData extends LiveSensorData {
@@ -183,6 +184,24 @@ export default function AdminSensorsPage() {
     } catch (err) { console.error(err); }
   }
 
+  async function forceOffline(sensor: SensorData) {
+    try {
+      const liveRef = ref(getRtdb(), `sensorLive/${sensor.id}`);
+      await set(liveRef, {
+        isOnline: false,
+        status: "safe",
+        gas: 0,
+        temperature: 0,
+        humidity: 0,
+        lastUpdate: Date.now()
+      });
+      
+      // Update juga di Firestore jika diperlukan
+      const firestoreRef = doc(db, "sensors", sensor.id);
+      await updateDoc(firestoreRef, { isOnline: false, condition: "safe" });
+    } catch (err) { console.error("Failed to force offline:", err); }
+  }
+
   return (
     <AdminLayout
       title="Sensor Management"
@@ -292,6 +311,13 @@ export default function AdminSensorsPage() {
                           <button onClick={() => updateFirmware(s)} className="font-bold px-3 py-1.5 rounded-lg text-xs hover:opacity-80 transition-colors shadow-sm cursor-pointer" style={{ backgroundColor: "var(--card-bg-solid)", borderWidth: 1, borderColor: "var(--card-surface-border)", color: "var(--card-text)" }}>
                             Update FW
                           </button>
+                          
+                          {/* TOMBOL FORCE OFFLINE */}
+                          {isOnline && (
+                            <button onClick={() => forceOffline(s)} title="Turn Off Device" className="p-1.5 rounded-lg hover:opacity-80 transition-colors cursor-pointer bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400">
+                              <PowerOff size={16} />
+                            </button>
+                          )}
                           
                           <button className="p-1.5 rounded-lg hover:opacity-80 transition-colors cursor-pointer" style={{ color: "var(--card-text-muted)" }}>
                             <MoreHorizontal size={16} />

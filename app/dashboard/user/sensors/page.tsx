@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import UserLayout from "@/src/components/layout/UserLayout";
 import { ClientSensorModel, FirestoreSensor, LiveSensorData } from "@/models/clientSensorModel";
-import { AlertTriangle, Check, RefreshCw, Radio } from "lucide-react";
-import { auth } from "@/lib/firebase";
+import { AlertTriangle, Check, RefreshCw, Radio, PowerOff } from "lucide-react";
+import { auth, db, getRtdb } from "@/lib/firebase";
+import { doc, updateDoc } from "firebase/firestore";
+import { ref, set } from "firebase/database";
 import { onAuthStateChanged, User } from "firebase/auth";
 
 // Menyesuaikan struktur interface lokal dengan isi asli Firebase kamu
@@ -33,6 +35,22 @@ export default function SensorsPage() {
     });
     return () => unsubscribeAuth();
   }, []);
+
+  async function forceOffline(sensorId: string) {
+    try {
+      const liveRef = ref(getRtdb(), `sensorLive/${sensorId}`);
+      await set(liveRef, {
+        isOnline: false,
+        status: "safe",
+        gas: 0,
+        temperature: 0,
+        humidity: 0,
+        lastUpdate: Date.now()
+      });
+      const firestoreRef = doc(db, "sensors", sensorId);
+      await updateDoc(firestoreRef, { isOnline: false, condition: "safe" });
+    } catch (err) { console.error("Failed to force offline:", err); }
+  }
 
   // 2. Ambil data konseptual statis sensor dari Firestore
   useEffect(() => {
@@ -199,15 +217,23 @@ export default function SensorsPage() {
                     </div>
 
                     {/* BARIS BAWAH: METRICS THRESHOLD & ONLINE STATUS */}
-                    <div className="pt-4 border-t flex items-center justify-between text-[9px] md:text-[10px] font-bold tracking-widest gap-1" style={{ borderColor: "var(--card-surface-border)", color: "var(--card-text-faint)" }}>
+                    <div className="pt-4 border-t flex items-center justify-between text-[9px] md:text-[10px] font-bold tracking-widest gap-2" style={{ borderColor: "var(--card-surface-border)", color: "var(--card-text-faint)" }}>
                       <div className="truncate uppercase">
                         <span>Safe Limit: &lt; {sensor.thresholds?.warning || 200} PPM</span>
                       </div>
-                      <div className="flex items-center gap-1.5 shrink-0 px-2 py-1 rounded-md border" style={{ backgroundColor: "var(--card-surface)", borderColor: "var(--card-surface-border)" }}>
-                        <div className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full ${isDeviceOnline ? "bg-emerald-500" : "bg-slate-300 dark:bg-slate-600"}`} />
-                        <span className={`uppercase font-black ${isDeviceOnline ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400 dark:text-slate-500"}`}>
-                          {isDeviceOnline ? "Connected" : "Offline"}
-                        </span>
+                      
+                      <div className="flex items-center gap-2 shrink-0">
+                        {isDeviceOnline && (
+                          <button onClick={() => forceOffline(sensor.id)} title="Force Turn Off Device" className="p-1 rounded hover:opacity-80 transition-opacity bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 cursor-pointer">
+                            <PowerOff size={12} />
+                          </button>
+                        )}
+                        <div className="flex items-center gap-1.5 px-2 py-1 rounded-md border" style={{ backgroundColor: "var(--card-surface)", borderColor: "var(--card-surface-border)" }}>
+                          <div className={`w-1.5 h-1.5 md:w-2 md:h-2 rounded-full ${isDeviceOnline ? "bg-emerald-500" : "bg-slate-300 dark:bg-slate-600"}`} />
+                          <span className={`uppercase font-black ${isDeviceOnline ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400 dark:text-slate-500"}`}>
+                            {isDeviceOnline ? "Connected" : "Offline"}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
