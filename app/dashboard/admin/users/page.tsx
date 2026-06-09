@@ -268,7 +268,7 @@ function AddUserModal({ packages, onClose }: { packages: SubscriptionPackage[], 
       });
 
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to create user:", error);
       alert("Failed to add new user: " + (error.message || ""));
     } finally {

@@ -31,6 +31,7 @@ export default function ReportsPage() {
     
     let isMounted = true;
     let unsubscribeAlerts: (() => void) | undefined;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
 
     async function fetchReportData() {

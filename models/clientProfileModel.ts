@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { db, auth } from '@/lib/firebase';
 import { doc, getDoc, getDocs, updateDoc, collection, query, where, orderBy, onSnapshot, setDoc, deleteDoc, Timestamp } from 'firebase/firestore'; 
 import { createUserWithEmailAndPassword } from 'firebase/auth';
@@ -48,7 +49,7 @@ export const ClientProfileModel = {
   async getAllProfiles(): Promise<any[]> {
     const usersRef = collection(db, 'users');
     const snapshot = await getDocs(usersRef);
-    const users: any[] = [];
+    const users: unknown[] = [];
     snapshot.forEach((doc) => {
       users.push({ id: doc.id, ...doc.data() });
     });

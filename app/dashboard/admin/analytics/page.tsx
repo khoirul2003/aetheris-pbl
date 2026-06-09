@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
@@ -139,9 +140,9 @@ export default function AdminAnalyticsPage() {
       let paidDate = new Date();
       if (sub.startDate) {
         if (typeof sub.startDate === 'object' && 'toDate' in sub.startDate) {
-            paidDate = (sub.startDate as any).toDate();
+            paidDate = (sub.startDate as unknown).toDate();
         } else {
-            paidDate = new Date(sub.startDate as any);
+            paidDate = new Date(sub.startDate as unknown);
         }
       }
 

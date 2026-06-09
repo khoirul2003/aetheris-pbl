@@ -45,7 +45,7 @@ export default function SensorsPage() {
         gas: 0,
         temperature: 0,
         humidity: 0,
-        lastUpdate: Date.now()
+        lastUpdate: new Date().getTime()
       });
       const firestoreRef = doc(db, "sensors", sensorId);
       await updateDoc(firestoreRef, { isOnline: false, condition: "safe" });

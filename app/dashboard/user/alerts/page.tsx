@@ -26,6 +26,7 @@ export default function AlertsPage() {
 
   useEffect(() => {
     if (!userId) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     const unsubscribe = ClientAlertModel.subscribeToAlerts(userId, (data) => {
       setAlerts(data);

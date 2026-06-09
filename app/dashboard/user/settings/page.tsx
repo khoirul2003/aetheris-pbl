@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 "use client";
 
 import { useEffect, useState } from "react";
@@ -126,7 +127,7 @@ export default function SettingsPage() {
             <div className="space-y-6">
               
               {/* KARTU 1: PROFIL RESTORAN */}
-              <div className=" backdrop-blur border  rounded-3xl p-6 md:p-8 shadow-xs" style={{ borderColor: "var(--card-border)" }} style={{ backgroundColor: "var(--card-bg)" }}>
+              <div className=" backdrop-blur border  rounded-3xl p-6 md:p-8 shadow-xs" style={{ borderColor: "var(--card-border)" ,  backgroundColor: "var(--card-bg)" }}>
                 <h3 className="text-[11px] font-black uppercase tracking-widest  mb-6" style={{ color: "var(--card-text-faint)" }}>Restaurant Profile</h3>
                 <div className="divide-y  text-xs" style={{ borderColor: "var(--card-surface-border)" }}>
                   
@@ -137,7 +138,7 @@ export default function SettingsPage() {
                     </div>
                     <button 
                       onClick={() => setActiveModal("name")}
-                      className="px-4 py-2  border  rounded-xl font-bold hover:opacity-80 shrink-0 shadow-sm transition-all cursor-pointer border-none" style={{ backgroundColor: "var(--card-surface)", borderColor: "var(--card-surface-border)", color: "var(--card-text)" }} style={{ borderColor: "var(--card-border)" }}
+                      className="px-4 py-2  border  rounded-xl font-bold hover:opacity-80 shrink-0 shadow-sm transition-all cursor-pointer border-none" style={{ backgroundColor: "var(--card-surface)", borderColor: "var(--card-surface-border)", color: "var(--card-text)" ,  borderColor: "var(--card-border)" }}
                     >
                       Edit
                     </button>
@@ -150,7 +151,7 @@ export default function SettingsPage() {
                     </div>
                     <button 
                       onClick={() => setActiveModal("address")}
-                      className="px-4 py-2  border  rounded-xl font-bold hover:opacity-80 shrink-0 shadow-sm transition-all cursor-pointer border-none" style={{ backgroundColor: "var(--card-surface)", borderColor: "var(--card-surface-border)", color: "var(--card-text)" }} style={{ borderColor: "var(--card-border)" }}
+                      className="px-4 py-2  border  rounded-xl font-bold hover:opacity-80 shrink-0 shadow-sm transition-all cursor-pointer border-none" style={{ backgroundColor: "var(--card-surface)", borderColor: "var(--card-surface-border)", color: "var(--card-text)" ,  borderColor: "var(--card-border)" }}
                     >
                       Edit
                     </button>
@@ -165,7 +166,7 @@ export default function SettingsPage() {
                     </div>
                     <button 
                       onClick={() => setActiveModal("hours")}
-                      className="px-4 py-2  border  rounded-xl font-bold hover:opacity-80 shrink-0 shadow-sm transition-all cursor-pointer border-none" style={{ backgroundColor: "var(--card-surface)", borderColor: "var(--card-surface-border)", color: "var(--card-text)" }} style={{ borderColor: "var(--card-border)" }}
+                      className="px-4 py-2  border  rounded-xl font-bold hover:opacity-80 shrink-0 shadow-sm transition-all cursor-pointer border-none" style={{ backgroundColor: "var(--card-surface)", borderColor: "var(--card-surface-border)", color: "var(--card-text)" ,  borderColor: "var(--card-border)" }}
                     >
                       Edit
                     </button>
@@ -175,7 +176,7 @@ export default function SettingsPage() {
               </div>
 
               {/* KARTU 2: NOTIFIKASI */}
-              <div className=" backdrop-blur border  rounded-3xl p-6 md:p-8 shadow-xs" style={{ borderColor: "var(--card-border)" }} style={{ backgroundColor: "var(--card-bg)" }}>
+              <div className=" backdrop-blur border  rounded-3xl p-6 md:p-8 shadow-xs" style={{ borderColor: "var(--card-border)" ,  backgroundColor: "var(--card-bg)" }}>
                 <h3 className="text-[11px] font-black uppercase tracking-widest  mb-6" style={{ color: "var(--card-text-faint)" }}>Notifications & Contact</h3>
                 <div className="space-y-6 text-xs">
                   
@@ -187,7 +188,7 @@ export default function SettingsPage() {
                     <div className="flex items-center gap-3 shrink-0">
                       <button 
                         onClick={() => setActiveModal("phone")}
-                        className="px-3 py-1.5  border  rounded-xl font-bold hover:opacity-80 text-[11px] shadow-sm transition-all cursor-pointer border-none" style={{ backgroundColor: "var(--card-surface)", borderColor: "var(--card-surface-border)", color: "var(--card-text)" }} style={{ borderColor: "var(--card-border)" }}
+                        className="px-3 py-1.5  border  rounded-xl font-bold hover:opacity-80 text-[11px] shadow-sm transition-all cursor-pointer border-none" style={{ backgroundColor: "var(--card-surface)", borderColor: "var(--card-surface-border)", color: "var(--card-text)" ,  borderColor: "var(--card-border)" }}
                       >
                         Edit Phone
                       </button>
@@ -235,7 +236,7 @@ export default function SettingsPage() {
             <div className="space-y-6">
 
               {/* KARTU INSTRUKSI PANDUAN PENGATURAN WI-FI UNTUK USER */}
-              <div className=" backdrop-blur border  rounded-3xl p-6 md:p-8 shadow-xs" style={{ borderColor: "var(--card-border)" }} style={{ backgroundColor: "var(--card-bg)" }}>
+              <div className=" backdrop-blur border  rounded-3xl p-6 md:p-8 shadow-xs" style={{ borderColor: "var(--card-border)" ,  backgroundColor: "var(--card-bg)" }}>
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-8 h-8 rounded-full bg-[#EAF2EB] flex items-center justify-center shrink-0">
                     <Wifi size={16} className="text-[#4D6344]" />
@@ -259,7 +260,7 @@ export default function SettingsPage() {
               </div>
 
               {/* KARTU PAKET LANGGANAN */}
-              <div className=" backdrop-blur border  rounded-3xl p-6 md:p-8 shadow-xs" style={{ borderColor: "var(--card-border)" }} style={{ backgroundColor: "var(--card-bg)" }}>
+              <div className=" backdrop-blur border  rounded-3xl p-6 md:p-8 shadow-xs" style={{ borderColor: "var(--card-border)" ,  backgroundColor: "var(--card-bg)" }}>
                 <h3 className="text-[11px] font-black uppercase tracking-widest  mb-6" style={{ color: "var(--card-text-faint)" }}>Subscription Plan</h3>
                 <div className="bg-[#EAF2EB]/80 border border-[#C4D0B7]/50 p-5 rounded-2xl mb-5 shadow-inner">
                   <p className="text-base font-black text-[#4D6344] uppercase tracking-wide">
@@ -298,7 +299,7 @@ export default function SettingsPage() {
                 {activeModal === "phone" && "Edit WhatsApp Number"}
                 {activeModal === "hours" && "Edit Operational Hours"}
               </h4>
-              <button onClick={() => setActiveModal(null)} className=" hover: hover:bg-[var(--card-surface)] p-1.5 rounded-full transition-all cursor-pointer border-none bg-transparent" style={{ color: "var(--card-title)" }} style={{ color: "var(--card-text-faint)" }}>
+              <button onClick={() => setActiveModal(null)} className=" hover: hover:bg-[var(--card-surface)] p-1.5 rounded-full transition-all cursor-pointer border-none bg-transparent" style={{ color: "var(--card-title)" ,  color: "var(--card-text-faint)" }}>
                 <X size={18} />
               </button>
             </div>

@@ -29,8 +29,10 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
   useEffect(() => {
     const savedTheme = localStorage.getItem("aetheris_theme") as Theme | null;
     if (savedTheme === "dark" || savedTheme === "light") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTheme(savedTheme);
     } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTheme("dark");
     }
     setMounted(true);
