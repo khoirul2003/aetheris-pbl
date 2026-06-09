@@ -61,6 +61,13 @@ export default function AdminSensorsPage() {
   const [newSensorOwner, setNewSensorOwner] = useState("");
   const [isAdding, setIsAdding] = useState(false);
 
+  // State for Edit Sensor Modal
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editSensorId, setEditSensorId] = useState("");
+  const [editSensorName, setEditSensorName] = useState("");
+  const [editSensorLocation, setEditSensorLocation] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+
   async function handleAddSensor(e: React.FormEvent) {
     e.preventDefault();
     if (!newSensorId || !newSensorName || !newSensorOwner) return;
@@ -88,6 +95,31 @@ export default function AdminSensorsPage() {
       alert("Failed to add new sensor");
     }
     setIsAdding(false);
+  }
+
+  function openEditModal(sensor: SensorData) {
+    setEditSensorId(sensor.id);
+    setEditSensorName(sensor.name || "");
+    setEditSensorLocation(sensor.location || "");
+    setIsEditModalOpen(true);
+  }
+
+  async function handleEditSensor(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editSensorId || !editSensorName) return;
+    setIsEditing(true);
+    try {
+      const refDoc = doc(db, "sensors", editSensorId);
+      await updateDoc(refDoc, {
+        name: editSensorName,
+        location: editSensorLocation,
+      });
+      setIsEditModalOpen(false);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to update sensor");
+    }
+    setIsEditing(false);
   }
 
 
@@ -304,6 +336,10 @@ export default function AdminSensorsPage() {
                             View
                           </button>
                           
+                          <button onClick={() => openEditModal(s)} className="font-bold px-3 py-1.5 rounded-lg text-xs hover:opacity-80 transition-colors shadow-sm cursor-pointer" style={{ backgroundColor: "var(--card-bg-solid)", borderWidth: 1, borderColor: "var(--card-surface-border)", color: "var(--card-text)" }}>
+                            Edit
+                          </button>
+                          
                           <button onClick={() => toggleSensor(s)} className={`font-bold px-3 py-1.5 rounded-lg text-xs transition-colors border cursor-pointer ${s.disabled ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30' : 'bg-rose-50 dark:bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-500/30'}`}>
                             {s.disabled ? 'Enable' : 'Disable'}
                           </button>
@@ -457,6 +493,48 @@ export default function AdminSensorsPage() {
                 <button type="submit" disabled={isAdding} className="flex-1 py-3 px-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-all border-none cursor-pointer disabled:opacity-50" style={{ backgroundColor: "var(--accent-primary)", color: "#fff" }}>
                   {isAdding ? <Loader2 size={16} className="animate-spin" /> : null}
                   Save Sensor
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT SENSOR MODAL */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#111612]/80 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl p-6 shadow-2xl border" style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--card-border)" }}>
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-black uppercase tracking-widest" style={{ color: "var(--card-title)" }}>Edit Sensor</h3>
+              <button onClick={() => setIsEditModalOpen(false)} className="p-1 rounded-full hover:opacity-80 transition-opacity border-none bg-transparent cursor-pointer" style={{ color: "var(--card-text-muted)" }}>
+                <X size={20} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleEditSensor} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-2" style={{ color: "var(--card-text-faint)" }}>Sensor ID</label>
+                <input disabled type="text" value={editSensorId} className="w-full px-4 py-3 rounded-xl text-sm outline-none border font-mono opacity-50 cursor-not-allowed" style={{ backgroundColor: "var(--card-surface)", borderColor: "var(--card-surface-border)", color: "var(--card-text)" }} />
+                <p className="text-[10px] mt-1 font-medium text-rose-500">Hardware ID cannot be changed.</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-2" style={{ color: "var(--card-text-faint)" }}>Sensor Name</label>
+                <input required type="text" placeholder="e.g. Main Kitchen" value={editSensorName} onChange={e => setEditSensorName(e.target.value)} className="w-full px-4 py-3 rounded-xl text-sm outline-none border focus:ring-2 focus:ring-[#4D6344]/20 transition-all" style={{ backgroundColor: "var(--card-surface)", borderColor: "var(--card-surface-border)", color: "var(--card-text)" }} />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider mb-2" style={{ color: "var(--card-text-faint)" }}>Placement Location</label>
+                <input required type="text" placeholder="e.g. Frying Area" value={editSensorLocation} onChange={e => setEditSensorLocation(e.target.value)} className="w-full px-4 py-3 rounded-xl text-sm outline-none border focus:ring-2 focus:ring-[#4D6344]/20 transition-all" style={{ backgroundColor: "var(--card-surface)", borderColor: "var(--card-surface-border)", color: "var(--card-text)" }} />
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <button type="button" onClick={() => setIsEditModalOpen(false)} className="flex-1 py-3 px-4 rounded-xl font-bold text-sm hover:opacity-80 transition-all border-none cursor-pointer" style={{ backgroundColor: "var(--card-surface)", color: "var(--card-text)" }}>
+                  Cancel
+                </button>
+                <button type="submit" disabled={isEditing} className="flex-1 py-3 px-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-all border-none cursor-pointer disabled:opacity-50" style={{ backgroundColor: "var(--accent-primary)", color: "#fff" }}>
+                  {isEditing ? <Loader2 size={16} className="animate-spin" /> : null}
+                  Save Changes
                 </button>
               </div>
             </form>
