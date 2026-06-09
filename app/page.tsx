@@ -17,6 +17,7 @@ import {
   Layers,
   Loader2
 } from "lucide-react";
+import ThemeToggle from "@/src/components/ThemeToggle";
 
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -82,6 +83,8 @@ export default function LandingPage() {
             <a href="#arsitektur" className="hover:opacity-80 transition-opacity" style={{ color: "inherit" }}>Architecture</a>
             <a href="#harga" className="hover:opacity-80 transition-opacity" style={{ color: "inherit" }}>Service Packages</a>
             
+            <ThemeToggle />
+
             {/* Tombol Login Desktop */}
             <button 
               onClick={handleNavigateToLogin}
@@ -98,13 +101,16 @@ export default function LandingPage() {
           </div>
 
           {/* Mobile Toggle */}
-          <button 
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
-            className="md:hidden p-2 cursor-pointer border-none bg-transparent hover:opacity-80"
-            style={{ color: "var(--card-text-muted)" }}
-          >
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+          <div className="md:hidden flex items-center gap-3">
+            <ThemeToggle />
+            <button 
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
+              className="p-2 cursor-pointer border-none bg-transparent hover:opacity-80"
+              style={{ color: "var(--card-text-muted)" }}
+            >
+              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Nav Menu */}

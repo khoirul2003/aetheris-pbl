@@ -31,9 +31,10 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
     if (savedTheme === "dark" || savedTheme === "light") {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setTheme(savedTheme);
-    } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+    } else {
+      // Jika belum ada preferensi, paksakan default ke light
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setTheme("dark");
+      setTheme("light");
     }
     setMounted(true);
   }, []);

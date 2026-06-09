@@ -30,31 +30,30 @@ export default function UserLayout({
   // Set selalu false di awal agar hasil render Server dan Client sama persis
   const [isAuthorized, setIsAuthorized] = useState(false);
 
-  const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("aetheris_sidebar_collapsed");
-      return saved !== null ? JSON.parse(saved) : false;
-    }
-    return false;
-  });
-
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
   const [isMobileOpen, setIsMobileOpen] = useState<boolean>(false);
   const [mounted, setMounted] = useState<boolean>(false);
   
   // Cache data pengguna di sessionStorage untuk mencegah kedipan (flicker) saat pindah halaman
-  const [userName, setUserName] = useState<string | null>(() => {
-    if (typeof window !== "undefined") return sessionStorage.getItem("aetheris_user_name") || null;
-    return null;
-  });
-  const [activeUserEmail, setActiveUserEmail] = useState<string | null>(() => {
-    if (typeof window !== "undefined") return sessionStorage.getItem("aetheris_user_email") || null;
-    return null;
-  });
+  const [userName, setUserName] = useState<string | null>(null);
+  const [activeUserEmail, setActiveUserEmail] = useState<string | null>(null);
 
   // Optimistic Auth Caching & Mencegah Cascading Render
   useEffect(() => {
     const timer = setTimeout(() => {
       setMounted(true);
+      
+      const savedSidebar = localStorage.getItem("aetheris_sidebar_collapsed");
+      if (savedSidebar !== null) {
+        setIsCollapsed(JSON.parse(savedSidebar));
+      }
+      
+      const savedName = sessionStorage.getItem("aetheris_user_name");
+      if (savedName) setUserName(savedName);
+      
+      const savedEmail = sessionStorage.getItem("aetheris_user_email");
+      if (savedEmail) setActiveUserEmail(savedEmail);
+
     }, 0);
 
     if (sessionStorage.getItem("aetheris_user_auth") === "true") {

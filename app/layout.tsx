@@ -24,22 +24,8 @@ export default function RootLayout({
   return (
     // Memasukkan variabel font ke dalam tag HTML
     <html lang="id" className={`${plusJakartaSans.variable} antialiased`} suppressHydrationWarning>
-      {/* Inline script untuk mencegah flash tema yang salah (FOUC prevention) */}
       <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  var theme = localStorage.getItem('aetheris_theme');
-                  if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                    document.documentElement.classList.add('dark');
-                  }
-                } catch(e) {}
-              })();
-            `,
-          }}
-        />
+        {/* FOUC script dihapus karena sudah diatur secara default ke light mode di ThemeProvider */}
       </head>
       {/* font-sans sekarang akan mengacu pada Plus Jakarta Sans */}
       <body className="font-sans bg-[var(--background)] text-[var(--foreground)]">
