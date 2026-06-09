@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import UserLayout from "@/src/components/layout/UserLayout"; // Menggunakan layout User yang baru
-import { auth, db } from "@/lib/firebase";
+import UserLayout from "@/src/components/layout/UserLayout";
+import { auth, db, getRtdb } from "@/lib/firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
+import { ref as rtdbRef, query as rtdbQuery, limitToLast, onValue, off } from "firebase/database";
 import {
   collection,
   query,
@@ -107,37 +108,62 @@ export default function UserDashboard() {
 
         if (unsubscribeSummary) unsubscribeSummary();
 
-        const summaryQ = query(
-          collection(db, "dailySummaries"),
-          where("userId", "==", currentUserId),
-          orderBy("date", "asc"),
-          limit(7),
-        );
+        const unsubscribers: (() => void)[] = [];
 
-        unsubscribeSummary = onSnapshot(summaryQ, (summarySnapshot) => {
-          const history: Record<string, string | number>[] = [];
+        sensorList.forEach((sensor) => {
+          const historyRef = rtdbQuery(rtdbRef(getRtdb(), `sensorHistory/${sensor.id}`), limitToLast(60));
+          
+          const listener = onValue(historyRef, (snapshot) => {
+            if (snapshot.exists()) {
+              setChartHistory((prevHistory) => {
+                // Buat salinan deep copy dari history sebelumnya agar tidak memodifikasi objek yang frozen
+                const historyMap: Record<number, any> = {};
+                prevHistory.forEach(item => {
+                  historyMap[item.sortTime] = { ...item };
+                });
 
-          summarySnapshot.forEach((doc) => {
-            const data = doc.data();
-            const rawDate = data.date ? data.date.split("-") : [];
-            const formattedDate =
-              rawDate.length === 3 ? `${rawDate[1]}/${rawDate[2]}` : data.date; // Changed to MM/DD format
+                snapshot.forEach((childSnap) => {
+                  const pushId = childSnap.key;
+                  const data = childSnap.val();
+                  
+                  const PUSH_CHARS = '-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz';
+                  let timestamp = 0;
+                  if (pushId) {
+                    for (let i = 0; i < 8; i++) {
+                      timestamp = timestamp * 64 + PUSH_CHARS.indexOf(pushId.charAt(i));
+                    }
+                  }
+                  
+                  // Bulatkan ke kelipatan 10 detik terdekat agar garis grafik antar sensor menyatu
+                  const roundedTime = Math.floor(timestamp / 10000) * 10000;
+                  const timeStr = new Date(roundedTime).toLocaleTimeString("id-ID", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
+                    hour12: false
+                  });
 
-            const chartRow: Record<string, string | number> = {
-              time: formattedDate,
-            };
+                  if (!historyMap[roundedTime]) {
+                    historyMap[roundedTime] = { time: timeStr, sortTime: roundedTime };
+                  }
+                  
+                  historyMap[roundedTime][sensor.name] = data.gas || 0;
+                });
 
-            sensorList.forEach((sensor) => {
-              chartRow[sensor.name] = data.avgGasPerSensor?.[sensor.id] || 0;
-            });
-
-            history.push(chartRow);
+                // Ubah ke array, urutkan berdasarkan waktu, ambil 60 terakhir
+                return Object.values(historyMap)
+                  .sort((a, b) => a.sortTime - b.sortTime)
+                  .slice(-60);
+              });
+            }
           });
-
-          if (history.length > 0) {
-            setChartHistory(history);
-          }
+          
+          unsubscribers.push(() => off(historyRef, 'value', listener));
         });
+
+        unsubscribeSummary = () => {
+          unsubscribers.forEach(unsub => unsub());
+        };
       },
       (error) => {
         console.error("Failed to load sensors in real-time:", error);
@@ -196,19 +222,19 @@ export default function UserDashboard() {
   useEffect(() => {
     if (dynamicSensors.length === 0) return;
 
-    const now = new Date();
-    const timeString = now.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
-
     const unsubscribers = dynamicSensors.map((sensor) => {
       return ClientSensorModel.subscribeToLiveStatus(sensor.id, (data) => {
         setLiveSensors((prev: Record<string, LiveSensorData>) => ({
           ...prev,
           [sensor.id]: data,
         }));
+
+        const timeString = new Date().toLocaleTimeString("id-ID", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: false,
+        });
 
         setStats((prev: typeof stats) => ({
           ...prev,
@@ -500,7 +526,7 @@ export default function UserDashboard() {
           {/* WEEKLY CHART TREND */}
           <div className="p-4 md:p-6 rounded-2xl shadow-sm flex flex-col w-full h-full overflow-hidden" style={{ backgroundColor: "var(--card-bg-solid)", borderWidth: 1, borderColor: "var(--card-surface-border)" }}>
             <h3 className="text-xs font-black tracking-wider uppercase mb-4 flex items-center gap-2" style={{ color: "var(--card-text-muted)" }}>
-              <TrendingUp size={14} /> Weekly Average
+              <TrendingUp size={14} /> Latest Live
               Gas Trend
             </h3>
             <div className="h-[260px] w-full text-[10px] md:text-[11px] flex-grow">
