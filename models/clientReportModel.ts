@@ -19,7 +19,7 @@ export const ClientReportModel = {
     const q = query(
       summaryRef,
       where('userId', '==', userId),
-      orderBy('date', 'asc'),
+      orderBy('date', 'desc'),
       limit(7)
     );
 
@@ -28,6 +28,9 @@ export const ClientReportModel = {
     snapshot.forEach((doc) => {
       summaries.push({ id: doc.id, ...doc.data() } as DailySummary);
     });
-    return summaries;
+    
+    // Karena kita query dengan 'desc' untuk mendapatkan 7 teratas/terbaru, 
+    // kita perlu membalik urutannya ('reverse') agar grafik merender dari kiri (hari terlama) ke kanan (hari terbaru).
+    return summaries.reverse();
   }
 };

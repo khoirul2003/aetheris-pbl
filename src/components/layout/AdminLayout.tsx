@@ -30,7 +30,15 @@ export default function AdminLayout({
   // Set selalu false di awal agar hasil render Server dan Client sama persis
   const [isAuthorized, setIsAuthorized] = useState(false);
 
-  const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      const savedSidebar = localStorage.getItem("aetheris_sidebar_collapsed");
+      if (savedSidebar !== null) {
+        return JSON.parse(savedSidebar);
+      }
+    }
+    return false;
+  });
 
   const [isMobileOpen, setIsMobileOpen] = useState<boolean>(false);
   const [, setMounted] = useState<boolean>(false);
@@ -40,10 +48,7 @@ export default function AdminLayout({
     const timer = setTimeout(() => {
       setMounted(true);
       
-      const savedSidebar = localStorage.getItem("aetheris_sidebar_collapsed");
-      if (savedSidebar !== null) {
-        setIsCollapsed(JSON.parse(savedSidebar));
-      }
+      // isCollapsed sudah diinisialisasi secara sinkron, kita tidak perlu set ulang di sini
     }, 0);
 
     if (sessionStorage.getItem("aetheris_admin_auth") === "true") {
